@@ -49,7 +49,7 @@ func (h *expiryHeap) Pop() interface{} {
 }
 
 // NewMemoryHelper 创建内存缓存助手实例
-func NewMemoryHelper() CacheHelper {
+func NewMemoryHelper() CacheInterf {
 	mh := &memoryHelper{
 		data:     make(map[string]*cacheItem),
 		ctx:      context.Background(),

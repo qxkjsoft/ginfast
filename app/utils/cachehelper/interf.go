@@ -6,7 +6,7 @@ import (
 )
 
 // RedisHelper Redis助手接口
-type CacheHelper interface {
+type CacheInterf interface {
 	// Set 设置键值对，并指定过期时间
 	Set(ctx context.Context, key string, value string, expiration time.Duration) error
 

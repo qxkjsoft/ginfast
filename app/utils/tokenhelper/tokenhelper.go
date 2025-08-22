@@ -11,8 +11,8 @@ import (
 
 // TokenService Token服务
 type TokenService struct {
-	ctx            context.Context
-	redisHelper    cachehelper.CacheHelper
+	Ctx            context.Context
+	RedisHelper    cachehelper.CacheInterf
 	JWTSecret      string
 	TokenExpire    time.Duration
 	RefreshExpire  time.Duration
@@ -59,7 +59,7 @@ func (s *TokenService) GenerateTokenWithCache(user *ClaimsUser) (string, error) 
 // StoreToken 存储Token到Redis
 func (s *TokenService) StoreToken(info *TokenInfo) error {
 	key := s.getTokenKey(info.UserID, info.Token)
-	return s.redisHelper.Set(s.ctx, key, "1", time.Until(info.ExpiresAt))
+	return s.RedisHelper.Set(s.Ctx, key, "1", time.Until(info.ExpiresAt))
 }
 
 // ValidateTokenWithCache 验证JWT令牌（带缓存检查）
@@ -72,7 +72,7 @@ func (s *TokenService) ValidateTokenWithCache(tokenString string) bool {
 
 	// 检查缓存中是否存在该token（白名单模式）
 	key := s.getTokenKey(claims.UserID, tokenString)
-	exists, err := s.redisHelper.Exists(s.ctx, key)
+	exists, err := s.RedisHelper.Exists(s.Ctx, key)
 	if err != nil || exists == 0 {
 		return false
 	}
@@ -88,7 +88,7 @@ func (s *TokenService) RevokeToken(tokenString string) error {
 	}
 
 	key := s.getTokenKey(claims.UserID, tokenString)
-	return s.redisHelper.Del(s.ctx, key)
+	return s.RedisHelper.Del(s.Ctx, key)
 }
 
 // getTokenKey 获取Redis中存储Token的key
@@ -155,7 +155,7 @@ func (s *TokenService) GenerateRefreshToken(userID uint) (string, error) {
 // StoreRefreshToken 存储Refresh Token到Redis
 func (s *TokenService) StoreRefreshToken(info *RefreshTokenInfo) error {
 	key := s.getRefreshTokenKey(info.UserID)
-	return s.redisHelper.Set(s.ctx, key, info.Token, time.Until(info.ExpiresAt))
+	return s.RedisHelper.Set(s.Ctx, key, info.Token, time.Until(info.ExpiresAt))
 }
 
 // ParseRefreshToken 解析Refresh Token
@@ -181,7 +181,7 @@ func (s *TokenService) ValidateRefreshToken(tokenString string) bool {
 
 	// 检查Redis中是否存在该token
 	key := s.getRefreshTokenKey(claims.UserID)
-	storedToken, err := s.redisHelper.Get(s.ctx, key)
+	storedToken, err := s.RedisHelper.Get(s.Ctx, key)
 	if err != nil {
 		return false
 	}
@@ -192,7 +192,7 @@ func (s *TokenService) ValidateRefreshToken(tokenString string) bool {
 // RevokeRefreshToken 撤销Refresh Token
 func (s *TokenService) RevokeRefreshToken(userID uint) error {
 	key := s.getRefreshTokenKey(userID)
-	return s.redisHelper.Del(s.ctx, key)
+	return s.RedisHelper.Del(s.Ctx, key)
 }
 
 // RefreshAccessToken 使用Refresh Token刷新Access Token

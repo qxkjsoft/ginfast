@@ -2,7 +2,7 @@ package routes
 
 import (
 	"gin-fast/app/controllers"
-	"gin-fast/app/global/g"
+	"gin-fast/app/global/app"
 
 	"gin-fast/app/middleware"
 
@@ -15,7 +15,7 @@ var authControllers = &controllers.AuthController{}
 // InitRoutes 初始化路由
 func InitRoutes(engine *gin.Engine) {
 	// 跨域
-	if g.ConfigYml.GetBool("HttpServer.AllowCrossDomain") {
+	if app.ConfigYml.GetBool("HttpServer.AllowCrossDomain") {
 		engine.Use(middleware.CorsNext())
 	}
 

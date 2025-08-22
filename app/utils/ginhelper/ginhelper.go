@@ -3,8 +3,8 @@ package ginhelper
 import (
 	"errors"
 	"fmt"
+	"gin-fast/app/global/app"
 	"gin-fast/app/global/consts"
-	"gin-fast/app/global/g"
 	"gin-fast/app/utils/response"
 	"io"
 
@@ -15,7 +15,7 @@ import (
 
 func GetEngine() *gin.Engine {
 	var engine *gin.Engine
-	if g.ConfigYml.GetBool("Server.AppDebug") == false {
+	if app.ConfigYml.GetBool("Server.AppDebug") == false {
 		gin.SetMode(gin.ReleaseMode)
 		gin.DefaultWriter = io.Discard
 		engine = gin.New()
@@ -55,6 +55,6 @@ type PanicExceptionRecord struct{}
 func (p *PanicExceptionRecord) Write(b []byte) (n int, err error) {
 	errStr := string(b)
 	err = errors.New(errStr)
-	g.ZapLog.Error(consts.ServerOccurredErrorMsg, zap.String("errStrace", errStr))
+	app.ZapLog.Error(consts.ServerOccurredErrorMsg, zap.String("errStrace", errStr))
 	return len(errStr), err
 }

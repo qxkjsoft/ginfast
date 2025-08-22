@@ -3,7 +3,7 @@ package gormhelper
 import (
 	"errors"
 	"fmt"
-	"gin-fast/app/global/g"
+	"gin-fast/app/global/app"
 	"gin-fast/app/global/myerrors"
 	"strings"
 	"time"
@@ -20,21 +20,21 @@ import (
 // 获取一个 mysql 客户端
 func GetOneMysqlClient() (*gorm.DB, error) {
 	sqlType := "Mysql"
-	readDbIsOpen := g.ConfigYml.GetInt("Gormv2." + sqlType + ".IsOpenReadDb")
+	readDbIsOpen := app.ConfigYml.GetInt("Gormv2." + sqlType + ".IsOpenReadDb")
 	return GetSqlDriver(sqlType, readDbIsOpen)
 }
 
 // 获取一个 sqlserver 客户端
 func GetOneSqlserverClient() (*gorm.DB, error) {
 	sqlType := "SqlServer"
-	readDbIsOpen := g.ConfigYml.GetInt("Gormv2." + sqlType + ".IsOpenReadDb")
+	readDbIsOpen := app.ConfigYml.GetInt("Gormv2." + sqlType + ".IsOpenReadDb")
 	return GetSqlDriver(sqlType, readDbIsOpen)
 }
 
 // 获取一个 postgresql 客户端
 func GetOnePostgreSqlClient() (*gorm.DB, error) {
 	sqlType := "Postgresql"
-	readDbIsOpen := g.ConfigYml.GetInt("Gormv2." + sqlType + ".IsOpenReadDb")
+	readDbIsOpen := app.ConfigYml.GetInt("Gormv2." + sqlType + ".IsOpenReadDb")
 	return GetSqlDriver(sqlType, readDbIsOpen)
 }
 
@@ -43,7 +43,7 @@ func GetSqlDriver(sqlType string, readDbIsOpen int, dbConf ...ConfigParams) (*go
 
 	var dbDialector gorm.Dialector
 	if val, err := getDbDialector(sqlType, "Write", dbConf...); err != nil {
-		g.ZapLog.Error(myerrors.ErrorsDialectorDbInitFail+sqlType, zap.Error(err))
+		app.ZapLog.Error(myerrors.ErrorsDialectorDbInitFail+sqlType, zap.Error(err))
 	} else {
 		dbDialector = val
 	}
@@ -61,7 +61,7 @@ func GetSqlDriver(sqlType string, readDbIsOpen int, dbConf ...ConfigParams) (*go
 	// 读写分离配置只
 	if readDbIsOpen == 1 {
 		if val, err := getDbDialector(sqlType, "Read", dbConf...); err != nil {
-			g.ZapLog.Error(myerrors.ErrorsDialectorDbInitFail+sqlType, zap.Error(err))
+			app.ZapLog.Error(myerrors.ErrorsDialectorDbInitFail+sqlType, zap.Error(err))
 		} else {
 			dbDialector = val
 		}
@@ -70,10 +70,10 @@ func GetSqlDriver(sqlType string, readDbIsOpen int, dbConf ...ConfigParams) (*go
 			Policy:   dbresolver.RandomPolicy{},     // sources/replicas 负载均衡策略适用于
 		}
 		err = gormDb.Use(dbresolver.Register(resolverConf).
-			SetConnMaxIdleTime(time.Duration(g.ConfigYml.GetInt("Gormv2."+sqlType+".Read.SetConnMaxIdleTime")) * time.Second).
-			SetConnMaxLifetime(time.Duration(g.ConfigYml.GetInt("Gormv2."+sqlType+".Read.SetConnMaxLifetime")) * time.Second).
-			SetMaxIdleConns(g.ConfigYml.GetInt("Gormv2." + sqlType + ".Read.SetMaxIdleConns")).
-			SetMaxOpenConns(g.ConfigYml.GetInt("Gormv2." + sqlType + ".Read.SetMaxOpenConns")))
+			SetConnMaxIdleTime(time.Duration(app.ConfigYml.GetInt("Gormv2."+sqlType+".Read.SetConnMaxIdleTime")) * time.Second).
+			SetConnMaxLifetime(time.Duration(app.ConfigYml.GetInt("Gormv2."+sqlType+".Read.SetConnMaxLifetime")) * time.Second).
+			SetMaxIdleConns(app.ConfigYml.GetInt("Gormv2." + sqlType + ".Read.SetMaxIdleConns")).
+			SetMaxOpenConns(app.ConfigYml.GetInt("Gormv2." + sqlType + ".Read.SetMaxOpenConns")))
 		if err != nil {
 			return nil, err
 		}
@@ -92,10 +92,10 @@ func GetSqlDriver(sqlType string, readDbIsOpen int, dbConf ...ConfigParams) (*go
 	if rawDb, err := gormDb.DB(); err != nil {
 		return nil, err
 	} else {
-		rawDb.SetConnMaxIdleTime(time.Duration(g.ConfigYml.GetInt("Gormv2."+sqlType+".Write.SetConnMaxIdleTime")) * time.Second)
-		rawDb.SetConnMaxLifetime(time.Duration(g.ConfigYml.GetInt("Gormv2."+sqlType+".Write.SetConnMaxLifetime")) * time.Second)
-		rawDb.SetMaxIdleConns(g.ConfigYml.GetInt("Gormv2." + sqlType + ".Write.SetMaxIdleConns"))
-		rawDb.SetMaxOpenConns(g.ConfigYml.GetInt("Gormv2." + sqlType + ".Write.SetMaxOpenConns"))
+		rawDb.SetConnMaxIdleTime(time.Duration(app.ConfigYml.GetInt("Gormv2."+sqlType+".Write.SetConnMaxIdleTime")) * time.Second)
+		rawDb.SetConnMaxLifetime(time.Duration(app.ConfigYml.GetInt("Gormv2."+sqlType+".Write.SetConnMaxLifetime")) * time.Second)
+		rawDb.SetMaxIdleConns(app.ConfigYml.GetInt("Gormv2." + sqlType + ".Write.SetMaxIdleConns"))
+		rawDb.SetMaxOpenConns(app.ConfigYml.GetInt("Gormv2." + sqlType + ".Write.SetMaxOpenConns"))
 		return gormDb, nil
 	}
 }
@@ -119,12 +119,12 @@ func getDbDialector(sqlType, readWrite string, dbConf ...ConfigParams) (gorm.Dia
 
 // 根据配置参数生成数据库驱动 dsn
 func getDsn(sqlType, readWrite string, dbConf ...ConfigParams) string {
-	Host := g.ConfigYml.GetString("Gormv2." + sqlType + "." + readWrite + ".Host")
-	DataBase := g.ConfigYml.GetString("Gormv2." + sqlType + "." + readWrite + ".DataBase")
-	Port := g.ConfigYml.GetInt("Gormv2." + sqlType + "." + readWrite + ".Port")
-	User := g.ConfigYml.GetString("Gormv2." + sqlType + "." + readWrite + ".User")
-	Pass := g.ConfigYml.GetString("Gormv2." + sqlType + "." + readWrite + ".Pass")
-	Charset := g.ConfigYml.GetString("Gormv2." + sqlType + "." + readWrite + ".Charset")
+	Host := app.ConfigYml.GetString("Gormv2." + sqlType + "." + readWrite + ".Host")
+	DataBase := app.ConfigYml.GetString("Gormv2." + sqlType + "." + readWrite + ".DataBase")
+	Port := app.ConfigYml.GetInt("Gormv2." + sqlType + "." + readWrite + ".Port")
+	User := app.ConfigYml.GetString("Gormv2." + sqlType + "." + readWrite + ".User")
+	Pass := app.ConfigYml.GetString("Gormv2." + sqlType + "." + readWrite + ".Pass")
+	Charset := app.ConfigYml.GetString("Gormv2." + sqlType + "." + readWrite + ".Charset")
 
 	if len(dbConf) > 0 {
 		if strings.ToLower(readWrite) == "write" {

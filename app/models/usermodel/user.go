@@ -1,7 +1,7 @@
 package usermodel
 
 import (
-	"gin-fast/app/global/g"
+	"gin-fast/app/global/app"
 
 	"gorm.io/gorm"
 )
@@ -24,7 +24,7 @@ func (User) TableName() string {
 // GetUserByUsername 根据用户名获取用户
 func GetUserByUsername(username string) (*User, error) {
 	var user User
-	if err := g.DB().Where("username = ?", username).First(&user).Error; err != nil {
+	if err := app.GormDbMysql.Where("username = ?", username).First(&user).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
@@ -32,13 +32,13 @@ func GetUserByUsername(username string) (*User, error) {
 
 // CreateUser 创建用户
 func CreateUser(user *User) error {
-	return g.DB().Create(user).Error
+	return app.GormDbMysql.Create(user).Error
 }
 
 // GetUserByID 根据ID获取用户
 func GetUserByID(id uint) (*User, error) {
 	var user User
-	if err := g.DB().First(&user, id).Error; err != nil {
+	if err := app.GormDbMysql.First(&user, id).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil

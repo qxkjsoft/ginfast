@@ -1,8 +1,8 @@
 package middleware
 
 import (
+	"gin-fast/app/global/app"
 	"gin-fast/app/global/consts"
-	"gin-fast/app/utils/tokenhelper"
 	"net/http"
 	"strings"
 
@@ -27,8 +27,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		}
 
 		tokenString := headerParts[1]
-		claims, err := tokenhelper.GetTokenService().ParseToken(tokenString)
-
+		claims, err := app.TokenService.ParseToken(tokenString)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			c.Abort()

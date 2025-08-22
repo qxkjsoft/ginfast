@@ -1,9 +1,6 @@
 package ymlconfig
 
 import (
-	"gin-fast/app/global/g"
-	"gin-fast/app/utils/ymlconfig/interf"
-
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 
@@ -18,11 +15,11 @@ func init() {
 	lastChangeTime = time.Now()
 }
 
-func CreateYamlFactory(fileName ...string) interf.YmlConfigInterf {
+func CreateYamlFactory(path string, fileName ...string) YmlConfigInterf {
 
 	yamlConfig := viper.New()
 	// 配置文件所在目录
-	yamlConfig.AddConfigPath(g.BasePath + "/config")
+	yamlConfig.AddConfigPath(path)
 	// 需要读取的文件名,默认为：config
 	if len(fileName) == 0 {
 		yamlConfig.SetConfigName("config")

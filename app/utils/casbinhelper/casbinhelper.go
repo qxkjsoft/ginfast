@@ -2,10 +2,7 @@ package casbinhelper
 
 import (
 	"fmt"
-	"gin-fast/app/global/g"
-	"log"
 	"net/http"
-	"sync"
 
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
@@ -19,37 +16,20 @@ type CasbinService struct {
 	enforcer *casbin.Enforcer
 }
 
-var (
-	casbinInstance *CasbinService
-	casbinOnce     sync.Once
-)
-
-// GetCasbinService 获取Casbin服务单例
-func GetCasbinService() *CasbinService {
-	casbinOnce.Do(func() {
-		casbinInstance = &CasbinService{}
-		err := casbinInstance.InitCasbin(g.DB())
-		if err != nil {
-			log.Fatal("Failed to initialize Casbin service: ", err)
-		}
-	})
-	return casbinInstance
-}
-
 // NewCasbinService 创建Casbin服务实例
 func NewCasbinService() *CasbinService {
 	return &CasbinService{}
 }
 
 // InitCasbin 初始化Casbin
-func (s *CasbinService) InitCasbin(db *gorm.DB) error {
+func (s *CasbinService) InitCasbin(db *gorm.DB, config string) error {
 
-	m, err := model.NewModelFromString(g.ConfigYml.GetString("Casbin.ModelConfig"))
+	//m, err := model.NewModelFromString(app.ConfigYml.GetString("Casbin.ModelConfig"))
+	m, err := model.NewModelFromString(config)
 	if err != nil {
 		return fmt.Errorf("failed to create model: %v", err)
 	}
 
-	// 创建Gorm适配器，指定表名为tb_auth_casbin_rule
 	// 首先检查数据库连接是否正常
 	sqlDB, err := db.DB()
 	if err != nil {

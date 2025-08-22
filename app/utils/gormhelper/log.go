@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gin-fast/app/global/g"
+	"gin-fast/app/global/app"
 	"strings"
 	"time"
 
@@ -24,7 +24,7 @@ func createCustomGormLog(sqlType string, options ...Options) gormLog.Interface {
 		traceErrStr  = "%s %s\n[%.3fms] [rows:%v] %s"
 	)
 	logConf := gormLog.Config{
-		SlowThreshold: time.Second * g.ConfigYml.GetDuration("Gormv2."+sqlType+".SlowThreshold"),
+		SlowThreshold: time.Second * app.ConfigYml.GetDuration("Gormv2."+sqlType+".SlowThreshold"),
 		LogLevel:      gormLog.Warn,
 		Colorful:      false,
 	}
@@ -51,11 +51,11 @@ func (l logOutPut) Printf(strFormat string, args ...interface{}) {
 	logFlag := "gorm_v2 日志:"
 	detailFlag := "详情："
 	if strings.HasPrefix(strFormat, "[info]") || strings.HasPrefix(strFormat, "[traceStr]") {
-		g.ZapLog.Info(logFlag, zap.String(detailFlag, logRes))
+		app.ZapLog.Info(logFlag, zap.String(detailFlag, logRes))
 	} else if strings.HasPrefix(strFormat, "[error]") || strings.HasPrefix(strFormat, "[traceErr]") {
-		g.ZapLog.Error(logFlag, zap.String(detailFlag, logRes))
+		app.ZapLog.Error(logFlag, zap.String(detailFlag, logRes))
 	} else if strings.HasPrefix(strFormat, "[warn]") || strings.HasPrefix(strFormat, "[traceWarn]") {
-		g.ZapLog.Warn(logFlag, zap.String(detailFlag, logRes))
+		app.ZapLog.Warn(logFlag, zap.String(detailFlag, logRes))
 	}
 
 }

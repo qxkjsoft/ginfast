@@ -1,7 +1,7 @@
 package gormhelper
 
 import (
-	"gin-fast/app/global/g"
+	"gin-fast/app/global/app"
 	"gin-fast/app/global/myerrors"
 	"reflect"
 	"strings"
@@ -21,7 +21,7 @@ func MaskNotDataError(gormDB *gorm.DB) {
 
 func CreateBeforeHook(gormDB *gorm.DB) {
 	if reflect.TypeOf(gormDB.Statement.Dest).Kind() != reflect.Ptr {
-		g.ZapLog.Warn(myerrors.ErrorsGormDBCreateParamsNotPtr)
+		app.ZapLog.Warn(myerrors.ErrorsGormDBCreateParamsNotPtr)
 	} else {
 		destValueOf := reflect.ValueOf(gormDB.Statement.Dest).Elem()
 		if destValueOf.Type().Kind() == reflect.Slice || destValueOf.Type().Kind() == reflect.Array {
@@ -73,7 +73,7 @@ func CreateBeforeHook(gormDB *gorm.DB) {
 func UpdateBeforeHook(gormDB *gorm.DB) {
 	if reflect.TypeOf(gormDB.Statement.Dest).Kind() == reflect.Struct {
 		//_ = gormDB.AddError(errors.New(my_errors.ErrorsGormDBUpdateParamsNotPtr))
-		g.ZapLog.Warn(myerrors.ErrorsGormDBUpdateParamsNotPtr)
+		app.ZapLog.Warn(myerrors.ErrorsGormDBUpdateParamsNotPtr)
 	} else if reflect.TypeOf(gormDB.Statement.Dest).Kind() == reflect.Map {
 		// 如果是调用了 gorm.Update 、updates 函数 , 在参数没有传递指针的情况下，无法触发回调函数
 

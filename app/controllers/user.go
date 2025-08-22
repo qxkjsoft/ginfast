@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"gin-fast/app/global/g"
+	"gin-fast/app/global/app"
 	"gin-fast/app/models/usermodel"
 	"gin-fast/app/utils/common"
 	"gin-fast/app/utils/passwordhelper"
@@ -32,7 +32,7 @@ func (uc *UserController) GetProfile(c *gin.Context) {
 	// 获取用户信息
 	user, err := usermodel.GetUserByID(claims.UserID)
 	if err != nil {
-		g.ZapLog.Error("用户不存在", zap.Error(err))
+		app.ZapLog.Error("用户不存在", zap.Error(err))
 		response.Fail(c, "用户不存在")
 		return
 	}
@@ -52,21 +52,21 @@ func (uc *UserController) UpdateProfile(c *gin.Context) {
 	// 获取用户信息
 	user, err := usermodel.GetUserByID(userID.(uint))
 	if err != nil {
-		g.ZapLog.Error("用户不存在", zap.Error(err))
+		app.ZapLog.Error("用户不存在", zap.Error(err))
 		response.Fail(c, "用户不存在")
 		return
 	}
 
 	// 绑定请求数据
 	if err := c.ShouldBindJSON(&user); err != nil {
-		g.ZapLog.Error("更新用户信息失败", zap.Error(err))
+		app.ZapLog.Error("更新用户信息失败", zap.Error(err))
 		response.Fail(c, err.Error())
 		return
 	}
 
 	// 更新用户信息
-	if err := g.DB().Save(&user).Error; err != nil {
-		g.ZapLog.Error("更新用户信息失败", zap.Error(err))
+	if err := app.GormDbMysql.Save(&user).Error; err != nil {
+		app.ZapLog.Error("更新用户信息失败", zap.Error(err))
 		response.Fail(c, "更新失败")
 		return
 	}
@@ -80,7 +80,7 @@ func (uc *UserController) GetUserByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		g.ZapLog.Error("用户不存在", zap.Error(err))
+		app.ZapLog.Error("用户不存在", zap.Error(err))
 		response.Fail(c, "Invalid user ID")
 		return
 	}
@@ -88,7 +88,7 @@ func (uc *UserController) GetUserByID(c *gin.Context) {
 	// 获取用户信息
 	user, err := usermodel.GetUserByID(uint(id))
 	if err != nil {
-		g.ZapLog.Error("用户不存在", zap.Error(err))
+		app.ZapLog.Error("用户不存在", zap.Error(err))
 		response.Fail(c, "用户不存在")
 		return
 	}
@@ -100,7 +100,7 @@ func (uc *UserController) GetUserByID(c *gin.Context) {
 func (uc *UserController) Add(c *gin.Context) {
 	var req AddRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		g.ZapLog.Error("新增用户失败", zap.Error(err))
+		app.ZapLog.Error("新增用户失败", zap.Error(err))
 		response.Fail(c, err.Error())
 		return
 	}
@@ -108,7 +108,7 @@ func (uc *UserController) Add(c *gin.Context) {
 	// 检查用户名是否已存在
 	_, err := usermodel.GetUserByUsername(req.Username)
 	if err == nil {
-		g.ZapLog.Error("新增用户失败", zap.Error(err))
+		app.ZapLog.Error("新增用户失败", zap.Error(err))
 		response.Fail(c, "Username already exists")
 		return
 	}
@@ -116,7 +116,7 @@ func (uc *UserController) Add(c *gin.Context) {
 	// 密码加密
 	hashedPassword, err := passwordhelper.HashPassword(req.Password)
 	if err != nil {
-		g.ZapLog.Error("新增用户失败", zap.Error(err))
+		app.ZapLog.Error("新增用户失败", zap.Error(err))
 		response.Fail(c, "Failed to hash password")
 		return
 	}
@@ -129,7 +129,7 @@ func (uc *UserController) Add(c *gin.Context) {
 	}
 
 	if err := usermodel.CreateUser(user); err != nil {
-		g.ZapLog.Error("新增用户失败", zap.Error(err))
+		app.ZapLog.Error("新增用户失败", zap.Error(err))
 		response.Fail(c, "Failed to create user")
 		return
 	}

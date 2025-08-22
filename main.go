@@ -1,7 +1,7 @@
 package main
 
 import (
-	"gin-fast/app/global/g"
+	"gin-fast/app/global/app"
 	"gin-fast/app/routes"
 	"gin-fast/app/utils/ginhelper"
 	_ "gin-fast/bootstrap"
@@ -12,6 +12,6 @@ func main() {
 	// 初始化路由
 	routes.InitRoutes(engine)
 	// 启动服务器
-	_ = engine.Run(g.ConfigYml.GetString("HttpServer.Port"))
+	_ = engine.Run(app.ConfigYml.GetString("HttpServer.Port"))
 
 }

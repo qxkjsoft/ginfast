@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"gin-fast/app/global/g"
+	"gin-fast/app/global/app"
 	"gin-fast/app/models/usermodel"
 	"gin-fast/app/utils/passwordhelper"
 	"gin-fast/app/utils/response"
@@ -31,47 +31,47 @@ func (ac *AuthController) Login(c *gin.Context) {
 	// 根据用户名查找用户
 	user, err := usermodel.GetUserByUsername(req.Username)
 	if err != nil {
-		g.ZapLog.Error("用户名不存在", zap.Error(err))
+		app.ZapLog.Error("用户名不存在", zap.Error(err))
 		response.Fail(c, "用户名不存在")
 		return
 	}
 
 	// 验证密码
 	if err = passwordhelper.ComparePassword(user.Password, req.Password); err != nil {
-		g.ZapLog.Error("密码错误", zap.Error(err))
+		app.ZapLog.Error("密码错误", zap.Error(err))
 		response.Fail(c, "密码错误")
 		return
 	}
 
 	// 生成token
 	user.Password = ""
-	token, err := tokenhelper.GetTokenService().GenerateToken(&tokenhelper.ClaimsUser{
+	token, err := app.TokenService.GenerateToken(&tokenhelper.ClaimsUser{
 		UserID:   user.ID,
 		Username: user.Username,
 		RawData:  *user,
 	})
 	if err != nil {
-		g.ZapLog.Error("生成token失败", zap.Error(err))
+		app.ZapLog.Error("生成token失败", zap.Error(err))
 		response.Fail(c, "生成token失败")
 		return
 	}
 
 	// 生成refresh token
-	refreshToken, err := tokenhelper.GetTokenService().GenerateRefreshToken(user.ID)
+	refreshToken, err := app.TokenService.GenerateRefreshToken(user.ID)
 	if err != nil {
-		g.ZapLog.Error("生成refresh token失败", zap.Error(err))
+		app.ZapLog.Error("生成refresh token失败", zap.Error(err))
 		response.Fail(c, "生成refresh token失败")
 		return
 	}
-	claims, err := tokenhelper.GetTokenService().ParseToken(token)
+	claims, err := app.TokenService.ParseToken(token)
 	if err != nil {
-		g.ZapLog.Error("解析token失败", zap.Error(err))
+		app.ZapLog.Error("解析token失败", zap.Error(err))
 		response.Fail(c, "解析token失败")
 		return
 	}
-	claims1, err := tokenhelper.GetTokenService().ParseRefreshToken(refreshToken)
+	claims1, err := app.TokenService.ParseRefreshToken(refreshToken)
 	if err != nil {
-		g.ZapLog.Error("解析refreshToken失败", zap.Error(err))
+		app.ZapLog.Error("解析refreshToken失败", zap.Error(err))
 		response.Fail(c, "解析refreshToken失败")
 		return
 	}
@@ -99,7 +99,7 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 		// 如果header中没有，尝试从body中获取
 		var req RefreshRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			g.ZapLog.Error("刷新token失败", zap.Error(err))
+			app.ZapLog.Error("刷新token失败", zap.Error(err))
 			response.Fail(c, "refreshToken不能为空")
 			return
 		}
@@ -107,36 +107,36 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 	}
 
 	// 解析refreshToken获取用户ID
-	claims, err := tokenhelper.GetTokenService().ParseRefreshToken(refreshToken)
+	claims, err := app.TokenService.ParseRefreshToken(refreshToken)
 	if err != nil {
-		g.ZapLog.Error("解析refreshToken失败", zap.Error(err))
+		app.ZapLog.Error("解析refreshToken失败", zap.Error(err))
 		response.Fail(c, "无效的refreshToken")
 		return
 	}
 
 	// 从数据库中获取用户信息
 	var user usermodel.User
-	if err = g.DB().First(&user, claims.UserID).Error; err != nil {
-		g.ZapLog.Error("用户不存在", zap.Error(err))
+	if err = app.GormDbMysql.First(&user, claims.UserID).Error; err != nil {
+		app.ZapLog.Error("用户不存在", zap.Error(err))
 		response.Fail(c, "用户不存在")
 		return
 	}
 
 	// 使用refresh token刷新access token
 	user.Password = ""
-	newAccessToken, err := tokenhelper.GetTokenService().RefreshAccessToken(refreshToken, &tokenhelper.ClaimsUser{
+	newAccessToken, err := app.TokenService.RefreshAccessToken(refreshToken, &tokenhelper.ClaimsUser{
 		UserID:   user.ID,
 		Username: user.Username,
 		RawData:  user,
 	})
 	if err != nil {
-		g.ZapLog.Error("刷新token失败", zap.Error(err))
+		app.ZapLog.Error("刷新token失败", zap.Error(err))
 		response.Fail(c, "刷新token失败")
 		return
 	}
-	claims1, err := tokenhelper.GetTokenService().ParseRefreshToken(newAccessToken)
+	claims1, err := app.TokenService.ParseRefreshToken(newAccessToken)
 	if err != nil {
-		g.ZapLog.Error("解析token失败", zap.Error(err))
+		app.ZapLog.Error("解析token失败", zap.Error(err))
 		response.Fail(c, "解析token失败")
 		return
 	}
@@ -156,9 +156,9 @@ func (ac *AuthController) Logout(c *gin.Context) {
 	}
 
 	// 撤销refresh token
-	err := tokenhelper.GetTokenService().RevokeRefreshToken(uint(userID.(float64)))
+	err := app.TokenService.RevokeRefreshToken(uint(userID.(float64)))
 	if err != nil {
-		g.ZapLog.Error("登出失败", zap.Error(err))
+		app.ZapLog.Error("登出失败", zap.Error(err))
 		response.Fail(c, "登出失败")
 		return
 	}

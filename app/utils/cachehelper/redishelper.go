@@ -14,7 +14,7 @@ type redisHelper struct {
 }
 
 // NewRedisHelper 创建Redis助手实例
-func NewRedisHelper(addr, password string, db int) (CacheHelper, error) {
+func NewRedisHelper(addr, password string, db int) (CacheInterf, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     addr,     // Redis服务器地址
 		Password: password, // 密码
