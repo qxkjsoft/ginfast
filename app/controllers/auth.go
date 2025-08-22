@@ -4,7 +4,7 @@ import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models/usermodel"
 	"gin-fast/app/utils/passwordhelper"
-	"gin-fast/app/utils/response"
+
 	"gin-fast/app/utils/tokenhelper"
 
 	"github.com/gin-gonic/gin"
@@ -25,21 +25,21 @@ type RefreshRequest struct {
 func (ac *AuthController) Login(c *gin.Context) {
 	var req usermodel.LoginRequest
 	if err := req.Validate(c); err != nil {
-		response.Fail(c, err.Error())
+		app.Response.Fail(c, err.Error())
 		return
 	}
 	// 根据用户名查找用户
 	user, err := usermodel.GetUserByUsername(req.Username)
 	if err != nil {
 		app.ZapLog.Error("用户名不存在", zap.Error(err))
-		response.Fail(c, "用户名不存在")
+		app.Response.Fail(c, "用户名不存在")
 		return
 	}
 
 	// 验证密码
 	if err = passwordhelper.ComparePassword(user.Password, req.Password); err != nil {
 		app.ZapLog.Error("密码错误", zap.Error(err))
-		response.Fail(c, "密码错误")
+		app.Response.Fail(c, "密码错误")
 		return
 	}
 
@@ -52,7 +52,7 @@ func (ac *AuthController) Login(c *gin.Context) {
 	})
 	if err != nil {
 		app.ZapLog.Error("生成token失败", zap.Error(err))
-		response.Fail(c, "生成token失败")
+		app.Response.Fail(c, "生成token失败")
 		return
 	}
 
@@ -60,22 +60,22 @@ func (ac *AuthController) Login(c *gin.Context) {
 	refreshToken, err := app.TokenService.GenerateRefreshToken(user.ID)
 	if err != nil {
 		app.ZapLog.Error("生成refresh token失败", zap.Error(err))
-		response.Fail(c, "生成refresh token失败")
+		app.Response.Fail(c, "生成refresh token失败")
 		return
 	}
 	claims, err := app.TokenService.ParseToken(token)
 	if err != nil {
 		app.ZapLog.Error("解析token失败", zap.Error(err))
-		response.Fail(c, "解析token失败")
+		app.Response.Fail(c, "解析token失败")
 		return
 	}
 	claims1, err := app.TokenService.ParseRefreshToken(refreshToken)
 	if err != nil {
 		app.ZapLog.Error("解析refreshToken失败", zap.Error(err))
-		response.Fail(c, "解析refreshToken失败")
+		app.Response.Fail(c, "解析refreshToken失败")
 		return
 	}
-	response.Success(c, gin.H{
+	app.Response.Success(c, gin.H{
 		"accessToken":         token,
 		"refreshToken":        refreshToken,
 		"accessTokenExpires":  claims.ExpiresAt.Unix(),
@@ -100,7 +100,7 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 		var req RefreshRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			app.ZapLog.Error("刷新token失败", zap.Error(err))
-			response.Fail(c, "refreshToken不能为空")
+			app.Response.Fail(c, "refreshToken不能为空")
 			return
 		}
 		refreshToken = req.RefreshToken
@@ -110,7 +110,7 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 	claims, err := app.TokenService.ParseRefreshToken(refreshToken)
 	if err != nil {
 		app.ZapLog.Error("解析refreshToken失败", zap.Error(err))
-		response.Fail(c, "无效的refreshToken")
+		app.Response.Fail(c, "无效的refreshToken")
 		return
 	}
 
@@ -118,7 +118,7 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 	var user usermodel.User
 	if err = app.GormDbMysql.First(&user, claims.UserID).Error; err != nil {
 		app.ZapLog.Error("用户不存在", zap.Error(err))
-		response.Fail(c, "用户不存在")
+		app.Response.Fail(c, "用户不存在")
 		return
 	}
 
@@ -131,16 +131,16 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 	})
 	if err != nil {
 		app.ZapLog.Error("刷新token失败", zap.Error(err))
-		response.Fail(c, "刷新token失败")
+		app.Response.Fail(c, "刷新token失败")
 		return
 	}
 	claims1, err := app.TokenService.ParseRefreshToken(newAccessToken)
 	if err != nil {
 		app.ZapLog.Error("解析token失败", zap.Error(err))
-		response.Fail(c, "解析token失败")
+		app.Response.Fail(c, "解析token失败")
 		return
 	}
-	response.Success(c, gin.H{
+	app.Response.Success(c, gin.H{
 		"accessToken":        newAccessToken,
 		"accessTokenExpires": claims1.ExpiresAt,
 	})
@@ -151,7 +151,7 @@ func (ac *AuthController) Logout(c *gin.Context) {
 	// 从上下文中获取用户信息
 	userID, exists := c.Get("user_id")
 	if !exists {
-		response.Fail(c, "用户未登录")
+		app.Response.Fail(c, "用户未登录")
 		return
 	}
 
@@ -159,11 +159,11 @@ func (ac *AuthController) Logout(c *gin.Context) {
 	err := app.TokenService.RevokeRefreshToken(uint(userID.(float64)))
 	if err != nil {
 		app.ZapLog.Error("登出失败", zap.Error(err))
-		response.Fail(c, "登出失败")
+		app.Response.Fail(c, "登出失败")
 		return
 	}
 
-	response.Success(c, gin.H{
+	app.Response.Success(c, gin.H{
 		"message": "登出成功",
 	})
 }

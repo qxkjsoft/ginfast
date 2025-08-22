@@ -4,6 +4,7 @@ import (
 	"gin-fast/app/global/consts"
 	"gin-fast/app/utils/cachehelper"
 	"gin-fast/app/utils/casbinhelper"
+	"gin-fast/app/utils/response"
 	"gin-fast/app/utils/tokenhelper"
 	"gin-fast/app/utils/ymlconfig"
 
@@ -23,6 +24,7 @@ var (
 	CasbinV2         casbinhelper.CasbinInterf         // casbin指针
 	Cache            cachehelper.CacheInterf           // 缓存指针
 	TokenService     tokenhelper.TokenServiceInterface // token管理
+	Response         response.ResponseHandler
 )
 
 // DB 获取默认的数据库连接

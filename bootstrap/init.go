@@ -9,6 +9,7 @@ import (
 	"gin-fast/app/utils/cachehelper"
 	"gin-fast/app/utils/casbinhelper"
 	"gin-fast/app/utils/gormhelper"
+	"gin-fast/app/utils/response"
 	"gin-fast/app/utils/tokenhelper"
 	"gin-fast/app/utils/ymlconfig"
 	"log"
@@ -43,6 +44,9 @@ func init() {
 
 	// 初始化token管理
 	app.TokenService = NewTokenService(app.Cache)
+
+	// 初始化Response
+	app.Response = response.NewResponseHandler()
 }
 
 // 初始化数据库
