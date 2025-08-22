@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50726
 File Encoding         : 65001
 
-Date: 2025-08-21 18:04:49
+Date: 2025-08-22 18:16:33
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -43,6 +43,41 @@ INSERT INTO `casbin_rule` VALUES ('6', 'p', 'admin_role', '/api/*', 'DELETE', nu
 INSERT INTO `casbin_rule` VALUES ('7', 'p', 'user_role', '/api/users/profile', 'GET', null, null, null);
 INSERT INTO `casbin_rule` VALUES ('8', 'p', 'user_role', '/api/auth/login', 'POST', null, null, null);
 INSERT INTO `casbin_rule` VALUES ('9', 'p', 'user_role', '/api/auth/logout', 'POST', null, null, null);
+
+-- ----------------------------
+-- Table structure for sys_menu
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_menu`;
+CREATE TABLE `sys_menu` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '路由ID',
+  `parent_id` varchar(32) NOT NULL DEFAULT '0' COMMENT '父级路由ID，顶层为0',
+  `path` varchar(255) NOT NULL COMMENT '路由路径',
+  `name` varchar(100) NOT NULL COMMENT '路由名称',
+  `component` varchar(255) DEFAULT NULL COMMENT '组件文件路径',
+  `title` varchar(100) DEFAULT NULL COMMENT '菜单标题，国际化key',
+  `is_full` tinyint(1) DEFAULT '0' COMMENT '是否全屏显示：0-否，1-是',
+  `hide` tinyint(1) DEFAULT '0' COMMENT '是否隐藏：0-否，1-是',
+  `disable` tinyint(1) DEFAULT '0' COMMENT '是否停用：0-否，1-是',
+  `keep_alive` tinyint(1) DEFAULT '0' COMMENT '是否缓存：0-否，1-是',
+  `affix` tinyint(1) DEFAULT '0' COMMENT '是否固定：0-否，1-是',
+  `link` varchar(500) DEFAULT '' COMMENT '外链地址',
+  `iframe` tinyint(1) DEFAULT '0' COMMENT '是否内嵌：0-否，1-是',
+  `roles` json DEFAULT NULL COMMENT '权限角色标识',
+  `svg_icon` varchar(100) DEFAULT '' COMMENT 'svg图标名称',
+  `icon` varchar(100) DEFAULT '' COMMENT '普通图标名称',
+  `sort` int(11) DEFAULT '1' COMMENT '排序字段',
+  `type` tinyint(1) DEFAULT '2' COMMENT '类型：1-目录，2-菜单，3-按钮',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_parent_id` (`parent_id`),
+  KEY `idx_sort` (`sort`),
+  KEY `idx_type` (`type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统菜单路由表';
+
+-- ----------------------------
+-- Records of sys_menu
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for users
