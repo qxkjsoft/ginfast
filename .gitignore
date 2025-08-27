@@ -30,6 +30,8 @@ vendor/
 # 日志文件
 *.log
 logs/
+resource/logs/
+resource/logs/*.log
 
 # 临时文件
 tmp/
