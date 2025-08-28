@@ -2,11 +2,14 @@ package controllers
 
 import (
 	"gin-fast/app/global/app"
-	"gin-fast/app/models/usermodel"
+	"gin-fast/app/models"
+
+	"gin-fast/app/utils/common"
 	"gin-fast/app/utils/passwordhelper"
 
 	"gin-fast/app/utils/tokenhelper"
 
+	"github.com/dchest/captcha"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -23,13 +26,13 @@ type RefreshRequest struct {
 
 // Login 用户登录
 func (ac *AuthController) Login(c *gin.Context) {
-	var req usermodel.LoginRequest
+	var req models.LoginRequest
 	if err := req.Validate(c); err != nil {
 		app.Response.Fail(c, err.Error())
 		return
 	}
 	// 根据用户名查找用户
-	user, err := usermodel.GetUserByUsername(req.Username)
+	user, err := models.GetUserByUsername(req.Username)
 	if err != nil {
 		app.ZapLog.Error("用户名不存在", zap.Error(err))
 		app.Response.Fail(c, "用户名不存在")
@@ -77,17 +80,9 @@ func (ac *AuthController) Login(c *gin.Context) {
 	}
 	app.Response.Success(c, gin.H{
 		"accessToken":         token,
-		"refreshToken":        refreshToken,
 		"accessTokenExpires":  claims.ExpiresAt.Unix(),
+		"refreshToken":        refreshToken,
 		"refreshTokenExpires": claims1.ExpiresAt.Unix(),
-		"user": gin.H{
-			"id":          user.ID,
-			"avatar":      "",
-			"username":    user.Username,
-			"nickname":    "",
-			"role":        []string{user.Role},
-			"permissions": []string{},
-		},
 	})
 }
 
@@ -115,7 +110,7 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 	}
 
 	// 从数据库中获取用户信息
-	var user usermodel.User
+	var user models.User
 	if err = app.GormDbMysql.First(&user, claims.UserID).Error; err != nil {
 		app.ZapLog.Error("用户不存在", zap.Error(err))
 		app.Response.Fail(c, "用户不存在")
@@ -149,14 +144,13 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 // Logout 用户登出
 func (ac *AuthController) Logout(c *gin.Context) {
 	// 从上下文中获取用户信息
-	userID, exists := c.Get("user_id")
-	if !exists {
+	claims := common.GetClaims(c)
+	if claims == nil {
 		app.Response.Fail(c, "用户未登录")
 		return
 	}
-
 	// 撤销refresh token
-	err := app.TokenService.RevokeRefreshToken(uint(userID.(float64)))
+	err := app.TokenService.RevokeRefreshToken(claims.UserID)
 	if err != nil {
 		app.ZapLog.Error("登出失败", zap.Error(err))
 		app.Response.Fail(c, "登出失败")
@@ -166,4 +160,28 @@ func (ac *AuthController) Logout(c *gin.Context) {
 	app.Response.Success(c, gin.H{
 		"message": "登出成功",
 	})
+}
+
+// 生成验证码ID
+func (ac *AuthController) GetCaptchaId(c *gin.Context) {
+	length := app.ConfigYml.GetInt("Captcha.length")
+	var captchaId string
+	captchaId = captcha.NewLen(length)
+	app.Response.Success(c, gin.H{
+		"captchaId": captchaId,
+	})
+}
+
+// 获取验证码图片
+func (ac *AuthController) GetCaptchaImg(c *gin.Context) {
+	var req models.CaptchaImgRequest
+	if err := req.Validate(c); err != nil {
+		//app.Response.Fail(c, err.Error())
+		app.ZapLog.Error("获取验证码图片失败", zap.Error(err))
+		return
+	}
+	if req.Time != "" {
+		captcha.Reload(req.CaptchaId)
+	}
+	captcha.WriteImage(c.Writer, req.CaptchaId, req.Width, req.Height)
 }

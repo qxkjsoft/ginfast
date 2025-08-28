@@ -2,6 +2,7 @@ package tokenhelper
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"gin-fast/app/utils/cachehelper"
 	"time"
@@ -19,6 +20,9 @@ type TokenService struct {
 	CacheKeyPrefix string
 }
 
+/**
+	token管理，非缓存模式
+**/
 // GenerateToken 生成JWT令牌
 func (s *TokenService) GenerateToken(user *ClaimsUser) (string, error) {
 	claims := &Claims{
@@ -33,6 +37,31 @@ func (s *TokenService) GenerateToken(user *ClaimsUser) (string, error) {
 	return token.SignedString([]byte(s.JWTSecret))
 }
 
+// ParseToken 解析JWT令牌
+func (s *TokenService) ParseToken(tokenString string) (*Claims, error) {
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(s.JWTSecret), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	if !token.Valid {
+		return nil, errors.New("invalid token")
+	}
+	return claims, nil
+}
+
+// ValidateToken 验证JWT令牌
+func (s *TokenService) ValidateToken(tokenString string) bool {
+	_, err := s.ParseToken(tokenString)
+	return err == nil
+}
+
+/**
+	token管理，缓存模式
+**/
 // GenerateTokenWithCache 生成JWT令牌并存储到缓存
 func (s *TokenService) GenerateTokenWithCache(user *ClaimsUser) (string, error) {
 	tokenString, err := s.GenerateToken(user)
@@ -98,26 +127,9 @@ func (s *TokenService) getTokenKey(userID uint, tokenString string) string {
 	return fmt.Sprintf("%stoken:%d:%s", s.CacheKeyPrefix, userID, tokenHash)
 }
 
-// ParseToken 解析JWT令牌
-func (s *TokenService) ParseToken(tokenString string) (*Claims, error) {
-	claims := &Claims{}
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(s.JWTSecret), nil
-	})
-
-	if err != nil || !token.Valid {
-		return nil, err
-	}
-
-	return claims, nil
-}
-
-// ValidateToken 验证JWT令牌
-func (s *TokenService) ValidateToken(tokenString string) bool {
-	_, err := s.ParseToken(tokenString)
-	return err == nil
-}
-
+/**
+	refreshToken管理
+**/
 // GenerateRefreshToken 生成Refresh Token
 func (s *TokenService) GenerateRefreshToken(userID uint) (string, error) {
 	expirationTime := time.Now().Add(s.RefreshExpire * time.Second)
@@ -164,11 +176,12 @@ func (s *TokenService) ParseRefreshToken(tokenString string) (*RefreshTokenClaim
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(s.JWTSecret), nil
 	})
-
-	if err != nil || !token.Valid {
+	if err != nil {
 		return nil, err
 	}
-
+	if !token.Valid {
+		return nil, errors.New("invalid refresh token")
+	}
 	return claims, nil
 }
 

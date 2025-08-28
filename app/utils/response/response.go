@@ -39,9 +39,9 @@ func (r *DefaultResponseHandler) ReturnJson(Context *gin.Context, httpCode int, 
 
 	//Context.Header("key2020","value2020")  	//可以根据实际情况在头部添加额外的其他信息
 	Context.JSON(httpCode, gin.H{
-		"code": dataCode,
-		"msg":  msg,
-		"data": data,
+		"code":    dataCode,
+		"message": msg,
+		"data":    data,
 	})
 }
 

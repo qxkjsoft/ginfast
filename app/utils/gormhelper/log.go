@@ -23,9 +23,15 @@ func createCustomGormLog(sqlType string, options ...Options) gormLog.Interface {
 		traceWarnStr = "%s %s\n[%.3fms] [rows:%v] %s"
 		traceErrStr  = "%s %s\n[%.3fms] [rows:%v] %s"
 	)
+	/**
+	- Silent : 不打印任何日志
+	- Error : 只打印错误日志
+	- Warn : 打印警告和错误日志（当前设置）
+	- Info : 打印所有日志，包括SQL语句
+		**/
 	logConf := gormLog.Config{
 		SlowThreshold: time.Second * app.ConfigYml.GetDuration("Gormv2."+sqlType+".SlowThreshold"),
-		LogLevel:      gormLog.Warn,
+		LogLevel:      gormLog.Info,
 		Colorful:      false,
 	}
 	log := &logger{

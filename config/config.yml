@@ -40,6 +40,8 @@ Casbin:
     e = some(where (p.eft == allow))
     [matchers]
     m = g(r.sub, p.sub) && keyMatch2(r.obj, p.obj) && r.act == p.act
+Captcha:
+  length: 4   # 验证码生成时的长度
 Gormv2: # 只针对 gorm  操作数据库有效
   UseDbType: "mysql"   # 默认使用的数据库类型（mysql、sqlserver、postgresql）
   Mysql:
