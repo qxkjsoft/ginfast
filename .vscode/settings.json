@@ -18,5 +18,37 @@
         "titleBar.inactiveBackground": "#349ce099",
         "titleBar.inactiveForeground": "#15202b99"
     },
-    "peacock.color": "#349ce0"
+    "peacock.color": "#349ce0",
+    "go.gotoSymbol.includeImports": true,
+    "go.gotoSymbol.includeGoroot": true,
+    "go.useLanguageServer": true,
+    "go.formatTool": "goimports",
+    "go.docsTool": "godoc",
+    "go.showWelcome": false,
+    "go.survey.prompt": false,
+    "go.enableCodeLens": {
+        "references": false,
+        "runtest": true
+    },
+    "go.alternateTools": {
+        "go": "go"
+    },
+    "editor.gotoLocation.multipleDefinitions": "goto",
+    "editor.gotoLocation.multipleDeclarations": "goto",
+    "editor.gotoLocation.multipleImplementations": "goto",
+    "editor.gotoLocation.multipleReferences": "goto",
+    "editor.gotoLocation.multipleTypeDefinitions": "goto",
+    "go.goroot": "C:\\Program Files\\Go",
+    "go.inferGopath": false,
+    "go.buildOnSave": "off",
+    "go.lintOnSave": "off",
+    "go.vetOnSave": "off",
+    "editor.definitionLinkOpensInPeek": false,
+    "editor.peekWidgetDefaultFocus": "editor",
+    "go.experimental.packageIntellisense": true,
+    "go.allowImportsNetworkAccess": false,
+    "go.toolsManagement.autoUpdate": true,
+    "gopls": {
+        "ui.navigation.importShortcut": "Definition"
+    }
 }

@@ -1,31 +1,43 @@
-# Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-__debug_bin*
-
-# Test binary, built with `go test -c`
-*.test
-
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
-
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
-# Go workspace file
-go.work
-
-# IDE files
+# IDE 配置文件
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# OS generated files
+# 编译输出
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go 测试文件
+*.test
+
+# Go 覆盖率文件
+*.out
+*.prof
+
+# 依赖管理
+vendor/
+
+# 环境配置文件
+.env
+.env.local
+.env.production
+
+# 日志文件
+*.log
+logs/
+resource/logs/
+resource/logs/*.log
+
+# 临时文件
+tmp/
+temp/
+
+# 操作系统生成的文件
 .DS_Store
 .DS_Store?
 ._*
@@ -34,9 +46,15 @@ go.work
 ehthumbs.db
 Thumbs.db
 
-# Log files
-*.log
+# Go 工作区文件
+go.work
+go.work.sum
 
-# Build output
-dist/
-build/
+# 二进制文件
+/bin/
+/dist/
+
+# 配置文件备份
+*.bak
+*.backup
+config/*.local.yml

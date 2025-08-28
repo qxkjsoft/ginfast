@@ -78,6 +78,7 @@ func (ac *AuthController) Login(c *gin.Context) {
 		app.Response.Fail(c, "解析refreshToken失败")
 		return
 	}
+
 	app.Response.Success(c, gin.H{
 		"accessToken":         token,
 		"accessTokenExpires":  claims.ExpiresAt.Unix(),
