@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type UserController struct {
@@ -25,13 +26,13 @@ func (uc *UserController) GetProfile(c *gin.Context) {
 	}
 
 	// 获取用户信息
-	user, err := models.GetUserByID(claims.UserID)
+	user := models.NewUser()
+	err := user.GetUserByID(claims.UserID)
 	if err != nil {
 		app.ZapLog.Error("用户不存在", zap.Error(err))
 		app.Response.Fail(c, "用户不存在")
 		return
 	}
-	user.Password = ""
 	app.Response.Success(c, gin.H{
 		"id":       user.ID,
 		"avatar":   user.Avatar,
@@ -44,6 +45,34 @@ func (uc *UserController) GetProfile(c *gin.Context) {
 	})
 }
 
+// 用户列表
+func (uc *UserController) List(c *gin.Context) {
+	var req models.UserListRequest
+	if err := req.Validate(c); err != nil {
+		app.Response.Fail(c, err.Error())
+		return
+	}
+	var count int64
+	err := app.DB().Model(&models.User{}).Count(&count).Error
+	if err != nil {
+		app.Response.Fail(c, err.Error())
+		return
+	}
+	userList := models.NewUserList()
+	err = userList.Find(req.Paginate(), func(d *gorm.DB) *gorm.DB {
+		return d.Omit("password")
+	})
+	if err != nil {
+		app.Response.Fail(c, err.Error())
+		return
+	}
+	app.Response.Success(c, gin.H{
+		"list":  userList,
+		"total": count,
+	})
+
+}
+
 // UpdateProfile 更新用户资料
 func (uc *UserController) UpdateProfile(c *gin.Context) {
 	// 从上下文中获取用户ID
@@ -54,7 +83,8 @@ func (uc *UserController) UpdateProfile(c *gin.Context) {
 	}
 
 	// 获取用户信息
-	user, err := models.GetUserByID(userID.(uint))
+	user := models.NewUser()
+	err := user.GetUserByID(userID.(uint))
 	if err != nil {
 		app.ZapLog.Error("用户不存在", zap.Error(err))
 		app.Response.Fail(c, "用户不存在")
@@ -90,7 +120,8 @@ func (uc *UserController) GetUserByID(c *gin.Context) {
 	}
 
 	// 获取用户信息
-	user, err := models.GetUserByID(uint(id))
+	user := models.NewUser()
+	err = user.GetUserByID(uint(id))
 	if err != nil {
 		app.ZapLog.Error("用户不存在", zap.Error(err))
 		app.Response.Fail(c, "用户不存在")
@@ -103,20 +134,24 @@ func (uc *UserController) GetUserByID(c *gin.Context) {
 // 新增用户
 func (uc *UserController) Add(c *gin.Context) {
 	var req models.AddRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := req.Validate(c); err != nil {
+		app.Response.Fail(c, err.Error())
+		return
+	}
+	// 检查用户名是否已存在
+	user := models.NewUser()
+	err := user.GetUserByUsername(req.UserName)
+	if err != nil {
 		app.ZapLog.Error("新增用户失败", zap.Error(err))
 		app.Response.Fail(c, err.Error())
 		return
 	}
-
-	// 检查用户名是否已存在
-	_, err := models.GetUserByUsername(req.Username)
-	if err == nil {
-		app.ZapLog.Error("新增用户失败", zap.Error(err))
-		app.Response.Fail(c, "Username already exists")
+	if !user.IsEmpty() {
+		app.ZapLog.Error("用户已存在", zap.Error(err))
+		app.Response.Fail(c, "用户已存在")
 		return
-	}
 
+	}
 	// 密码加密
 	hashedPassword, err := passwordhelper.HashPassword(req.Password)
 	if err != nil {
@@ -125,13 +160,42 @@ func (uc *UserController) Add(c *gin.Context) {
 		return
 	}
 
-	// 创建用户
-	user := &models.User{
-		Username: req.Username,
-		Password: string(hashedPassword),
-	}
+	// 使用事务创建用户和角色关联
+	err = app.DB().Transaction(func(tx *gorm.DB) error {
+		// 创建用户
+		user.Username = req.UserName
+		user.NickName = req.NickName
+		user.Phone = req.Phone
+		user.Email = req.Email
+		user.Password = string(hashedPassword)
+		user.Sex = req.Sex
+		user.DeptID = req.DeptId
+		user.Status = req.Status
+		user.Description = req.Description
+		user.CreatedBy = common.GetCurrentUserID(c)
 
-	if err := models.CreateUser(user); err != nil {
+		if err := tx.Create(user).Error; err != nil {
+			return err
+		}
+
+		// 创建用户角色关联
+		if len(req.Roles) > 0 {
+			userRoles := make([]models.SysUserRole, len(req.Roles))
+			for i, roleID := range req.Roles {
+				userRoles[i] = models.SysUserRole{
+					UserID: user.ID,
+					RoleID: roleID,
+				}
+			}
+			if err := tx.Create(&userRoles).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
 		app.ZapLog.Error("新增用户失败", zap.Error(err))
 		app.Response.Fail(c, "Failed to create user")
 		return

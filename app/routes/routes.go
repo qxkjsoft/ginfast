@@ -12,6 +12,9 @@ import (
 var userControllers = &controllers.UserController{}
 var authControllers = &controllers.AuthController{}
 var sysMenuControllers = &controllers.SysMenuController{}
+var sysDepartmentControllers = &controllers.SysDepartmentController{}
+var sysRoleControllers = &controllers.SysRoleController{}
+var sysDictControllers = &controllers.SysDictController{}
 
 // InitRoutes 初始化路由
 func InitRoutes(engine *gin.Engine) {
@@ -37,18 +40,51 @@ func InitRoutes(engine *gin.Engine) {
 	protected.Use(middleware.JWTAuthMiddleware())
 	//protected.Use(middleware.CasbinMiddleware())
 	{
-		// 获取当前登录用户信息
-		protected.GET("/users/profile", userControllers.GetProfile)
-		// 更新用户信息
-		protected.PUT("/users/profile", userControllers.UpdateProfile)
-		// 根据ID获取用户信息
-		protected.GET("/users/:id", userControllers.GetUserByID)
-		// 新增用户
-		protected.POST("/users/add", userControllers.Add)
-		// 用户登出
-		protected.POST("/users/logout", authControllers.Logout)
+		// 用户管理路由组
+		users := protected.Group("/users")
+		{
+			// 获取当前登录用户信息
+			users.GET("/profile", userControllers.GetProfile)
+			// 更新用户信息
+			users.PUT("/profile", userControllers.UpdateProfile)
+			// 根据ID获取用户信息
+			users.GET("/:id", userControllers.GetUserByID)
+			// 新增用户
+			users.POST("/add", userControllers.Add)
+			// 用户列表
+			users.GET("/list", userControllers.List)
+			// 用户登出
+			users.POST("/logout", authControllers.Logout)
+		}
 
-		// 导出菜单
-		protected.GET("/sysMenu/getMenu", sysMenuControllers.GetMenu)
+		// 系统菜单路由组
+		sysMenu := protected.Group("/sysMenu")
+		{
+			// 导出菜单
+			sysMenu.GET("/getMenu", sysMenuControllers.GetMenu)
+		}
+
+		// 系统部门路由组
+		sysDepartment := protected.Group("/sysDepartment")
+		{
+			// 部门列表
+			sysDepartment.GET("/getDivision", sysDepartmentControllers.GetDivision)
+		}
+
+		// 系统角色路由组
+		sysRole := protected.Group("/sysRole")
+		{
+			// 获取角色列表
+			sysRole.GET("/getRoles", sysRoleControllers.GetRoles)
+		}
+
+		// 系统字典路由组
+		sysDict := protected.Group("/sysDict")
+		{
+			// 获取所有字典数据（包含关联字典项）
+			sysDict.GET("/getAllDicts", sysDictControllers.GetAllDicts)
+			// 根据字典编码获取字典及其字典项
+			sysDict.GET("/getByCode/:code", sysDictControllers.GetDictByCode)
+		}
 	}
 }

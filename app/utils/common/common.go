@@ -20,3 +20,11 @@ func GetClaims(c *gin.Context) *tokenhelper.Claims {
 	}
 	return res
 }
+
+func GetCurrentUserID(c *gin.Context) uint {
+	claims := GetClaims(c)
+	if claims == nil {
+		return 0
+	}
+	return claims.UserID
+}

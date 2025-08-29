@@ -19,11 +19,6 @@ import (
 type AuthController struct {
 }
 
-// RefreshRequest 刷新token请求结构
-type RefreshRequest struct {
-	RefreshToken string `json:"refreshToken" binding:"required"`
-}
-
 // Login 用户登录
 func (ac *AuthController) Login(c *gin.Context) {
 	var req models.LoginRequest
@@ -32,13 +27,19 @@ func (ac *AuthController) Login(c *gin.Context) {
 		return
 	}
 	// 根据用户名查找用户
-	user, err := models.GetUserByUsername(req.Username)
+	user := models.NewUser()
+	err := user.GetUserByUsername(req.Username)
 	if err != nil {
-		app.ZapLog.Error("用户名不存在", zap.Error(err))
-		app.Response.Fail(c, "用户名不存在")
+		app.ZapLog.Error("用户查询错误", zap.Error(err))
+		app.Response.Fail(c, "用户查询错误")
 		return
 	}
 
+	if user.IsEmpty() {
+		app.ZapLog.Error("用户不存在")
+		app.Response.Fail(c, "用户不存在")
+		return
+	}
 	// 验证密码
 	if err = passwordhelper.ComparePassword(user.Password, req.Password); err != nil {
 		app.ZapLog.Error("密码错误", zap.Error(err))
@@ -93,8 +94,8 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 	refreshToken := c.GetHeader("RefreshToken")
 	if refreshToken == "" {
 		// 如果header中没有，尝试从body中获取
-		var req RefreshRequest
-		if err := c.ShouldBindJSON(&req); err != nil {
+		var req models.RefreshRequest
+		if err := c.ShouldBind(&req); err != nil {
 			app.ZapLog.Error("刷新token失败", zap.Error(err))
 			app.Response.Fail(c, "refreshToken不能为空")
 			return

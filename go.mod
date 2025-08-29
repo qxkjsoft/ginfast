@@ -1,6 +1,6 @@
 module gin-fast
 
-go 1.24.6
+go 1.25
 
 require (
 	github.com/casbin/casbin/v2 v2.120.0
