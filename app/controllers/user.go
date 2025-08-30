@@ -60,7 +60,7 @@ func (uc *UserController) List(c *gin.Context) {
 	}
 	userList := models.NewUserList()
 	err = userList.Find(req.Paginate(), func(d *gorm.DB) *gorm.DB {
-		return d.Omit("password")
+		return d.Omit("password").Preload("Roles")
 	})
 	if err != nil {
 		app.Response.Fail(c, err.Error())
@@ -71,41 +71,6 @@ func (uc *UserController) List(c *gin.Context) {
 		"total": count,
 	})
 
-}
-
-// UpdateProfile 更新用户资料
-func (uc *UserController) UpdateProfile(c *gin.Context) {
-	// 从上下文中获取用户ID
-	userID, exists := c.Get("user_id")
-	if !exists {
-		app.Response.Fail(c, "UserId必须")
-		return
-	}
-
-	// 获取用户信息
-	user := models.NewUser()
-	err := user.GetUserByID(userID.(uint))
-	if err != nil {
-		app.ZapLog.Error("用户不存在", zap.Error(err))
-		app.Response.Fail(c, "用户不存在")
-		return
-	}
-
-	// 绑定请求数据
-	if err := c.ShouldBindJSON(&user); err != nil {
-		app.ZapLog.Error("更新用户信息失败", zap.Error(err))
-		app.Response.Fail(c, err.Error())
-		return
-	}
-
-	// 更新用户信息
-	if err := app.GormDbMysql.Save(&user).Error; err != nil {
-		app.ZapLog.Error("更新用户信息失败", zap.Error(err))
-		app.Response.Fail(c, "更新失败")
-		return
-	}
-
-	app.Response.Success(c, nil, "更新成功")
 }
 
 // GetUserByID 根据ID获取用户
@@ -202,4 +167,133 @@ func (uc *UserController) Add(c *gin.Context) {
 	}
 
 	app.Response.Success(c, nil, "User created successfully")
+}
+
+// UpdateProfile 更新用户资料
+func (uc *UserController) Update(c *gin.Context) {
+	var req models.UpdateRequest
+	if err := req.Validate(c); err != nil {
+		app.Response.Fail(c, err.Error())
+		return
+	}
+
+	// 检查用户是否存在
+	user := models.NewUser()
+	err := user.GetUserByID(req.Id)
+	if err != nil {
+		app.ZapLog.Error("更新用户失败", zap.Error(err))
+		app.Response.Fail(c, err.Error())
+		return
+	}
+	if user.IsEmpty() {
+		app.ZapLog.Error("用户不存在")
+		app.Response.Fail(c, "用户不存在")
+		return
+	}
+
+	// 检查用户名是否与其他用户冲突（排除当前用户）
+	existUser := models.NewUser()
+	err = existUser.GetUserByUsername(req.UserName)
+	if err != nil {
+		app.ZapLog.Error("更新用户失败", zap.Error(err))
+		app.Response.Fail(c, err.Error())
+		return
+	}
+	if !existUser.IsEmpty() && existUser.ID != req.Id {
+		app.ZapLog.Error("用户名已被其他用户使用")
+		app.Response.Fail(c, "用户名已被其他用户使用")
+		return
+	}
+
+	// 使用事务更新用户和角色关联
+	err = app.DB().Transaction(func(tx *gorm.DB) error {
+		// 更新用户信息
+		user.Username = req.UserName
+		user.NickName = req.NickName
+		user.Phone = req.Phone
+		user.Email = req.Email
+		user.Sex = req.Sex
+		user.DeptID = req.DeptId
+		user.Status = req.Status
+		user.Description = req.Description
+
+		if err := tx.Save(user).Error; err != nil {
+			return err
+		}
+
+		// 删除现有的用户角色关联
+		if err := tx.Where("user_id = ?", user.ID).Delete(&models.SysUserRole{}).Error; err != nil {
+			return err
+		}
+
+		// 创建新的用户角色关联
+		if len(req.Roles) > 0 {
+			userRoles := make([]models.SysUserRole, len(req.Roles))
+			for i, roleID := range req.Roles {
+				userRoles[i] = models.SysUserRole{
+					UserID: user.ID,
+					RoleID: roleID,
+				}
+			}
+			if err := tx.Create(&userRoles).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		app.ZapLog.Error("更新用户失败", zap.Error(err))
+		app.Response.Fail(c, "更新用户失败")
+		return
+	}
+
+	app.Response.Success(c, nil, "更新成功")
+}
+
+// Delete 删除用户
+func (uc *UserController) Delete(c *gin.Context) {
+	var req models.DeleteRequest
+	if err := req.Validate(c); err != nil {
+		app.Response.Fail(c, err.Error())
+		return
+	}
+
+	// 检查用户是否存在
+	user := models.NewUser()
+	err := user.GetUserByID(req.Id)
+	if err != nil {
+		app.ZapLog.Error("删除用户失败", zap.Error(err))
+		app.Response.Fail(c, err.Error())
+		return
+	}
+	if user.IsEmpty() {
+		app.ZapLog.Error("用户不存在")
+		app.Response.Fail(c, "用户不存在")
+		return
+	}
+
+	// 使用事务删除用户和角色关联
+	err = app.DB().Transaction(func(tx *gorm.DB) error {
+		// 删除用户角色关联
+		if err := tx.Where("user_id = ?", user.ID).Delete(&models.SysUserRole{}).Error; err != nil {
+			return err
+		}
+
+		// 软删除用户
+		if err := tx.Where("id = ?", user.ID).Delete(user).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		app.ZapLog.Error("删除用户失败", zap.Error(err))
+		app.Response.Fail(c, "删除用户失败")
+		return
+	}
+
+	app.Response.Success(c, nil, "删除成功")
 }

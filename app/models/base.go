@@ -1,10 +1,11 @@
 package models
 
 import (
-	"io"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/gookit/validate"
 	"gorm.io/gorm"
 )
@@ -14,14 +15,24 @@ type BaseRequest struct {
 
 // Bind 绑定请求参数
 func (r *BaseRequest) Bind(c *gin.Context, obj interface{}) (err error) {
-	// 先尝试从JSON body及form表单读取数据
-	if err := c.ShouldBind(obj); err != nil && err != io.EOF {
-		// 如果JSON body读取失败，尝试从URL参数读取
-		if err := c.ShouldBindQuery(obj); err != nil {
-			return err
-		}
+	// 先尝试从URL参数读取数据
+	c.ShouldBindQuery(obj)
+	// 获取Content-Type
+	contentType := c.GetHeader("Content-Type")
+
+	// 处理表单数据（不会消耗body用于后续绑定）
+	if strings.Contains(contentType, "application/x-www-form-urlencoded") ||
+		strings.Contains(contentType, "multipart/form-data") {
+		return c.ShouldBind(obj)
 	}
-	return
+
+	// 处理JSON数据，使用ShouldBindBodyWith避免消耗request body
+	if strings.Contains(contentType, "application/json") {
+		return c.ShouldBindBodyWith(obj, binding.JSON)
+	}
+
+	// 其他情况尝试ShouldBind
+	return c.ShouldBind(obj)
 }
 
 type Validator struct {

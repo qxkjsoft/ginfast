@@ -9,8 +9,8 @@ import (
 // User 用户模型
 type User struct {
 	BaseModel
-	Username    string      `gorm:"column:username;uniqueIndex;not null;size:50;comment:用户名" json:"username"`
-	Password    string      `gorm:"column:password;not null;size:255;comment:密码" json:"password"`
+	Username    string      `gorm:"column:username;uniqueIndex;not null;size:50;comment:用户名" json:"userName"`
+	Password    string      `gorm:"column:password;not null;size:255;comment:密码" json:"passWord"`
 	Email       string      `gorm:"column:email;size:100;comment:邮箱" json:"email"`
 	Status      int8        `gorm:"column:status;default:1;comment:是否启用 0停用 1启用" json:"status"`
 	Description string      `gorm:"column:description;not null;size:500;comment:描述" json:"description"`
@@ -54,6 +54,11 @@ func (u *User) GetUserByUsername(username string) (err error) {
 
 func (u *User) Create(funcs ...func(*gorm.DB) *gorm.DB) (err error) {
 	return app.DB().Scopes(funcs...).Create(u).Error
+}
+
+// DeleteByID 根据ID软删除用户
+func (u *User) DeleteByID(id uint) error {
+	return app.DB().Where("id = ?", id).Delete(u).Error
 }
 
 type UserList []*User

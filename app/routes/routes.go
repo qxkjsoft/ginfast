@@ -45,14 +45,16 @@ func InitRoutes(engine *gin.Engine) {
 		{
 			// 获取当前登录用户信息
 			users.GET("/profile", userControllers.GetProfile)
-			// 更新用户信息
-			users.PUT("/profile", userControllers.UpdateProfile)
 			// 根据ID获取用户信息
 			users.GET("/:id", userControllers.GetUserByID)
-			// 新增用户
-			users.POST("/add", userControllers.Add)
 			// 用户列表
 			users.GET("/list", userControllers.List)
+			// 新增用户
+			users.POST("/add", userControllers.Add)
+			// 更新用户信息
+			users.PUT("/edit", userControllers.Update)
+			// 删除用户
+			users.DELETE("/delete", userControllers.Delete)
 			// 用户登出
 			users.POST("/logout", authControllers.Logout)
 		}

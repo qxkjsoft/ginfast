@@ -27,6 +27,24 @@ func (r *AddRequest) Validate(c *gin.Context) error {
 	return r.Check(c, r)
 }
 
+type UpdateRequest struct {
+	Validator
+	Id          uint   `form:"id"  validate:"required" message:"ID不能为空"`
+	UserName    string `form:"userName" validate:"required" message:"用户名不能为空"`
+	NickName    string `form:"nickName" validate:"required" message:"昵称不能为空"`
+	Phone       string `form:"phone"`
+	Email       string `form:"email"`
+	Sex         string `form:"sex" validate:"required" message:"性别不能为空"`
+	DeptId      uint   `form:"deptId" validate:"required" message:"部门ID不能为空"`
+	Roles       []uint `form:"roles" validate:"required" message:"角色不能为空"`
+	Status      int8   `form:"status" validate:"required" message:"状态不能为空"`
+	Description string `form:"description"`
+}
+
+func (r *UpdateRequest) Validate(c *gin.Context) error {
+	return r.Check(c, r)
+}
+
 type LoginRequest struct {
 	Validator
 	Username string `validate:"required" message:"用户名不能为空"`
@@ -65,5 +83,15 @@ type UserListRequest struct {
 }
 
 func (r *UserListRequest) Validate(c *gin.Context) error {
+	return r.Check(c, r)
+}
+
+// DeleteRequest 删除用户请求结构
+type DeleteRequest struct {
+	Validator
+	Id uint `form:"id" validate:"required" message:"用户ID不能为空"`
+}
+
+func (r *DeleteRequest) Validate(c *gin.Context) error {
 	return r.Check(c, r)
 }
