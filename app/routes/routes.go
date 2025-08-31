@@ -76,8 +76,18 @@ func InitRoutes(engine *gin.Engine) {
 		// 系统角色路由组
 		sysRole := protected.Group("/sysRole")
 		{
-			// 获取角色列表
+			// 获取角色列表（树形结构）
 			sysRole.GET("/getRoles", sysRoleControllers.GetRoles)
+			// 角色列表（支持分页和过滤）
+			sysRole.GET("/list", sysRoleControllers.List)
+			// 根据ID获取角色信息
+			sysRole.GET("/:id", sysRoleControllers.GetByID)
+			// 新增角色
+			sysRole.POST("/add", sysRoleControllers.Add)
+			// 更新角色
+			sysRole.PUT("/edit", sysRoleControllers.Update)
+			// 删除角色
+			sysRole.DELETE("/delete", sysRoleControllers.Delete)
 		}
 
 		// 系统字典路由组
