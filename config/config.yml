@@ -29,6 +29,9 @@ Logs:
   MaxAge: 15                                            #保留旧日志最大天数
   Compress: false                                      #日志备份时，是否进行压缩
 Casbin:
+  AutoLoadPolicySeconds: 30 # 扫描数据库策略的频率(单位：秒)
+  TablePrefix: ""
+  TableName: "casbin_rule" 
   ModelConfig: | # 竖线 | 表示以下整段文本保持换行格式
     [request_definition]
     r = sub, obj, act

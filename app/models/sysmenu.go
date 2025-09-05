@@ -11,24 +11,28 @@ import (
 // SysMenu 系统菜单路由模型
 type SysMenu struct {
 	BaseModel
-	ParentID  uint        `gorm:"column:parent_id;not null;default:0;comment:父级路由ID，顶层为0" json:"parentId"`
-	Path      string      `gorm:"column:path;not null;size:255;comment:路由路径" json:"path"`
-	Name      string      `gorm:"column:name;not null;size:100;comment:路由名称" json:"name"`
-	Component string      `gorm:"column:component;size:255;comment:组件文件路径" json:"component"`
-	Title     string      `gorm:"column:title;size:100;comment:菜单标题，国际化key" json:"title"`
-	IsFull    bool        `gorm:"column:is_full;default:false;comment:是否全屏显示" json:"isFull"`
-	Hide      bool        `gorm:"column:hide;default:false;comment:是否隐藏" json:"hide"`
-	Disable   bool        `gorm:"column:disable;default:false;comment:是否停用" json:"disable"`
-	KeepAlive bool        `gorm:"column:keep_alive;default:false;comment:是否缓存" json:"keepAlive"`
-	Affix     bool        `gorm:"column:affix;default:false;comment:是否固定" json:"affix"`
-	Link      string      `gorm:"column:link;default:'';size:500;comment:外链地址" json:"link"`
-	Iframe    bool        `gorm:"column:iframe;default:false;comment:是否内嵌" json:"iframe"`
-	SvgIcon   string      `gorm:"column:svg_icon;default:'';size:100;comment:svg图标名称" json:"svgIcon"`
-	Icon      string      `gorm:"column:icon;default:'';size:100;comment:普通图标名称" json:"icon"`
-	Sort      int         `gorm:"column:sort;default:1;comment:排序字段" json:"sort"`
-	Type      int8        `gorm:"column:type;default:2;comment:类型：1-目录，2-菜单，3-按钮" json:"type"`
-	CreatedBy uint        `gorm:"column:created_by;comment:创建人" json:"createdBy"`
-	Children  SysMenuList `gorm:"-" json:"children"`
+	ParentID   uint        `gorm:"column:parent_id;not null;default:0;comment:父级路由ID，顶层为0" json:"parentId"`
+	Path       string      `gorm:"column:path;not null;size:255;comment:路由路径" json:"path"`
+	Name       string      `gorm:"column:name;not null;size:100;comment:路由名称" json:"name"`
+	Component  string      `gorm:"column:component;size:255;comment:组件文件路径" json:"component"`
+	Title      string      `gorm:"column:title;size:100;comment:菜单标题，国际化key" json:"title"`
+	IsFull     bool        `gorm:"column:is_full;default:false;comment:是否全屏显示" json:"isFull"`
+	Hide       bool        `gorm:"column:hide;default:false;comment:是否隐藏" json:"hide"`
+	Disable    bool        `gorm:"column:disable;default:false;comment:是否停用" json:"disable"`
+	KeepAlive  bool        `gorm:"column:keep_alive;default:false;comment:是否缓存" json:"keepAlive"`
+	Affix      bool        `gorm:"column:affix;default:false;comment:是否固定" json:"affix"`
+	Redirect   string      `gorm:"column:redirect;size:255;comment:跳转地址" json:"redirect"`
+	IsLink     bool        `gorm:"column:is_link;default:false;comment:是否外链" json:"isLink"`
+	Link       string      `gorm:"column:link;default:'';size:500;comment:外链地址" json:"link"`
+	Iframe     bool        `gorm:"column:iframe;default:false;comment:是否内嵌" json:"iframe"`
+	SvgIcon    string      `gorm:"column:svg_icon;default:'';size:100;comment:svg图标名称" json:"svgIcon"`
+	Icon       string      `gorm:"column:icon;default:'';size:100;comment:普通图标名称" json:"icon"`
+	Sort       int         `gorm:"column:sort;default:1;comment:排序字段" json:"sort"`
+	Type       int8        `gorm:"column:type;default:2;comment:类型：1-目录，2-菜单，3-按钮" json:"type"`
+	Permission string      `gorm:"column:permission;default:'';size:100;comment:权限标识" json:"permission"`
+	CreatedBy  uint        `gorm:"column:created_by;comment:创建人" json:"createdBy"`
+	Apis       SysApiList  `gorm:"many2many:sys_menu_api;foreignKey:id;joinForeignKey:menu_id;References:id;joinReferences:api_id" json:"apis"`
+	Children   SysMenuList `gorm:"-" json:"children"`
 }
 
 // TableName 设置表名
@@ -40,6 +44,20 @@ func NewSysMenu() *SysMenu {
 	return &SysMenu{}
 }
 
+// IsEmpty 检查单个菜单是否为空
+func (menu *SysMenu) IsEmpty() bool {
+	return menu.ID == 0
+}
+
+// Find 查找单个菜单
+func (menu *SysMenu) Find(funcs ...func(*gorm.DB) *gorm.DB) (err error) {
+	err = app.DB().Scopes(funcs...).First(menu).Error
+	if err == gorm.ErrRecordNotFound {
+		err = nil // 将记录未找到的错误转换为nil，通过IsEmpty()方法判断
+	}
+	return
+}
+
 type SysMenuList []*SysMenu
 
 func NewSysMenuList() SysMenuList {
@@ -49,6 +67,13 @@ func NewSysMenuList() SysMenuList {
 func (list SysMenuList) IsEmpty() bool {
 	return len(list) == 0
 
+}
+
+func (list SysMenuList) GetApis() (res SysApiList) {
+	for _, menu := range list {
+		res = append(res, menu.Apis...)
+	}
+	return
 }
 
 func (list *SysMenuList) Find(funcs ...func(*gorm.DB) *gorm.DB) (err error) {

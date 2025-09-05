@@ -3,7 +3,7 @@ package app
 import (
 	"gin-fast/app/global/consts"
 	"gin-fast/app/utils/cachehelper"
-	"gin-fast/app/utils/casbinhelper"
+
 	"gin-fast/app/utils/response"
 	"gin-fast/app/utils/tokenhelper"
 	"gin-fast/app/utils/ymlconfig"
@@ -21,7 +21,7 @@ var (
 	GormDbSqlserver  *gorm.DB                          // sqlserver数据库连接
 	GormDbPostgreSql *gorm.DB                          // postgresql数据库连接
 	ZapLog           *zap.Logger                       // 全局日志指针
-	CasbinV2         casbinhelper.CasbinInterf         // casbin指针
+	CasbinV2         CasbinInterf                      // casbin指针
 	Cache            cachehelper.CacheInterf           // 缓存指针
 	TokenService     tokenhelper.TokenServiceInterface // token管理
 	Response         response.ResponseHandler

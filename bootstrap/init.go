@@ -5,7 +5,7 @@ import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/global/consts"
 	"gin-fast/app/global/myerrors"
-	"gin-fast/app/service/zaphook"
+	"gin-fast/app/service"
 	"gin-fast/app/utils/cachehelper"
 	"gin-fast/app/utils/casbinhelper"
 	"gin-fast/app/utils/gormhelper"
@@ -29,28 +29,28 @@ func init() {
 	app.ConfigYml = ymlconfig.CreateYamlFactory(app.BasePath + "/config")
 	app.ConfigYml.ConfigFileChangeListen()
 	// 日志
-	app.ZapLog = CreateZapFactory(zaphook.ZapLogHandler)
+	app.ZapLog = createZapFactory(service.ZapLogHandler)
 	// 初始化数据库
-	InitDB()
+	initDB()
 	// 初始化casbin
-	app.CasbinV2 = casbinhelper.NewCasbinService()
+	app.CasbinV2 = casbinhelper.NewCasbinHelper()
 	err := app.CasbinV2.InitCasbin(app.DB(), app.ConfigYml.GetString("Casbin.ModelConfig"))
 	if err != nil {
 		log.Fatal("CasbinV2.InitCasbin err :" + err.Error())
 	}
 
 	// 初始化缓存管理
-	app.Cache = NewCache()
+	app.Cache = newCache()
 
 	// 初始化token管理
-	app.TokenService = NewTokenService(app.Cache)
+	app.TokenService = newTokenService(app.Cache)
 
 	// 初始化Response
 	app.Response = response.NewResponseHandler()
 }
 
 // 初始化数据库
-func InitDB() {
+func initDB() {
 	// mysql
 	if app.ConfigYml.GetInt("Gormv2.Mysql.IsInitGlobalGormMysql") == 1 {
 		if dbMysql, err := gormhelper.GetOneMysqlClient(); err != nil {
@@ -97,8 +97,8 @@ func checkRequiredFolders() {
 	}
 }
 
-// CreateZapFactory 创建zap日志工厂
-func CreateZapFactory(entry func(zapcore.Entry) error) *zap.Logger {
+// createZapFactory 创建zap日志工厂
+func createZapFactory(entry func(zapcore.Entry) error) *zap.Logger {
 	// 获取程序所处的模式：  开发调试 、 生产
 	appDebug := app.ConfigYml.GetBool("Server.AppDebug")
 
@@ -159,8 +159,8 @@ func CreateZapFactory(entry func(zapcore.Entry) error) *zap.Logger {
 	return zap.New(zapCore, zap.AddCaller(), zap.Hooks(entry), zap.AddStacktrace(zap.WarnLevel))
 }
 
-// NewCache 初始化缓存
-func NewCache() cachehelper.CacheInterf {
+// newCache 初始化缓存
+func newCache() cachehelper.CacheInterf {
 	cacheType := app.ConfigYml.GetString("Server.CacheType")
 	if cacheType == "redis" {
 		redisHelper, err := cachehelper.NewRedisHelper(
@@ -177,7 +177,7 @@ func NewCache() cachehelper.CacheInterf {
 	return cachehelper.NewMemoryHelper()
 }
 
-func NewTokenService(cache cachehelper.CacheInterf) tokenhelper.TokenServiceInterface {
+func newTokenService(cache cachehelper.CacheInterf) tokenhelper.TokenServiceInterface {
 	return &tokenhelper.TokenService{
 		RedisHelper:    cache,
 		JWTSecret:      app.ConfigYml.GetString("Token.JwtTokenSignKey"),

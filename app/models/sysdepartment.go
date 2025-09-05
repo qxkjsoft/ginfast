@@ -50,6 +50,16 @@ func (d *SysDepartment) Create(funcs ...func(*gorm.DB) *gorm.DB) (err error) {
 	return app.DB().Scopes(funcs...).Create(d).Error
 }
 
+func (d *SysDepartment) Update() (err error) {
+	err = app.DB().Save(d).Error
+	return
+}
+
+func (d *SysDepartment) Delete() (err error) {
+	err = app.DB().Delete(d).Error
+	return
+}
+
 type SysDepartmentList []*SysDepartment
 
 func NewSysDepartmentList() SysDepartmentList {

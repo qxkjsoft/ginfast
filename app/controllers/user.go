@@ -3,6 +3,7 @@ package controllers
 import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
+	"gin-fast/app/service"
 	"gin-fast/app/utils/common"
 	"gin-fast/app/utils/passwordhelper"
 
@@ -33,6 +34,49 @@ func (uc *UserController) GetProfile(c *gin.Context) {
 		app.Response.Fail(c, "用户不存在")
 		return
 	}
+
+	// 查询关联角色关联的按钮菜单权限
+	permissions := []string{}
+	if !user.Roles.IsEmpty() {
+		// 获取所有角色ID
+		roleIDs := user.Roles.Map(func(role *models.SysRole) interface{} {
+			return role.ID
+		})
+
+		// 查询角色关联的菜单ID
+		roleMenuList := models.NewSysRoleMenuList()
+		err = roleMenuList.Find(func(db *gorm.DB) *gorm.DB {
+			return db.Where("role_id IN ?", roleIDs)
+		})
+		if err != nil {
+			app.ZapLog.Error("查询角色菜单关联失败", zap.Error(err))
+		} else if len(roleMenuList) > 0 {
+			// 获取菜单ID列表
+			menuIDs := roleMenuList.Map(func(roleMenu *models.SysRoleMenu) uint {
+				return roleMenu.MenuID
+			})
+
+			// 查询按钮类型的菜单（type=3）
+			buttonMenus := models.NewSysMenuList()
+			err = buttonMenus.Find(func(db *gorm.DB) *gorm.DB {
+				return db.Select("permission").Where("id IN ? AND type = ? AND permission !=''", menuIDs, 3)
+			})
+			if err != nil {
+				app.ZapLog.Error("查询按钮菜单失败", zap.Error(err))
+			} else {
+				// 提取权限标识
+				permissionSet := make(map[string]bool)
+				for _, menu := range buttonMenus {
+					permissionSet[menu.Permission] = true
+				}
+				// 转换为切片
+				for permission := range permissionSet {
+					permissions = append(permissions, permission)
+				}
+			}
+		}
+	}
+
 	app.Response.Success(c, gin.H{
 		"id":       user.ID,
 		"avatar":   user.Avatar,
@@ -41,7 +85,7 @@ func (uc *UserController) GetProfile(c *gin.Context) {
 		"roles": user.Roles.Map(func(role *models.SysRole) interface{} {
 			return role.ID
 		}),
-		"permissions": []string{},
+		"permissions": permissions,
 	})
 }
 
@@ -165,6 +209,18 @@ func (uc *UserController) Add(c *gin.Context) {
 		app.Response.Fail(c, "Failed to create user")
 		return
 	}
+	// casbin 为用户分配角色
+	// err = app.CasbinV2.AddRolesForUserByID(user.ID, req.Roles)
+	// if err != nil {
+	// 	app.ZapLog.Error("新增用户失败", zap.Error(err))
+	// 	app.Response.Fail(c, "Failed to create user")
+	// 	return
+	// }
+	if err = service.CasbinService.AddRoleForUser(user.ID, req.Roles); err != nil {
+		app.ZapLog.Error("新增用户失败", zap.Error(err))
+		app.Response.Fail(c, "Failed to create user")
+		return
+	}
 
 	app.Response.Success(c, nil, "User created successfully")
 }
@@ -248,6 +304,26 @@ func (uc *UserController) Update(c *gin.Context) {
 		app.Response.Fail(c, "更新用户失败")
 		return
 	}
+	// casbin 修改用户角色
+	// err = app.CasbinV2.DeleteRolesForUserByID(user.ID, nil)
+	// if err != nil {
+	// 	app.ZapLog.Error("更新用户失败", zap.Error(err))
+	// 	app.Response.Fail(c, "更新用户失败")
+	// 	return
+	// }
+	// if len(req.Roles) > 0 {
+	// 	err = app.CasbinV2.AddRolesForUserByID(user.ID, req.Roles)
+	// 	if err != nil {
+	// 		app.ZapLog.Error("更新用户失败", zap.Error(err))
+	// 		app.Response.Fail(c, "更新用户失败")
+	// 		return
+	// 	}
+	// }
+	if err = service.CasbinService.EditUserRoles(user.ID, req.Roles); err != nil {
+		app.ZapLog.Error("更新用户失败", zap.Error(err))
+		app.Response.Fail(c, "更新用户失败")
+		return
+	}
 
 	app.Response.Success(c, nil, "更新成功")
 }
@@ -295,5 +371,17 @@ func (uc *UserController) Delete(c *gin.Context) {
 		return
 	}
 
+	// casbin 移除用户角色
+	// err = app.CasbinV2.DeleteRolesForUserByID(user.ID, nil)
+	// if err != nil {
+	// 	app.ZapLog.Error("删除用户失败", zap.Error(err))
+	// 	app.Response.Fail(c, "删除用户失败")
+	// 	return
+	// }
+	if err = service.CasbinService.DeleteUserRoles(user.ID, nil); err != nil {
+		app.ZapLog.Error("删除用户失败", zap.Error(err))
+		app.Response.Fail(c, "删除用户失败")
+		return
+	}
 	app.Response.Success(c, nil, "删除成功")
 }

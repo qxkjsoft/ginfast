@@ -29,6 +29,7 @@ func CreateYamlFactory(path string, fileName ...string) YmlConfigInterf {
 	//设置配置文件类型(后缀)为 yml
 	yamlConfig.SetConfigType("yml")
 
+	// 读取配置文件
 	if err := yamlConfig.ReadInConfig(); err != nil {
 		log.Fatal("ReadInConfig err: " + err.Error())
 	}

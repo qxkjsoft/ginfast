@@ -49,7 +49,15 @@ func (ac *AuthController) Login(c *gin.Context) {
 
 	// 生成token
 	user.Password = ""
-	token, err := app.TokenService.GenerateToken(&tokenhelper.ClaimsUser{
+	// // token 不记录缓存
+	// token, err := app.TokenService.GenerateToken(&tokenhelper.ClaimsUser{
+	// 	UserID:   user.ID,
+	// 	Username: user.Username,
+	// 	RawData:  *user,
+	// })
+
+	// // token 将记录缓存
+	token, err := app.TokenService.GenerateTokenWithCache(&tokenhelper.ClaimsUser{
 		UserID:   user.ID,
 		Username: user.Username,
 		RawData:  *user,
@@ -151,8 +159,15 @@ func (ac *AuthController) Logout(c *gin.Context) {
 		app.Response.Fail(c, "用户未登录")
 		return
 	}
+	// 撤销 access token
+	tokenString, err := common.GetAccessToken(c)
+	if err != nil {
+		app.Response.Fail(c, "获取access token失败")
+		return
+	}
+	app.TokenService.RevokeToken(tokenString)
 	// 撤销refresh token
-	err := app.TokenService.RevokeRefreshToken(claims.UserID)
+	err = app.TokenService.RevokeRefreshToken(claims.UserID)
 	if err != nil {
 		app.ZapLog.Error("登出失败", zap.Error(err))
 		app.Response.Fail(c, "登出失败")

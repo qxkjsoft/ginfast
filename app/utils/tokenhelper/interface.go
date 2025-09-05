@@ -12,7 +12,7 @@ type TokenServiceInterface interface {
 	StoreToken(info *TokenInfo) error
 
 	// ValidateTokenWithCache 验证JWT令牌（带缓存检查）
-	ValidateTokenWithCache(tokenString string) bool
+	ValidateTokenWithCache(tokenString string) (*Claims, error)
 
 	// RevokeToken 撤销Token（从缓存中移除）
 	RevokeToken(tokenString string) error
@@ -21,7 +21,7 @@ type TokenServiceInterface interface {
 	ParseToken(tokenString string) (*Claims, error)
 
 	// ValidateToken 验证JWT令牌
-	ValidateToken(tokenString string) bool
+	ValidateToken(tokenString string) (*Claims, error)
 
 	// GenerateRefreshToken 生成Refresh Token
 	GenerateRefreshToken(userID uint) (string, error)
@@ -33,7 +33,7 @@ type TokenServiceInterface interface {
 	ParseRefreshToken(tokenString string) (*RefreshTokenClaims, error)
 
 	// ValidateRefreshToken 验证Refresh Token
-	ValidateRefreshToken(tokenString string) bool
+	ValidateRefreshToken(tokenString string) (*RefreshTokenClaims, error)
 
 	// RevokeRefreshToken 撤销Refresh Token
 	RevokeRefreshToken(userID uint) error

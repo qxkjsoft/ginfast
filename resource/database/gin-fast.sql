@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50726
 File Encoding         : 65001
 
-Date: 2025-08-29 18:13:13
+Date: 2025-09-05 18:09:32
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -28,21 +28,111 @@ CREATE TABLE `casbin_rule` (
   `v3` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
   `v4` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
   `v5` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_casbin_rule` (`ptype`,`v0`,`v1`,`v2`,`v3`,`v4`,`v5`)
+) ENGINE=InnoDB AUTO_INCREMENT=416 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- ----------------------------
 -- Records of casbin_rule
 -- ----------------------------
-INSERT INTO `casbin_rule` VALUES ('1', 'g', 'admin', 'admin_role', '', null, null, null);
-INSERT INTO `casbin_rule` VALUES ('2', 'g', 'user', 'user_role', '', null, null, null);
-INSERT INTO `casbin_rule` VALUES ('3', 'p', 'admin_role', '/api/*', 'GET', null, null, null);
-INSERT INTO `casbin_rule` VALUES ('4', 'p', 'admin_role', '/api/*', 'POST', null, null, null);
-INSERT INTO `casbin_rule` VALUES ('5', 'p', 'admin_role', '/api/*', 'PUT', null, null, null);
-INSERT INTO `casbin_rule` VALUES ('6', 'p', 'admin_role', '/api/*', 'DELETE', null, null, null);
-INSERT INTO `casbin_rule` VALUES ('7', 'p', 'user_role', '/api/users/profile', 'GET', null, null, null);
-INSERT INTO `casbin_rule` VALUES ('8', 'p', 'user_role', '/api/auth/login', 'POST', null, null, null);
-INSERT INTO `casbin_rule` VALUES ('9', 'p', 'user_role', '/api/auth/logout', 'POST', null, null, null);
+INSERT INTO `casbin_rule` VALUES ('16', 'g', 'role_16', 'role_1', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('17', 'g', 'role_17', 'role_1', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('18', 'g', 'role_18', 'role_1', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('19', 'g', 'role_19', 'role_2', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('20', 'g', 'role_20', 'role_2', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('21', 'g', 'role_21', 'role_3', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('22', 'g', 'role_22', 'role_3', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('23', 'g', 'role_23', 'role_4', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('24', 'g', 'role_24', 'role_4', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('25', 'g', 'role_25', 'role_4', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('26', 'g', 'role_26', 'role_5', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('27', 'g', 'role_27', 'role_5', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('28', 'g', 'role_28', 'role_6', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('29', 'g', 'role_29', 'role_6', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('30', 'g', 'role_30', 'role_7', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('31', 'g', 'role_31', 'role_7', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('32', 'g', 'role_32', 'role_8', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('33', 'g', 'role_33', 'role_8', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('34', 'g', 'role_34', 'role_8', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('35', 'g', 'role_35', 'role_9', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('36', 'g', 'role_36', 'role_9', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('37', 'g', 'role_37', 'role_10', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('38', 'g', 'role_38', 'role_10', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('39', 'g', 'role_39', 'role_10', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('40', 'g', 'role_40', 'role_11', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('41', 'g', 'role_41', 'role_11', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('42', 'g', 'role_42', 'role_12', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('43', 'g', 'role_43', 'role_12', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('44', 'g', 'role_44', 'role_13', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('45', 'g', 'role_45', 'role_13', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('46', 'g', 'role_46', 'role_14', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('47', 'g', 'role_47', 'role_14', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('48', 'g', 'role_48', 'role_15', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('49', 'g', 'role_49', 'role_15', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('50', 'g', 'role_50', 'role_15', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('51', 'g', 'role_52', 'role_51', null, null, null, null);
+INSERT INTO `casbin_rule` VALUES ('54', 'g', 'role_53', 'role_51', '', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('93', 'g', 'user_1', 'role_1', '', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('231', 'g', 'user_3', 'role_2', '', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('232', 'g', 'user_3', 'role_3', '', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('380', 'p', 'role_1', '/api/sysApi/add', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('385', 'p', 'role_1', '/api/sysApi/delete', 'DELETE', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('396', 'p', 'role_1', '/api/sysApi/edit', 'PUT', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('374', 'p', 'role_1', '/api/sysApi/list', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('382', 'p', 'role_1', '/api/sysDepartment/getDivision', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('397', 'p', 'role_1', '/api/sysDict/getAllDicts', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('388', 'p', 'role_1', '/api/sysMenu/add', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('384', 'p', 'role_1', '/api/sysMenu/apis/*', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('389', 'p', 'role_1', '/api/sysMenu/delete', 'DELETE', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('379', 'p', 'role_1', '/api/sysMenu/edit', 'PUT', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('387', 'p', 'role_1', '/api/sysMenu/getMenuList', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('391', 'p', 'role_1', '/api/sysMenu/getRouters', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('390', 'p', 'role_1', '/api/sysMenu/setApis', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('376', 'p', 'role_1', '/api/sysRole/add', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('395', 'p', 'role_1', '/api/sysRole/addRoleMenu', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('377', 'p', 'role_1', '/api/sysRole/delete', 'DELETE', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('383', 'p', 'role_1', '/api/sysRole/edit', 'PUT', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('392', 'p', 'role_1', '/api/sysRole/getRoles', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('378', 'p', 'role_1', '/api/sysRole/getUserPermission/*', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('393', 'p', 'role_1', '/api/users/add', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('394', 'p', 'role_1', '/api/users/delete', 'DELETE', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('375', 'p', 'role_1', '/api/users/edit', 'PUT', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('381', 'p', 'role_1', '/api/users/list', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('386', 'p', 'role_1', '/api/users/profile', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('341', 'p', 'role_16', '/api/sysDepartment/getDivision', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('339', 'p', 'role_16', '/api/sysDict/getAllDicts', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('338', 'p', 'role_16', '/api/sysMenu/getRouters', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('334', 'p', 'role_16', '/api/sysRole/getRoles', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('335', 'p', 'role_16', '/api/users/add', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('336', 'p', 'role_16', '/api/users/edit', 'PUT', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('340', 'p', 'role_16', '/api/users/list', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('337', 'p', 'role_16', '/api/users/profile', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('368', 'p', 'role_2', '/api/sysDepartment/getDivision', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('366', 'p', 'role_2', '/api/sysDict/getAllDicts', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('373', 'p', 'role_2', '/api/sysMenu/getRouters', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('369', 'p', 'role_2', '/api/sysRole/getRoles', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('370', 'p', 'role_2', '/api/users/add', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('371', 'p', 'role_2', '/api/users/edit', 'PUT', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('367', 'p', 'role_2', '/api/users/list', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('372', 'p', 'role_2', '/api/users/profile', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('400', 'p', 'role_3', '/api/sysDict/getAllDicts', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('406', 'p', 'role_3', '/api/sysMenu/getMenuList', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('403', 'p', 'role_3', '/api/sysMenu/getRouters', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('401', 'p', 'role_3', '/api/sysRole/add', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('402', 'p', 'role_3', '/api/sysRole/addRoleMenu', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('405', 'p', 'role_3', '/api/sysRole/edit', 'PUT', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('404', 'p', 'role_3', '/api/sysRole/getRoles', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('398', 'p', 'role_3', '/api/sysRole/getUserPermission/*', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('399', 'p', 'role_3', '/api/users/profile', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('407', 'p', 'role_4', '/api/sysDict/getAllDicts', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('414', 'p', 'role_4', '/api/sysMenu/getMenuList', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('412', 'p', 'role_4', '/api/sysMenu/getRouters', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('409', 'p', 'role_4', '/api/sysRole/add', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('410', 'p', 'role_4', '/api/sysRole/addRoleMenu', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('413', 'p', 'role_4', '/api/sysRole/edit', 'PUT', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('408', 'p', 'role_4', '/api/sysRole/getRoles', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('415', 'p', 'role_4', '/api/sysRole/getUserPermission/*', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('411', 'p', 'role_4', '/api/users/profile', 'GET', '', '', '');
 
 -- ----------------------------
 -- Table structure for sys_api
@@ -52,19 +142,54 @@ CREATE TABLE `sys_api` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `title` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '权限名称',
   `path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '权限路径',
-  `method` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `method` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '请求方法',
   `api_group` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '分组',
-  `menu_id` int(11) unsigned DEFAULT NULL COMMENT '菜单ID',
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   `deleted_at` datetime DEFAULT NULL,
   `created_by` int(11) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------
 -- Records of sys_api
 -- ----------------------------
+INSERT INTO `sys_api` VALUES ('1', '用户登录', '/api/login', 'POST', '认证管理', '2025-09-03 11:13:09', '2025-09-03 11:13:09', null, null);
+INSERT INTO `sys_api` VALUES ('2', '刷新Token', '/api/refreshToken', 'POST', '认证管理', '2025-09-03 11:13:09', '2025-09-03 11:13:09', null, null);
+INSERT INTO `sys_api` VALUES ('3', '生成验证码ID', '/api/captcha/id', 'GET', '认证管理', '2025-09-03 11:13:09', '2025-09-03 11:13:09', null, null);
+INSERT INTO `sys_api` VALUES ('4', '获取验证码图片', '/api/captcha/image', 'GET', '认证管理', '2025-09-03 11:13:09', '2025-09-03 11:13:09', null, null);
+INSERT INTO `sys_api` VALUES ('5', '用户登出', '/api/users/logout', 'POST', '认证管理', '2025-09-03 11:13:09', '2025-09-03 11:13:09', null, null);
+INSERT INTO `sys_api` VALUES ('6', '获取当前用户信息', '/api/users/profile', 'GET', '用户管理', '2025-09-03 11:13:09', '2025-09-03 11:13:09', null, null);
+INSERT INTO `sys_api` VALUES ('7', '根据ID获取用户信息', '/api/users/:id', 'GET', '用户管理', '2025-09-03 11:13:09', '2025-09-03 11:13:09', null, null);
+INSERT INTO `sys_api` VALUES ('8', '用户列表', '/api/users/list', 'GET', '用户管理', '2025-09-03 11:13:09', '2025-09-03 11:13:09', null, null);
+INSERT INTO `sys_api` VALUES ('9', '新增用户', '/api/users/add', 'POST', '用户管理', '2025-09-03 11:13:09', '2025-09-03 11:13:09', null, null);
+INSERT INTO `sys_api` VALUES ('10', '更新用户信息', '/api/users/edit', 'PUT', '用户管理', '2025-09-03 11:13:09', '2025-09-03 11:13:09', null, null);
+INSERT INTO `sys_api` VALUES ('11', '删除用户', '/api/users/delete', 'DELETE', '用户管理', '2025-09-03 11:13:09', '2025-09-03 11:13:09', null, null);
+INSERT INTO `sys_api` VALUES ('12', '获取用户权限菜单', '/api/sysMenu/getRouters', 'GET', '菜单管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('13', '获取完整菜单列表', '/api/sysMenu/getMenuList', 'GET', '菜单管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('14', '根据ID获取菜单信息', '/api/sysMenu/:id', 'GET', '菜单管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('15', '新增菜单', '/api/sysMenu/add', 'POST', '菜单管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('16', '更新菜单', '/api/sysMenu/edit', 'PUT', '菜单管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('17', '删除菜单', '/api/sysMenu/delete', 'DELETE', '菜单管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('18', '获取部门列表', '/api/sysDepartment/getDivision', 'GET', '部门管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('19', '获取所有角色数据', '/api/sysRole/getRoles', 'GET', '角色管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('20', '根据角色ID获取角色菜单权限', '/api/sysRole/getUserPermission/:roleId', 'GET', '角色管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('21', '添加角色的菜单权限', '/api/sysRole/addRoleMenu', 'POST', '角色管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('22', '角色分页列表', '/api/sysRole/list', 'GET', '角色管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('23', '根据ID获取角色信息', '/api/sysRole/:id', 'GET', '角色管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('24', '新增角色', '/api/sysRole/add', 'POST', '角色管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('25', '更新角色', '/api/sysRole/edit', 'PUT', '角色管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('26', '删除角色', '/api/sysRole/delete', 'DELETE', '角色管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('27', '获取所有字典数据', '/api/sysDict/getAllDicts', 'GET', '字典管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('28', '根据字典编码获取字典', '/api/sysDict/getByCode/:code', 'GET', '字典管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('29', 'API列表', '/api/sysApi/list', 'GET', 'API管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('30', '根据ID获取API信息', '/api/sysApi/:id', 'GET', 'API管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('31', '新增API', '/api/sysApi/add', 'POST', 'API管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('32', '更新API', '/api/sysApi/edit', 'PUT', 'API管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('33', '删除API', '/api/sysApi/delete', 'DELETE', 'API管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
+INSERT INTO `sys_api` VALUES ('34', '测试11', '/api/sysTest/test', 'POST', 'test', '2025-09-03 11:14:23', '2025-09-03 11:30:19', '2025-09-05 15:42:45', '1');
+INSERT INTO `sys_api` VALUES ('35', '根据菜单ID获取API的ID集合', '/api/sysMenu/apis/:id', 'GET', '菜单管理', '2025-09-04 17:25:14', '2025-09-04 17:25:14', null, '1');
+INSERT INTO `sys_api` VALUES ('36', '设置菜单API权限', '/api/sysMenu/setApis', 'POST', '菜单管理', '2025-09-04 17:26:04', '2025-09-04 17:26:04', null, '1');
 
 -- ----------------------------
 -- Table structure for sys_department
@@ -72,7 +197,7 @@ CREATE TABLE `sys_api` (
 DROP TABLE IF EXISTS `sys_department`;
 CREATE TABLE `sys_department` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `parent_id` int(11) unsigned DEFAULT '0',
+  `parent_id` int(11) unsigned DEFAULT '0' COMMENT '父级',
   `name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '部门名称',
   `status` tinyint(1) DEFAULT NULL COMMENT '状态： 0 停用 1 启用',
   `leader` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '负责人',
@@ -167,6 +292,7 @@ CREATE TABLE `sys_menu` (
   `parent_id` varchar(32) NOT NULL DEFAULT '0' COMMENT '父级路由ID，顶层为0',
   `path` varchar(255) NOT NULL COMMENT '路由路径',
   `name` varchar(100) NOT NULL COMMENT '路由名称',
+  `redirect` varchar(255) DEFAULT NULL COMMENT '重定向',
   `component` varchar(255) DEFAULT NULL COMMENT '组件文件路径',
   `title` varchar(100) DEFAULT NULL COMMENT '菜单标题，国际化key',
   `is_full` tinyint(1) DEFAULT '0' COMMENT '是否全屏显示：0-否，1-是',
@@ -180,6 +306,8 @@ CREATE TABLE `sys_menu` (
   `icon` varchar(100) DEFAULT '' COMMENT '普通图标名称',
   `sort` int(11) DEFAULT '1' COMMENT '排序字段',
   `type` tinyint(1) DEFAULT '2' COMMENT '类型：1-目录，2-菜单，3-按钮',
+  `is_link` tinyint(1) DEFAULT '0' COMMENT '是否外链',
+  `permission` varchar(255) DEFAULT '' COMMENT '权限标识',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted_at` datetime DEFAULT NULL,
@@ -188,84 +316,112 @@ CREATE TABLE `sys_menu` (
   KEY `idx_parent_id` (`parent_id`),
   KEY `idx_sort` (`sort`),
   KEY `idx_type` (`type`)
-) ENGINE=InnoDB AUTO_INCREMENT=140206 DEFAULT CHARSET=utf8mb4 COMMENT='系统菜单路由表';
+) ENGINE=InnoDB AUTO_INCREMENT=140229 DEFAULT CHARSET=utf8mb4 COMMENT='系统菜单路由表';
 
 -- ----------------------------
 -- Records of sys_menu
 -- ----------------------------
-INSERT INTO `sys_menu` VALUES ('1', '0', '/home', 'home', 'home/home', 'home', '0', '0', '0', '0', '1', '', '0', 'home', '', '1', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('2', '0', '/file', 'file', null, 'file', '0', '0', '0', '1', '0', '', '0', 'folder-menu', '', '2', '1', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('3', '0', '/table', 'table', null, 'table', '0', '0', '0', '1', '0', '', '0', 'table', '', '3', '1', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('4', '0', '/form', 'form', null, 'form', '0', '0', '0', '1', '0', '', '0', 'form', '', '4', '1', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('5', '0', '/multilevel', 'multilevel', null, 'multilevel', '0', '0', '0', '1', '0', '', '0', 'switch', '', '5', '1', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('6', '0', '/component', 'component', null, 'component', '0', '0', '0', '1', '0', '', '0', 'classify', '', '6', '1', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('7', '0', '/directive', 'directive', null, 'directive', '0', '0', '0', '1', '0', '', '0', 'directives', '', '7', '1', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('9', '0', '/functions', 'functions', null, 'functions', '0', '0', '0', '1', '0', '', '0', 'functions', '', '9', '1', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('10', '0', '/system', 'system', null, 'system', '0', '0', '0', '1', '0', '', '0', 'set', '', '10', '1', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('12', '0', '/hide-menu', 'hide-menu', 'hide-menu/hide-menu', 'hide-menu', '0', '1', '0', '1', '0', '', '0', 'switch', '', '12', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('13', '0', '/permission', 'permission', null, 'permission', '0', '0', '0', '1', '0', '', '0', 'defend', '', '13', '1', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('14', '0', '/link', 'link', null, 'link', '0', '0', '0', '1', '0', '', '0', 'link', '', '14', '1', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('15', '0', '/monitor', 'monitor', null, 'system-monitor', '0', '0', '0', '1', '0', '', '0', 'financial-statement', '', '15', '1', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('16', '0', '/SnowAdmin-Thin', 'thin-preview', 'link/external/external', 'thin-preview', '0', '0', '0', '0', '1', 'http://115.190.79.132:83/#/login', '0', 'propaganda', '', '16', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('17', '0', '/i18n', 'i18n', 'i18n/show/index', 'i18n', '0', '0', '0', '1', '0', '', '0', 'earth', '', '17', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('18', '0', '/about', 'about', 'about/about', 'about', '0', '0', '0', '1', '0', '', '0', 'about', '', '18', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('201', '02', '/file/document-library', 'document-library', 'file/document-library/document-library', 'document-library', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('301', '03', '/table/common-table', 'common-table', 'table/common-table/common-table', 'common-table', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('302', '03', '/table/custom-table', 'custom-table', 'table/custom-table/custom-table', 'custom-table', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('401', '04', '/form/common-form', 'common-form', 'form/common-form/common-form', 'common-form', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('402', '04', '/form/step-form', 'step-form', 'form/step-form/step-form', 'step-form', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('501', '05', '/multilevel/second-1', 'second-1', 'multilevel/second/second-1', 'second-1', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('502', '05', '/multilevel/second-2', 'second-2', null, 'second-2', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '1', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('601', '06', '/component/player', 'player', 'component/player/player', 'player', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('602', '06', '/component/print', 'print', 'component/print/print', 'print', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('603', '06', '/component/draggable', 'draggable', 'component/draggable/draggable', 'draggable', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '3', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('604', '06', '/component/editor', 'editor', 'component/editor/editor', 'editor', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '4', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('605', '06', '/component/newbie', 'newbie', 'component/newbie/newbie', 'newbie', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '5', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('606', '06', '/component/icon-selector', 'icon-selector', 'component/icon-selector/icon-selector', 'icon-selector', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '6', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('607', '06', '/component/user-center', 'user-center', 'component/user-center/user-center', 'user-center', '0', '1', '0', '1', '0', '', '0', '', 'icon-menu', '7', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('608', '06', '/component/fingerprintjs2', 'fingerprintjs2', 'component/fingerprintjs2/fingerprintjs2', 'fingerprintjs2', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '8', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('609', '06', '/component/barcode', 'barcode', 'component/barcode/barcode', 'barcode', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '9', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('610', '06', '/component/qrcode', 'qrcode', 'component/qrcode/qrcode', 'qrcode', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '10', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('611', '06', '/component/pinyin', 'pinyin', 'component/pinyin/pinyin', 'pinyin', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '11', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('612', '06', '/component/recorder', 'recorder', 'component/recorder/recorder', 'recorder', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '12', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('613', '06', '/component/virtual-list', 'virtual-list', 'component/virtual-list/index', 'virtual-list', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '13', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('614', '06', '/component/common-layouts', 'common-layouts', 'component/common-layouts/index', 'common-layouts', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '14', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('701', '07', '/directive/anti-shake', 'anti-shake', 'directive/anti-shake/anti-shake', 'anti-shake', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('702', '07', '/directive/throttle', 'throttle', 'directive/throttle/throttle', 'throttle', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('703', '07', '/directive/test-directive', 'test-directive', 'directive/test-directive/test-directive', 'test-directive', '0', '1', '0', '1', '0', '', '0', '', 'icon-menu', '3', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('901', '09', '/functions/routing-operation', 'routing-operation', 'functions/routing-operation/index', 'routing-operation', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('902', '09', '/functions/common-tools', 'common-tools', 'functions/common-tools/common-tools', 'common-tools', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('903', '09', '/functions/tree-tools', 'tree-tools', 'functions/tree-tools/tree-tools', 'tree-tools', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '3', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('904', '09', '/functions/file-tools', 'file-tools', 'functions/file-tools/file-tools', 'file-tools', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '4', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('905', '09', '/functions/verify-tools', 'verify-tools', 'functions/verify-tools/verify-tools', 'verify-tools', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '5', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('1001', '10', '/system/account', 'account', 'system/account/account', 'account', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('1002', '10', '/system/role', 'role', 'system/role/role', 'role', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('1003', '10', '/system/menu', 'menu', 'system/menu/menu', 'menu', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '3', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('1004', '10', '/system/division', 'division', 'system/division/division', 'division', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '4', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('1005', '10', '/system/dictionary', 'dictionary', 'system/dictionary/dictionary', 'dictionary', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '5', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('1006', '10', '/system/log', 'log', 'system/log/log', 'log', '0', '1', '0', '1', '0', '', '0', '', 'icon-menu', '6', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('1007', '10', '/system/userinfo', 'userinfo', 'system/userinfo/userinfo', 'userinfo', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '7', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('1301', '13', '/permission/btn-perm', 'btn-perm', 'permission/btn-perm/btn-perm', 'btn-perm', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('1302', '13', '/permission/admin-page', 'admin-page', 'permission/admin-page/admin-page', 'admin-page', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('1303', '13', '/permission/common-page', 'common-page', 'permission/common-page/common-page', 'common-page', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '3', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('1401', '14', '/link/internal', 'internal', null, 'internal', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '1', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('1402', '14', '/link/external', 'external', null, 'external', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '1', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('1501', '15', '/monitor/onlineuser', 'onlineuser', 'monitor/onlineuser/index', 'onlineuser', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('1502', '15', '/monitor/crontab', 'crontab', 'monitor/crontab/index', 'crontab', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('1503', '15', '/monitor/crontab-logs', 'crontab-logs', 'monitor/crontab-logs/index', 'crontab-logs', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '3', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('50201', '0502', '/multilevel/third-2', 'third-2', 'multilevel/third/third-2', 'third-2', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('50202', '0502', '/multilevel/third-1', 'third-1', 'multilevel/third/third-1', 'third-1', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('50203', '0502', '/multilevel/third-3', 'third-3', 'multilevel/third/third-3', 'third-3', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '3', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('90101', '0901', '/functions/routing-operation/common-route', 'common-route', 'functions/routing-operation/common-route', 'common-route', '0', '1', '0', '1', '0', '', '0', 'switch', '', '1', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('90102', '0901', '/functions/routing-operation/dynamic-route/:name/:text', 'dynamic-route', 'functions/routing-operation/dynamic-route', 'dynamic-route', '0', '1', '0', '1', '0', '', '0', 'switch', '', '2', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('140101', '1401', '/link/internal/uigradients', 'uigradients', 'link/internal/internal', 'uigradients', '0', '0', '0', '1', '0', 'https://uigradients.com/#HoneyDew', '1', '', 'icon-menu', '1', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('140102', '1401', '/link/internal/color-taking-tool', 'color-taking-tool', 'link/internal/internal', 'color-taking-tool', '0', '0', '0', '1', '0', 'https://photokit.com/colors/eyedropper/?lang=zh', '1', '', 'icon-menu', '2', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('140103', '1401', '/link/internal/grid-generator', 'grid-generator', 'link/internal/internal', 'grid-generator', '0', '0', '0', '1', '0', 'https://cssgrid-generator.netlify.app/', '1', '', 'icon-menu', '3', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('140104', '1401', '/link/internal/gaodemap', 'gaodemap', 'link/internal/internal', 'amap', '0', '0', '0', '1', '0', 'http://115.190.79.132:82/', '1', '', 'icon-menu', '4', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('140201', '1402', '/link/external/SnowAdmin-Docs', 'SnowAdmin-Docs', 'link/external/external', 'SnowAdmin-Docs', '0', '0', '0', '1', '0', 'http://115.190.79.132:81/', '0', '', 'icon-menu', '5', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('140202', '1402', '/link/external/vue', 'vue', 'link/external/external', 'vue', '0', '0', '0', '1', '0', 'https://cn.vuejs.org/', '0', '', 'icon-menu', '1', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('140203', '1402', '/link/external/vite', 'vite', 'link/external/external', 'vite', '0', '0', '0', '1', '0', 'https://www.vitejs.net/', '0', '', 'icon-menu', '2', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('140205', '1402', '/link/external/juejin', 'juejin', 'link/external/external', 'juejin', '0', '0', '0', '1', '0', 'https://juejin.cn/user/1728883023940600', '0', '', 'icon-menu', '4', '2', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('1', '0', '/home', 'home', null, 'home/home', 'home', '0', '0', '0', '0', '1', '', '0', 'home', '', '1', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('2', '0', '/file', 'file', null, null, 'file', '0', '0', '0', '1', '0', '', '0', 'folder-menu', '', '2', '1', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('3', '0', '/table', 'table', null, null, 'table', '0', '0', '0', '1', '0', '', '0', 'table', '', '3', '1', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('4', '0', '/form', 'form', null, null, 'form', '0', '0', '0', '1', '0', '', '0', 'form', '', '4', '1', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('5', '0', '/multilevel', 'multilevel', null, null, 'multilevel', '0', '0', '0', '1', '0', '', '0', 'switch', '', '5', '1', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('6', '0', '/component', 'component', null, null, 'component', '0', '0', '0', '1', '0', '', '0', 'classify', '', '6', '1', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('7', '0', '/directive', 'directive', null, null, 'directive', '0', '0', '0', '1', '0', '', '0', 'directives', '', '7', '1', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('9', '0', '/functions', 'functions', null, null, 'functions', '0', '0', '0', '1', '0', '', '0', 'functions', '', '9', '1', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('10', '0', '/system', 'system', null, null, 'system', '0', '0', '0', '1', '0', '', '0', 'set', '', '10', '1', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('12', '0', '/hide-menu', 'hide-menu', null, 'hide-menu/hide-menu', 'hide-menu', '0', '1', '0', '1', '0', '', '0', 'switch', '', '12', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('13', '0', '/permission', 'permission', null, null, 'permission', '0', '0', '0', '1', '0', '', '0', 'defend', '', '13', '1', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('14', '0', '/link', 'link', null, null, 'link', '0', '0', '0', '1', '0', '', '0', 'link', '', '14', '1', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('15', '0', '/monitor', 'monitor', null, null, 'system-monitor', '0', '0', '0', '1', '0', '', '0', 'financial-statement', '', '15', '1', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('16', '0', '/SnowAdmin-Thin', 'thin-preview', null, 'link/external/external', 'thin-preview', '0', '0', '0', '0', '1', 'http://115.190.79.132:83/#/login', '0', 'propaganda', '', '16', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('17', '0', '/i18n', 'i18n', null, 'i18n/show/index', 'i18n', '0', '0', '0', '1', '0', '', '0', 'earth', '', '17', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('18', '0', '/about', 'about', null, 'about/about', 'about', '0', '0', '0', '1', '0', '', '0', 'about', '', '18', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('201', '02', '/file/document-library', 'document-library', null, 'file/document-library/document-library', 'document-library', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('301', '03', '/table/common-table', 'common-table', null, 'table/common-table/common-table', 'common-table', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('302', '03', '/table/custom-table', 'custom-table', null, 'table/custom-table/custom-table', 'custom-table', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('401', '04', '/form/common-form', 'common-form', null, 'form/common-form/common-form', 'common-form', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('402', '04', '/form/step-form', 'step-form', null, 'form/step-form/step-form', 'step-form', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('501', '05', '/multilevel/second-1', 'second-1', null, 'multilevel/second/second-1', 'second-1', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('502', '05', '/multilevel/second-2', 'second-2', null, null, 'second-2', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '1', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('601', '06', '/component/player', 'player', null, 'component/player/player', 'player', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('602', '06', '/component/print', 'print', null, 'component/print/print', 'print', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('603', '06', '/component/draggable', 'draggable', null, 'component/draggable/draggable', 'draggable', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '3', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('604', '06', '/component/editor', 'editor', null, 'component/editor/editor', 'editor', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '4', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('605', '06', '/component/newbie', 'newbie', null, 'component/newbie/newbie', 'newbie', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '5', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('606', '06', '/component/icon-selector', 'icon-selector', null, 'component/icon-selector/icon-selector', 'icon-selector', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '6', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('607', '06', '/component/user-center', 'user-center', null, 'component/user-center/user-center', 'user-center', '0', '1', '0', '1', '0', '', '0', '', 'icon-menu', '7', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('608', '06', '/component/fingerprintjs2', 'fingerprintjs2', null, 'component/fingerprintjs2/fingerprintjs2', 'fingerprintjs2', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '8', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('609', '06', '/component/barcode', 'barcode', null, 'component/barcode/barcode', 'barcode', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '9', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('610', '06', '/component/qrcode', 'qrcode', null, 'component/qrcode/qrcode', 'qrcode', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '10', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('611', '06', '/component/pinyin', 'pinyin', null, 'component/pinyin/pinyin', 'pinyin', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '11', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('612', '06', '/component/recorder', 'recorder', null, 'component/recorder/recorder', 'recorder', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '12', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('613', '06', '/component/virtual-list', 'virtual-list', null, 'component/virtual-list/index', 'virtual-list', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '13', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('614', '06', '/component/common-layouts', 'common-layouts', null, 'component/common-layouts/index', 'common-layouts', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '14', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('701', '07', '/directive/anti-shake', 'anti-shake', null, 'directive/anti-shake/anti-shake', 'anti-shake', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('702', '07', '/directive/throttle', 'throttle', null, 'directive/throttle/throttle', 'throttle', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('703', '07', '/directive/test-directive', 'test-directive', null, 'directive/test-directive/test-directive', 'test-directive', '0', '1', '0', '1', '0', '', '0', '', 'icon-menu', '3', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('901', '09', '/functions/routing-operation', 'routing-operation', null, 'functions/routing-operation/index', 'routing-operation', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('902', '09', '/functions/common-tools', 'common-tools', null, 'functions/common-tools/common-tools', 'common-tools', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('903', '09', '/functions/tree-tools', 'tree-tools', null, 'functions/tree-tools/tree-tools', 'tree-tools', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '3', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('904', '09', '/functions/file-tools', 'file-tools', null, 'functions/file-tools/file-tools', 'file-tools', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '4', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('905', '09', '/functions/verify-tools', 'verify-tools', null, 'functions/verify-tools/verify-tools', 'verify-tools', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '5', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('1001', '10', '/system/account', 'account', '', 'system/account/account', 'account', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '0', '', '2025-08-27 09:09:44', '2025-09-04 09:04:33', null, '0');
+INSERT INTO `sys_menu` VALUES ('1002', '10', '/system/role', 'role', null, 'system/role/role', 'role', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('1003', '10', '/system/menu', 'menu', null, 'system/menu/menu', 'menu', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '3', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('1004', '10', '/system/division', 'division', null, 'system/division/division', 'division', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '4', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('1005', '10', '/system/dictionary', 'dictionary', null, 'system/dictionary/dictionary', 'dictionary', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '5', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('1006', '10', '/system/log', 'log', null, 'system/log/log', 'log', '0', '1', '0', '1', '0', '', '0', '', 'icon-menu', '6', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('1007', '10', '/system/userinfo', 'userinfo', null, 'system/userinfo/userinfo', 'userinfo', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '7', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('1301', '13', '/permission/btn-perm', 'btn-perm', null, 'permission/btn-perm/btn-perm', 'btn-perm', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('1302', '13', '/permission/admin-page', 'admin-page', null, 'permission/admin-page/admin-page', 'admin-page', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('1303', '13', '/permission/common-page', 'common-page', null, 'permission/common-page/common-page', 'common-page', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '3', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('1401', '14', '/link/internal', 'internal', null, null, 'internal', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '1', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('1402', '14', '/link/external', 'external', null, null, 'external', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '1', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('1501', '15', '/monitor/onlineuser', 'onlineuser', null, 'monitor/onlineuser/index', 'onlineuser', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('1502', '15', '/monitor/crontab', 'crontab', null, 'monitor/crontab/index', 'crontab', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('1503', '15', '/monitor/crontab-logs', 'crontab-logs', null, 'monitor/crontab-logs/index', 'crontab-logs', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '3', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('50201', '0502', '/multilevel/third-2', 'third-2', null, 'multilevel/third/third-2', 'third-2', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('50202', '0502', '/multilevel/third-1', 'third-1', null, 'multilevel/third/third-1', 'third-1', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('50203', '0502', '/multilevel/third-3', 'third-3', null, 'multilevel/third/third-3', 'third-3', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '3', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('90101', '0901', '/functions/routing-operation/common-route', 'common-route', null, 'functions/routing-operation/common-route', 'common-route', '0', '1', '0', '1', '0', '', '0', 'switch', '', '1', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('90102', '0901', '/functions/routing-operation/dynamic-route/:name/:text', 'dynamic-route', null, 'functions/routing-operation/dynamic-route', 'dynamic-route', '0', '1', '0', '1', '0', '', '0', 'switch', '', '2', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('130101', '1301', '', 'btn-add', null, '', '新增按钮666', '0', '0', '0', '0', '0', '', '0', '', '', '1', '3', '0', '', '2025-09-01 11:29:58', '2025-09-01 11:29:58', null, null);
+INSERT INTO `sys_menu` VALUES ('130102', '1301', '', 'btn-edit', null, '', '编辑按钮', '0', '0', '0', '0', '0', '', '0', '', '', '2', '3', '0', '', '2025-09-01 11:29:58', '2025-09-01 11:29:58', null, null);
+INSERT INTO `sys_menu` VALUES ('130103', '1301', '', 'btn-delete', null, '', '删除按钮', '0', '0', '0', '0', '0', '', '0', '', '', '3', '3', '0', '', '2025-09-01 11:29:58', '2025-09-01 11:29:58', null, null);
+INSERT INTO `sys_menu` VALUES ('130201', '1301', '', 'btn-add-2', null, '', '新增按钮-2', '0', '0', '0', '0', '0', '', '0', '', '', '1', '3', '0', '', '2025-09-01 11:29:58', '2025-09-01 11:29:58', null, null);
+INSERT INTO `sys_menu` VALUES ('130202', '1301', '', 'btn-edit-2', null, '', '编辑按钮-2', '0', '0', '0', '0', '0', '', '0', '', '', '2', '3', '0', '', '2025-09-01 11:29:58', '2025-09-01 11:29:58', null, null);
+INSERT INTO `sys_menu` VALUES ('130203', '1301', '', 'btn-delete-2', null, '', '删除按钮-2', '0', '0', '0', '0', '0', '', '0', '', '', '3', '3', '0', '', '2025-09-01 11:29:58', '2025-09-01 11:29:58', null, null);
+INSERT INTO `sys_menu` VALUES ('140101', '1401', '/link/internal/uigradients', 'uigradients', null, 'link/internal/internal', 'uigradients', '0', '0', '0', '1', '0', 'https://uigradients.com/#HoneyDew', '1', '', 'icon-menu', '1', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('140102', '1401', '/link/internal/color-taking-tool', 'color-taking-tool', null, 'link/internal/internal', 'color-taking-tool', '0', '0', '0', '1', '0', 'https://photokit.com/colors/eyedropper/?lang=zh', '1', '', 'icon-menu', '2', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('140103', '1401', '/link/internal/grid-generator', 'grid-generator', null, 'link/internal/internal', 'grid-generator', '0', '0', '0', '1', '0', 'https://cssgrid-generator.netlify.app/', '1', '', 'icon-menu', '3', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('140104', '1401', '/link/internal/gaodemap', 'gaodemap', null, 'link/internal/internal', 'amap', '0', '0', '0', '1', '0', 'http://115.190.79.132:82/', '1', '', 'icon-menu', '4', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('140201', '1402', '/link/external/SnowAdmin-Docs', 'SnowAdmin-Docs', null, 'link/external/external', 'SnowAdmin-Docs', '0', '0', '0', '1', '0', 'http://115.190.79.132:81/', '0', '', 'icon-menu', '5', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('140202', '1402', '/link/external/vue', 'vue', null, 'link/external/external', 'vue', '0', '0', '0', '1', '0', 'https://cn.vuejs.org/', '0', '', 'icon-menu', '1', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('140203', '1402', '/link/external/vite', 'vite', null, 'link/external/external', 'vite', '0', '0', '0', '1', '0', 'https://www.vitejs.net/', '0', '', 'icon-menu', '2', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('140205', '1402', '/link/external/juejin', 'juejin', null, 'link/external/external', 'juejin', '0', '0', '0', '1', '0', 'https://juejin.cn/user/1728883023940600', '0', '', 'icon-menu', '4', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('140206', '0', '/test', 'Test', '/test', '', '测试目录', '0', '0', '0', '1', '0', '', '0', 'add-voucher', 'IconAlipayCircle', '100', '1', '0', '', '2025-09-02 15:11:26', '2025-09-02 17:57:36', null, '1');
+INSERT INTO `sys_menu` VALUES ('140207', '140206', '/test1', 'Test1', '/test1', '', '测试目录1', '0', '0', '0', '1', '0', '', '0', 'data-queries', 'IconArrowUp', '1', '1', '0', '', '2025-09-02 15:12:09', '2025-09-02 15:12:09', null, '1');
+INSERT INTO `sys_menu` VALUES ('140208', '140207', '/testmenu', 'Testmenu', '', 'system/test/test', '测试菜单', '0', '0', '0', '1', '0', '', '0', 'about', 'IconApps', '1', '2', '0', '', '2025-09-02 15:13:54', '2025-09-04 17:55:23', null, '1');
+INSERT INTO `sys_menu` VALUES ('140209', '140208', '', '', '', '', '测试按钮', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'sys:btn:test', '2025-09-02 16:05:48', '2025-09-02 16:05:48', null, '1');
+INSERT INTO `sys_menu` VALUES ('140211', '140208', '', '', '', '', '测试按钮2', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'sys:btn:test1', '2025-09-02 17:50:02', '2025-09-02 17:50:02', null, '1');
+INSERT INTO `sys_menu` VALUES ('140212', '0', '/test2', 'Test2', '', 'system/test/test2', 'test2', '0', '0', '0', '1', '0', '', '0', 'about', '', '99', '2', '0', '', '2025-09-02 17:55:12', '2025-09-02 17:57:29', null, '1');
+INSERT INTO `sys_menu` VALUES ('140213', '10', '/system/api', 'SystemApi', '', 'system/sysapi/sysapi', 'API管理', '0', '0', '0', '1', '0', '', '0', '', 'IconMenu', '4', '2', '0', '', '2025-09-03 10:53:57', '2025-09-04 17:29:12', null, '1');
+INSERT INTO `sys_menu` VALUES ('140214', '1001', '', '', '', '', '新增', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:account:add', '2025-09-03 16:11:58', '2025-09-03 16:11:58', null, '1');
+INSERT INTO `sys_menu` VALUES ('140215', '1001', '', '', '', '', '编辑', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:account:edit', '2025-09-03 17:11:24', '2025-09-03 17:11:24', null, '1');
+INSERT INTO `sys_menu` VALUES ('140216', '1001', '', '', '', '', '删除', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:account:delete', '2025-09-03 17:12:22', '2025-09-03 17:12:22', null, '1');
+INSERT INTO `sys_menu` VALUES ('140217', '140208', '', '', '', '', '测试按钮3', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'sys:btn:test3', '2025-09-03 17:37:38', '2025-09-03 17:37:38', null, '1');
+INSERT INTO `sys_menu` VALUES ('140218', '1002', '', '', '', '', '新增', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:role:add', '2025-09-04 16:43:54', '2025-09-04 16:43:54', null, '1');
+INSERT INTO `sys_menu` VALUES ('140219', '1002', '', '', '', '', '编辑', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:role:edit', '2025-09-04 16:47:15', '2025-09-04 16:47:15', null, '1');
+INSERT INTO `sys_menu` VALUES ('140220', '1002', '', '', '', '', '删除', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:role:delete', '2025-09-04 16:50:19', '2025-09-04 16:50:19', null, '1');
+INSERT INTO `sys_menu` VALUES ('140221', '1002', '', '', '', '', '分配权限', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:role:addRoleMenu', '2025-09-04 16:53:09', '2025-09-04 16:53:09', null, '1');
+INSERT INTO `sys_menu` VALUES ('140222', '1003', '', '', '', '', '新增', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:menu:add', '2025-09-04 17:07:16', '2025-09-04 17:07:16', null, '1');
+INSERT INTO `sys_menu` VALUES ('140223', '1003', '', '', '', '', '编辑', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:menu:edit', '2025-09-04 17:11:51', '2025-09-04 17:11:51', null, '1');
+INSERT INTO `sys_menu` VALUES ('140224', '1003', '', '', '', '', '删除', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:menu:delete', '2025-09-04 17:12:24', '2025-09-04 17:12:24', null, '1');
+INSERT INTO `sys_menu` VALUES ('140225', '1003', '', '', '', '', '分配权限', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:menu:setMenuApis', '2025-09-04 17:20:09', '2025-09-04 17:20:09', null, '1');
+INSERT INTO `sys_menu` VALUES ('140226', '140213', '', '', '', '', '新增', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:api:add', '2025-09-04 17:30:56', '2025-09-04 17:30:56', null, '1');
+INSERT INTO `sys_menu` VALUES ('140227', '140213', '', '', '', '', '编辑', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:api:edit', '2025-09-04 17:31:20', '2025-09-04 17:31:20', null, '1');
+INSERT INTO `sys_menu` VALUES ('140228', '140213', '', '', '', '', '删除', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:api:delete', '2025-09-04 17:31:38', '2025-09-04 17:31:38', null, '1');
 
 -- ----------------------------
 -- Table structure for sys_menu_api
@@ -280,6 +436,34 @@ CREATE TABLE `sys_menu_api` (
 -- ----------------------------
 -- Records of sys_menu_api
 -- ----------------------------
+INSERT INTO `sys_menu_api` VALUES ('1', '6');
+INSERT INTO `sys_menu_api` VALUES ('1', '12');
+INSERT INTO `sys_menu_api` VALUES ('1', '27');
+INSERT INTO `sys_menu_api` VALUES ('1', '34');
+INSERT INTO `sys_menu_api` VALUES ('1001', '8');
+INSERT INTO `sys_menu_api` VALUES ('1001', '18');
+INSERT INTO `sys_menu_api` VALUES ('1001', '19');
+INSERT INTO `sys_menu_api` VALUES ('1002', '19');
+INSERT INTO `sys_menu_api` VALUES ('1003', '13');
+INSERT INTO `sys_menu_api` VALUES ('140213', '29');
+INSERT INTO `sys_menu_api` VALUES ('140214', '9');
+INSERT INTO `sys_menu_api` VALUES ('140215', '10');
+INSERT INTO `sys_menu_api` VALUES ('140216', '11');
+INSERT INTO `sys_menu_api` VALUES ('140218', '24');
+INSERT INTO `sys_menu_api` VALUES ('140219', '25');
+INSERT INTO `sys_menu_api` VALUES ('140220', '26');
+INSERT INTO `sys_menu_api` VALUES ('140221', '13');
+INSERT INTO `sys_menu_api` VALUES ('140221', '20');
+INSERT INTO `sys_menu_api` VALUES ('140221', '21');
+INSERT INTO `sys_menu_api` VALUES ('140222', '15');
+INSERT INTO `sys_menu_api` VALUES ('140223', '16');
+INSERT INTO `sys_menu_api` VALUES ('140224', '17');
+INSERT INTO `sys_menu_api` VALUES ('140225', '29');
+INSERT INTO `sys_menu_api` VALUES ('140225', '35');
+INSERT INTO `sys_menu_api` VALUES ('140225', '36');
+INSERT INTO `sys_menu_api` VALUES ('140226', '31');
+INSERT INTO `sys_menu_api` VALUES ('140227', '32');
+INSERT INTO `sys_menu_api` VALUES ('140228', '33');
 
 -- ----------------------------
 -- Table structure for sys_role
@@ -297,14 +481,64 @@ CREATE TABLE `sys_role` (
   `deleted_at` datetime DEFAULT NULL,
   `created_by` int(11) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------
 -- Records of sys_role
 -- ----------------------------
-INSERT INTO `sys_role` VALUES ('1', '超级管理员', '1', '1', '', '0', '2025-08-27 11:24:39', null, null, null);
-INSERT INTO `sys_role` VALUES ('2', '普通管理员', '2', '1', null, '0', '2025-08-27 11:24:54', null, null, null);
-INSERT INTO `sys_role` VALUES ('3', '普通管理员_1', '1', '1', null, '2', '2025-08-28 17:06:01', null, null, null);
+INSERT INTO `sys_role` VALUES ('1', '系统管理员', '1', '1', '最高权限管理员角色', '0', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('2', '业务管理员', '2', '1', '业务管理主要角色', '0', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('3', '内容审核员', '3', '1', '负责内容审核', '0', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('4', '财务经理', '4', '1', '财务管理主要角色', '0', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('5', '客服主管', '5', '1', '客户服务管理角色', '0', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('6', '运营总监', '6', '1', '运营部门负责人', '0', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('7', '产品经理', '7', '1', '产品管理主要角色', '0', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('8', '技术总监', '8', '1', '技术部门负责人', '0', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('9', '市场专员', '9', '1', '市场推广角色', '0', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('10', '人力资源经理', '10', '1', '人力资源管理部门角色', '0', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('11', '安全总监', '11', '1', '负责系统安全和数据保护', '0', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('12', '数据分析师', '12', '1', '负责业务数据分析和洞察', '0', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('13', '项目经理', '13', '1', '项目管理与协调', '0', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('14', '质量保证经理', '14', '1', '质量管理与控制', '0', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('15', '基础设施管理员', '15', '1', 'IT基础设施管理', '0', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('16', '用户管理员', '1', '1', '管理用户账户', '1', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('17', '权限管理员', '2', '1', '管理权限设置', '1', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('18', '日志审计员', '3', '1', '查看系统日志', '1', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('19', '业务操作员', '1', '1', '日常业务操作', '2', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('20', '数据录入员', '2', '1', '业务数据录入', '2', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('21', '图文审核员', '1', '1', '审核图文内容', '3', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('22', '视频审核员', '2', '1', '审核视频内容', '3', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('23', '会计', '1', '1', '日常会计核算', '4', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('24', '出纳', '2', '1', '资金管理', '4', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('25', '财务分析员', '3', '1', '财务数据分析', '4', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('26', '在线客服', '1', '1', '提供在线客服支持', '5', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('27', '电话客服', '2', '1', '提供电话客服支持', '5', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('28', '活动运营', '1', '1', '活动策划与执行', '6', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('29', '用户运营', '2', '1', '用户维护与增长', '6', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('30', 'UI设计师', '1', '1', '界面设计', '7', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('31', '交互设计师', '2', '1', '交互设计', '7', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('32', '后端开发', '1', '1', '后端开发工程师', '8', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('33', '前端开发', '2', '1', '前端开发工程师', '8', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('34', '测试工程师', '3', '1', '系统测试', '8', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('35', '推广专员', '1', '1', '市场推广', '9', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('36', '品牌专员', '2', '1', '品牌管理', '9', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('37', '招聘专员', '1', '1', '人员招聘', '10', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('38', '培训专员', '2', '1', '员工培训', '10', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('39', '薪酬专员', '3', '1', '薪酬福利管理', '10', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('40', '网络安全工程师', '1', '1', '负责网络安全防护', '11', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('41', '数据安全专员', '2', '1', '负责数据安全保护', '11', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('42', '数据挖掘工程师', '1', '1', '负责数据挖掘分析', '12', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('43', '报表开发员', '2', '1', '负责报表开发和维护', '12', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('44', '项目协调员', '1', '1', '协助项目管理工作', '13', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('45', '项目助理', '2', '1', '项目支持工作', '13', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('46', '测试专员', '1', '1', '执行测试工作', '14', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('47', '质量审核员', '2', '1', '进行质量审核', '14', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('48', '网络管理员', '1', '1', '管理网络设备', '15', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('49', '服务器管理员', '2', '1', '管理服务器资源', '15', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('50', '数据库管理员', '3', '1', '管理数据库系统', '15', '2025-09-01 17:32:12', '2025-09-01 17:32:12', null, '1');
+INSERT INTO `sys_role` VALUES ('51', ' 测试角色', '1', '1', '', '0', '2025-09-01 17:33:24', '2025-09-01 17:52:37', null, '1');
+INSERT INTO `sys_role` VALUES ('52', '测试角色_1', '1', '1', '666', '51', '2025-09-01 17:33:44', '2025-09-01 17:51:58', null, '1');
+INSERT INTO `sys_role` VALUES ('53', '测试角色_2', '1', '1', '', '51', '2025-09-04 14:47:43', '2025-09-04 15:01:06', null, '1');
 
 -- ----------------------------
 -- Table structure for sys_role_menu
@@ -384,6 +618,12 @@ INSERT INTO `sys_role_menu` VALUES ('1', '50202');
 INSERT INTO `sys_role_menu` VALUES ('1', '50203');
 INSERT INTO `sys_role_menu` VALUES ('1', '90101');
 INSERT INTO `sys_role_menu` VALUES ('1', '90102');
+INSERT INTO `sys_role_menu` VALUES ('1', '130101');
+INSERT INTO `sys_role_menu` VALUES ('1', '130102');
+INSERT INTO `sys_role_menu` VALUES ('1', '130103');
+INSERT INTO `sys_role_menu` VALUES ('1', '130201');
+INSERT INTO `sys_role_menu` VALUES ('1', '130202');
+INSERT INTO `sys_role_menu` VALUES ('1', '130203');
 INSERT INTO `sys_role_menu` VALUES ('1', '140101');
 INSERT INTO `sys_role_menu` VALUES ('1', '140102');
 INSERT INTO `sys_role_menu` VALUES ('1', '140103');
@@ -392,6 +632,54 @@ INSERT INTO `sys_role_menu` VALUES ('1', '140201');
 INSERT INTO `sys_role_menu` VALUES ('1', '140202');
 INSERT INTO `sys_role_menu` VALUES ('1', '140203');
 INSERT INTO `sys_role_menu` VALUES ('1', '140205');
+INSERT INTO `sys_role_menu` VALUES ('1', '140206');
+INSERT INTO `sys_role_menu` VALUES ('1', '140207');
+INSERT INTO `sys_role_menu` VALUES ('1', '140208');
+INSERT INTO `sys_role_menu` VALUES ('1', '140209');
+INSERT INTO `sys_role_menu` VALUES ('1', '140211');
+INSERT INTO `sys_role_menu` VALUES ('1', '140212');
+INSERT INTO `sys_role_menu` VALUES ('1', '140213');
+INSERT INTO `sys_role_menu` VALUES ('1', '140214');
+INSERT INTO `sys_role_menu` VALUES ('1', '140215');
+INSERT INTO `sys_role_menu` VALUES ('1', '140216');
+INSERT INTO `sys_role_menu` VALUES ('1', '140217');
+INSERT INTO `sys_role_menu` VALUES ('1', '140218');
+INSERT INTO `sys_role_menu` VALUES ('1', '140219');
+INSERT INTO `sys_role_menu` VALUES ('1', '140220');
+INSERT INTO `sys_role_menu` VALUES ('1', '140221');
+INSERT INTO `sys_role_menu` VALUES ('1', '140222');
+INSERT INTO `sys_role_menu` VALUES ('1', '140223');
+INSERT INTO `sys_role_menu` VALUES ('1', '140224');
+INSERT INTO `sys_role_menu` VALUES ('1', '140225');
+INSERT INTO `sys_role_menu` VALUES ('1', '140226');
+INSERT INTO `sys_role_menu` VALUES ('1', '140227');
+INSERT INTO `sys_role_menu` VALUES ('1', '140228');
+INSERT INTO `sys_role_menu` VALUES ('2', '1');
+INSERT INTO `sys_role_menu` VALUES ('2', '10');
+INSERT INTO `sys_role_menu` VALUES ('2', '1001');
+INSERT INTO `sys_role_menu` VALUES ('2', '140214');
+INSERT INTO `sys_role_menu` VALUES ('2', '140215');
+INSERT INTO `sys_role_menu` VALUES ('3', '1');
+INSERT INTO `sys_role_menu` VALUES ('3', '1002');
+INSERT INTO `sys_role_menu` VALUES ('3', '140218');
+INSERT INTO `sys_role_menu` VALUES ('3', '140219');
+INSERT INTO `sys_role_menu` VALUES ('3', '140221');
+INSERT INTO `sys_role_menu` VALUES ('4', '1');
+INSERT INTO `sys_role_menu` VALUES ('4', '1002');
+INSERT INTO `sys_role_menu` VALUES ('4', '140218');
+INSERT INTO `sys_role_menu` VALUES ('4', '140219');
+INSERT INTO `sys_role_menu` VALUES ('4', '140221');
+INSERT INTO `sys_role_menu` VALUES ('16', '1');
+INSERT INTO `sys_role_menu` VALUES ('16', '10');
+INSERT INTO `sys_role_menu` VALUES ('16', '1001');
+INSERT INTO `sys_role_menu` VALUES ('16', '140206');
+INSERT INTO `sys_role_menu` VALUES ('16', '140207');
+INSERT INTO `sys_role_menu` VALUES ('16', '140208');
+INSERT INTO `sys_role_menu` VALUES ('16', '140209');
+INSERT INTO `sys_role_menu` VALUES ('16', '140211');
+INSERT INTO `sys_role_menu` VALUES ('16', '140214');
+INSERT INTO `sys_role_menu` VALUES ('16', '140215');
+INSERT INTO `sys_role_menu` VALUES ('16', '140217');
 
 -- ----------------------------
 -- Table structure for sys_user_role
@@ -407,7 +695,8 @@ CREATE TABLE `sys_user_role` (
 -- Records of sys_user_role
 -- ----------------------------
 INSERT INTO `sys_user_role` VALUES ('1', '1');
-INSERT INTO `sys_user_role` VALUES ('1', '2');
+INSERT INTO `sys_user_role` VALUES ('3', '2');
+INSERT INTO `sys_user_role` VALUES ('3', '3');
 
 -- ----------------------------
 -- Table structure for users
@@ -431,13 +720,13 @@ CREATE TABLE `users` (
   `created_by` int(11) unsigned DEFAULT '0' COMMENT '创建人',
   PRIMARY KEY (`id`),
   UNIQUE KEY `username` (`username`)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- ----------------------------
 -- Records of users
 -- ----------------------------
-INSERT INTO `users` VALUES ('1', 'admin', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'admin@example.com', '1', '1', '18800000001', '男', '超级管理员', '', null, '2025-08-18 14:55:05', '2025-08-25 10:26:11', null, '0');
-INSERT INTO `users` VALUES ('3', 'zhangsan', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'zhangsan@example.com', '1', '1', '13800000001', '男', '张三', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
+INSERT INTO `users` VALUES ('1', 'admin', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'admin@example.com', '1', '1', '18800000001', '男', '超级管理员', '', '', '2025-08-18 14:55:05', '2025-09-04 17:47:15', null, '0');
+INSERT INTO `users` VALUES ('3', 'zhangsan', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'zhangsan@example.com', '1', '1', '13800000001', '男', '张三', '', '', '2025-08-28 15:26:45', '2025-09-05 11:04:26', null, '1');
 INSERT INTO `users` VALUES ('4', 'lisi', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'lisi@example.com', '1', '1', '13800000002', '男', '李四', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
 INSERT INTO `users` VALUES ('5', 'wangwu', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'wangwu@example.com', '1', '1', '13800000003', '男', '王五', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
 INSERT INTO `users` VALUES ('6', 'zhaoliu', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'zhaoliu@example.com', '1', '1', '13800000004', '男', '赵六', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
@@ -452,3 +741,4 @@ INSERT INTO `users` VALUES ('14', 'tom', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLs
 INSERT INTO `users` VALUES ('15', 'jerry', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'jerry@example.com', '1', '1', '13800000013', '男', '杰瑞', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
 INSERT INTO `users` VALUES ('16', 'alice', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'alice@example.com', '1', '1', '13800000014', '女', '爱丽丝', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
 INSERT INTO `users` VALUES ('17', 'bob', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'bob@example.com', '1', '1', '13800000015', '男', '鲍勃', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
+INSERT INTO `users` VALUES ('18', 'test1', '$2a$10$DqUyiUoQXUW3qKPGus4PqOsfdJbLzRYcHkn/.ZrPeK/b0ip2WCSfy', 'test1@qq. om', '1', '4', '18888888888', '1', 'test1', '', '', '2025-09-04 10:52:42', '2025-09-04 11:05:21', null, '1');

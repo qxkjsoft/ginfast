@@ -81,3 +81,14 @@ type SysRoleGetRequest struct {
 func (r *SysRoleGetRequest) Validate(c *gin.Context) error {
 	return r.Check(c, r)
 }
+
+// SysRoleMenuAssignRequest 角色菜单权限分配请求结构
+type SysRoleMenuAssignRequest struct {
+	Validator
+	RoleID uint   `form:"roleId" json:"roleId" validate:"required" message:"角色ID不能为空"`
+	MenuID []uint `form:"menuId" json:"menuId" validate:"required" message:"菜单ID列表不能为空"`
+}
+
+func (r *SysRoleMenuAssignRequest) Validate(c *gin.Context) error {
+	return r.Check(c, r)
+}

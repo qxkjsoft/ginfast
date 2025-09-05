@@ -54,9 +54,8 @@ func (s *TokenService) ParseToken(tokenString string) (*Claims, error) {
 }
 
 // ValidateToken 验证JWT令牌
-func (s *TokenService) ValidateToken(tokenString string) bool {
-	_, err := s.ParseToken(tokenString)
-	return err == nil
+func (s *TokenService) ValidateToken(tokenString string) (*Claims, error) {
+	return s.ParseToken(tokenString)
 }
 
 /**
@@ -92,21 +91,21 @@ func (s *TokenService) StoreToken(info *TokenInfo) error {
 }
 
 // ValidateTokenWithCache 验证JWT令牌（带缓存检查）
-func (s *TokenService) ValidateTokenWithCache(tokenString string) bool {
+func (s *TokenService) ValidateTokenWithCache(tokenString string) (*Claims, error) {
 	// 先验证JWT签名
 	claims, err := s.ParseToken(tokenString)
 	if err != nil {
-		return false
+		return nil, err
 	}
 
 	// 检查缓存中是否存在该token（白名单模式）
 	key := s.getTokenKey(claims.UserID, tokenString)
 	exists, err := s.RedisHelper.Exists(s.Ctx, key)
 	if err != nil || exists == 0 {
-		return false
+		return nil, errors.New("token not found")
 	}
 
-	return true
+	return claims, nil
 }
 
 // RevokeToken 撤销Token（从缓存中移除）
@@ -186,20 +185,22 @@ func (s *TokenService) ParseRefreshToken(tokenString string) (*RefreshTokenClaim
 }
 
 // ValidateRefreshToken 验证Refresh Token
-func (s *TokenService) ValidateRefreshToken(tokenString string) bool {
+func (s *TokenService) ValidateRefreshToken(tokenString string) (*RefreshTokenClaims, error) {
 	claims, err := s.ParseRefreshToken(tokenString)
 	if err != nil {
-		return false
+		return nil, err
 	}
 
 	// 检查Redis中是否存在该token
 	key := s.getRefreshTokenKey(claims.UserID)
 	storedToken, err := s.RedisHelper.Get(s.Ctx, key)
 	if err != nil {
-		return false
+		return nil, errors.New("refresh Token not found")
 	}
-
-	return storedToken == tokenString
+	if storedToken == tokenString {
+		return claims, nil
+	}
+	return nil, errors.New("invalid refresh token")
 }
 
 // RevokeRefreshToken 撤销Refresh Token
@@ -211,8 +212,8 @@ func (s *TokenService) RevokeRefreshToken(userID uint) error {
 // RefreshAccessToken 使用Refresh Token刷新Access Token
 func (s *TokenService) RefreshAccessToken(refreshTokenString string, user *ClaimsUser) (string, error) {
 	// 验证refresh token
-	if !s.ValidateRefreshToken(refreshTokenString) {
-		return "", jwt.ErrTokenInvalidClaims
+	if _, err := s.ValidateRefreshToken(refreshTokenString); err != nil {
+		return "", err
 	}
 
 	newAccessToken, err := s.GenerateToken(user)

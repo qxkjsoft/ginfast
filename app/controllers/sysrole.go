@@ -3,6 +3,7 @@ package controllers
 import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
+	"gin-fast/app/service"
 	"gin-fast/app/utils/common"
 	"strconv"
 
@@ -14,6 +15,31 @@ import (
 type SysRoleController struct {
 }
 
+// 根据用户ID获取角色菜单权限
+func (sc *SysRoleController) GetUserPermission(c *gin.Context) {
+	roleId, err := strconv.ParseUint(c.Param("roleId"), 10, 64)
+	if err != nil {
+		app.ZapLog.Error("Invalid role ID", zap.Error(err))
+		app.Response.Fail(c, "Invalid role ID")
+		return
+	}
+	sysRoleMenuList := models.NewSysRoleMenuList()
+	err = sysRoleMenuList.Find(func(d *gorm.DB) *gorm.DB {
+		return d.Where("role_id = ?", roleId)
+	})
+	if err != nil {
+		app.ZapLog.Error("获取角色菜单权限失败", zap.Error(err))
+		app.Response.Fail(c, "获取角色菜单权限失败")
+		return
+	}
+	app.Response.Success(c, gin.H{
+		"list": sysRoleMenuList.Map(func(m *models.SysRoleMenu) uint {
+			return m.MenuID
+		}),
+	})
+}
+
+// GetRoles 获取角色列表（树形结构）
 func (sc *SysRoleController) GetRoles(c *gin.Context) {
 	sysRoleList := models.NewSysRoleList()
 	err := sysRoleList.Find()
@@ -149,7 +175,12 @@ func (sc *SysRoleController) Add(c *gin.Context) {
 		app.Response.Fail(c, "新增角色失败")
 		return
 	}
-
+	// casbin 添加角色继承关系
+	if err = service.CasbinService.AddRoleInheritance(role.ID, req.ParentID); err != nil {
+		app.ZapLog.Error("添加角色继承关系失败", zap.Error(err))
+		app.Response.Fail(c, "添加角色继承关系失败")
+		return
+	}
 	app.Response.Success(c, role, "角色创建成功")
 }
 
@@ -230,6 +261,12 @@ func (sc *SysRoleController) Update(c *gin.Context) {
 		return
 	}
 
+	// 编辑角色继承关系
+	if err := service.CasbinService.EditRoleInheritance(role.ID, req.ParentID); err != nil {
+		app.ZapLog.Error("编辑角色继承关系失败", zap.Error(err))
+		app.Response.Fail(c, "编辑角色继承关系失败")
+		return
+	}
 	app.Response.Success(c, role, "角色更新成功")
 }
 
@@ -307,6 +344,101 @@ func (sc *SysRoleController) Delete(c *gin.Context) {
 		app.Response.Fail(c, "删除角色失败")
 		return
 	}
-
+	// 删除角色继承关系
+	if err := service.CasbinService.DeleteRoleInheritance(role.ID, role.ParentID); err != nil {
+		app.ZapLog.Error("删除角色继承关系失败", zap.Error(err))
+		app.Response.Fail(c, "删除角色继承关系失败")
+		return
+	}
 	app.Response.Success(c, nil, "角色删除成功")
+}
+
+// 为角色分配菜单权限
+func (sm *SysRoleController) AddRoleMenu(c *gin.Context) {
+	var req models.SysRoleMenuAssignRequest
+	if err := req.Validate(c); err != nil {
+		app.Response.Fail(c, err.Error())
+		return
+	}
+
+	// 检查角色是否存在
+	role := models.NewSysRole()
+	err := role.Find(func(d *gorm.DB) *gorm.DB {
+		return d.Where("id = ?", req.RoleID)
+	})
+	if err != nil {
+		app.ZapLog.Error("查询角色失败", zap.Error(err), zap.Uint("roleId", req.RoleID))
+		app.Response.Fail(c, "查询角色失败")
+		return
+	}
+	if role.IsEmpty() {
+		app.Response.Fail(c, "角色不存在")
+		return
+	}
+
+	// 检查菜单ID是否存在 - 优化为批量查询
+	menuList := models.NewSysMenuList()
+	err = menuList.Find(func(db *gorm.DB) *gorm.DB {
+		return db.Where("id in ?", req.MenuID).Select("id").Preload("Apis")
+	})
+	if err != nil {
+		app.ZapLog.Error("查询菜单失败", zap.Error(err), zap.Uint("roleId", req.RoleID), zap.Any("menuIds", req.MenuID))
+		app.Response.Fail(c, "查询菜单失败")
+		return
+	}
+
+	// 验证所有请求的菜单ID是否都存在
+	foundMenuIDs := make(map[uint]bool)
+	for _, menu := range menuList {
+		foundMenuIDs[menu.ID] = true
+	}
+
+	for _, menuID := range req.MenuID {
+		if !foundMenuIDs[menuID] {
+			app.Response.Fail(c, "菜单ID %d 不存在", menuID)
+			return
+		}
+	}
+
+	// 使用事务处理角色菜单权限分配
+	err = app.DB().Transaction(func(tx *gorm.DB) error {
+		// 先删除该角色的所有菜单权限
+		if err := tx.Where("role_id = ?", req.RoleID).Delete(&models.SysRoleMenu{}).Error; err != nil {
+			app.ZapLog.Error("删除角色菜单权限失败", zap.Error(err), zap.Uint("roleId", req.RoleID))
+			return err
+		}
+
+		// 批量插入新的角色菜单权限 - 优化为批量操作
+		var roleMenus []models.SysRoleMenu
+		for _, menuID := range req.MenuID {
+			roleMenus = append(roleMenus, models.SysRoleMenu{
+				RoleID: req.RoleID,
+				MenuID: menuID,
+			})
+		}
+
+		if len(roleMenus) > 0 {
+			if err := tx.CreateInBatches(roleMenus, 100).Error; err != nil {
+				app.ZapLog.Error("批量插入角色菜单权限失败", zap.Error(err), zap.Uint("roleId", req.RoleID), zap.Any("menuIds", req.MenuID))
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		app.ZapLog.Error("分配角色菜单权限失败", zap.Error(err), zap.Uint("roleId", req.RoleID), zap.Any("menuIds", req.MenuID))
+		app.Response.Fail(c, "分配角色菜单权限失败")
+		return
+	}
+
+	// 调整casbin权限
+	apis := menuList.GetApis().Unique()
+	if err := service.CasbinService.AddPoliciesForRole(req.RoleID, apis); err != nil {
+		app.ZapLog.Error("添加角色权限策略失败", zap.Error(err), zap.Uint("roleId", req.RoleID), zap.Any("apis", apis))
+		app.Response.Fail(c, "添加角色权限策略失败")
+		return
+	}
+	app.Response.Success(c, nil, "分配角色菜单权限成功")
 }

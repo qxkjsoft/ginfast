@@ -1,4 +1,4 @@
-package zaphook
+package service
 
 import (
 	"go.uber.org/zap/zapcore"

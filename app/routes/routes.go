@@ -15,6 +15,7 @@ var sysMenuControllers = &controllers.SysMenuController{}
 var sysDepartmentControllers = &controllers.SysDepartmentController{}
 var sysRoleControllers = &controllers.SysRoleController{}
 var sysDictControllers = &controllers.SysDictController{}
+var sysApiControllers = &controllers.SysApiController{}
 
 // InitRoutes 初始化路由
 func InitRoutes(engine *gin.Engine) {
@@ -38,7 +39,7 @@ func InitRoutes(engine *gin.Engine) {
 	// 受保护的路由
 	protected := engine.Group("/api")
 	protected.Use(middleware.JWTAuthMiddleware())
-	//protected.Use(middleware.CasbinMiddleware())
+	protected.Use(middleware.CasbinMiddleware())
 	{
 		// 用户管理路由组
 		users := protected.Group("/users")
@@ -62,8 +63,22 @@ func InitRoutes(engine *gin.Engine) {
 		// 系统菜单路由组
 		sysMenu := protected.Group("/sysMenu")
 		{
-			// 导出菜单
-			sysMenu.GET("/getMenu", sysMenuControllers.GetMenu)
+			// 获取当前用户有权限的菜单数据不含按钮
+			sysMenu.GET("/getRouters", sysMenuControllers.GetRouters)
+			// 获取完整的菜单列表
+			sysMenu.GET("/getMenuList", sysMenuControllers.GetMenuList)
+			// 根据ID获取菜单信息
+			sysMenu.GET("/:id", sysMenuControllers.GetByID)
+			// 新增菜单
+			sysMenu.POST("/add", sysMenuControllers.Add)
+			// 更新菜单
+			sysMenu.PUT("/edit", sysMenuControllers.Update)
+			// 删除菜单
+			sysMenu.DELETE("/delete", sysMenuControllers.Delete)
+			// 根据菜单ID获取API ID集合
+			sysMenu.GET("/apis/:id", sysMenuControllers.GetMenuApiIds)
+			// 为菜单分配API权限
+			sysMenu.POST("/setApis", sysMenuControllers.SetMenuApis)
 		}
 
 		// 系统部门路由组
@@ -71,14 +86,26 @@ func InitRoutes(engine *gin.Engine) {
 		{
 			// 部门列表
 			sysDepartment.GET("/getDivision", sysDepartmentControllers.GetDivision)
+			// 根据ID获取部门信息
+			sysDepartment.GET("/:id", sysDepartmentControllers.GetByID)
+			// 新增部门
+			sysDepartment.POST("/add", sysDepartmentControllers.Add)
+			// 更新部门
+			sysDepartment.PUT("/edit", sysDepartmentControllers.Update)
+			// 删除部门
+			sysDepartment.DELETE("/delete", sysDepartmentControllers.Delete)
 		}
 
 		// 系统角色路由组
 		sysRole := protected.Group("/sysRole")
 		{
-			// 获取角色列表（树形结构）
+			// 获取所有角色数据（树形结构）
 			sysRole.GET("/getRoles", sysRoleControllers.GetRoles)
-			// 角色列表（支持分页和过滤）
+			// 根据角色ID获取角色菜单权限
+			sysRole.GET("/getUserPermission/:roleId", sysRoleControllers.GetUserPermission)
+			// 为角色分配菜单权限
+			sysRole.POST("/addRoleMenu", sysRoleControllers.AddRoleMenu)
+			// 角色分页列表
 			sysRole.GET("/list", sysRoleControllers.List)
 			// 根据ID获取角色信息
 			sysRole.GET("/:id", sysRoleControllers.GetByID)
@@ -97,6 +124,21 @@ func InitRoutes(engine *gin.Engine) {
 			sysDict.GET("/getAllDicts", sysDictControllers.GetAllDicts)
 			// 根据字典编码获取字典及其字典项
 			sysDict.GET("/getByCode/:code", sysDictControllers.GetDictByCode)
+		}
+
+		// 系统API路由组
+		sysApi := protected.Group("/sysApi")
+		{
+			// API列表
+			sysApi.GET("/list", sysApiControllers.List)
+			// 根据ID获取API信息
+			sysApi.GET("/:id", sysApiControllers.GetByID)
+			// 新增API
+			sysApi.POST("/add", sysApiControllers.Add)
+			// 更新API
+			sysApi.PUT("/edit", sysApiControllers.Update)
+			// 删除API
+			sysApi.DELETE("/delete", sysApiControllers.Delete)
 		}
 	}
 }
