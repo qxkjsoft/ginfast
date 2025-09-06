@@ -1,6 +1,7 @@
 package response
 
 import (
+	"gin-fast/app/global/app"
 	"gin-fast/app/global/consts"
 	"net/http"
 
@@ -11,7 +12,7 @@ import (
 type DefaultResponseHandler struct{}
 
 // NewResponseHandler 创建新的响应处理器实例
-func NewResponseHandler() ResponseHandler {
+func NewResponseHandler() app.ResponseHandler {
 	return &DefaultResponseHandler{}
 }
 
@@ -19,7 +20,7 @@ func NewResponseHandler() ResponseHandler {
 type DefaultResponseConfig struct{}
 
 // NewResponseConfig 创建新的响应配置实例
-func NewResponseConfig() ResponseConfig {
+func NewResponseConfig() app.ResponseConfig {
 	return &DefaultResponseConfig{}
 }
 

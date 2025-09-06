@@ -2,11 +2,6 @@ package app
 
 import (
 	"gin-fast/app/global/consts"
-	"gin-fast/app/utils/cachehelper"
-
-	"gin-fast/app/utils/response"
-	"gin-fast/app/utils/tokenhelper"
-	"gin-fast/app/utils/ymlconfig"
 
 	"log"
 
@@ -15,19 +10,23 @@ import (
 )
 
 var (
-	BasePath         string                            // 定义项目的根目录
-	ConfigYml        ymlconfig.YmlConfigInterf         // 全局配置文件指针
-	GormDbMysql      *gorm.DB                          // mysql数据库连接
-	GormDbSqlserver  *gorm.DB                          // sqlserver数据库连接
-	GormDbPostgreSql *gorm.DB                          // postgresql数据库连接
-	ZapLog           *zap.Logger                       // 全局日志指针
-	CasbinV2         CasbinInterf                      // casbin指针
-	Cache            cachehelper.CacheInterf           // 缓存指针
-	TokenService     tokenhelper.TokenServiceInterface // token管理
-	Response         response.ResponseHandler
+	BasePath         string                // 定义项目的根目录
+	ConfigYml        YmlConfigInterf       // 全局配置文件指针
+	GormDbMysql      *gorm.DB              // mysql数据库连接
+	GormDbSqlserver  *gorm.DB              // sqlserver数据库连接
+	GormDbPostgreSql *gorm.DB              // postgresql数据库连接
+	ZapLog           *zap.Logger           // 全局日志指针
+	CasbinV2         CasbinInterf          // casbin指针
+	Cache            CacheInterf           // 缓存指针
+	TokenService     TokenServiceInterface // token管理
+	Response         ResponseHandler
 )
 
-// DB 获取默认的数据库连接
+/*
+ * @Description: 获取数据库连接
+ * @param sqlType 数据库类型 mysql sqlserver postgresql
+ * @return *gorm.DB
+ */
 func DB(sqlType ...string) *gorm.DB {
 	var dbType string
 	if len(sqlType) > 0 {

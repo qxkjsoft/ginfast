@@ -2,6 +2,7 @@ package cachehelper
 
 import (
 	"context"
+	"gin-fast/app/global/app"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -14,7 +15,7 @@ type redisHelper struct {
 }
 
 // NewRedisHelper 创建Redis助手实例
-func NewRedisHelper(addr, password string, db int) (CacheInterf, error) {
+func NewRedisHelper(addr, password string, db int) (app.CacheInterf, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     addr,     // Redis服务器地址
 		Password: password, // 密码

@@ -2,8 +2,8 @@ package common
 
 import (
 	"errors"
+	"gin-fast/app/global/app"
 	"gin-fast/app/global/consts"
-	"gin-fast/app/utils/tokenhelper"
 	"regexp"
 	"strings"
 
@@ -24,13 +24,13 @@ func GetAccessToken(c *gin.Context) (string, error) {
 }
 
 // GetClaims 从上下文获取 Claims
-func GetClaims(c *gin.Context) *tokenhelper.Claims {
+func GetClaims(c *gin.Context) *app.Claims {
 	claims, exists := c.Get(consts.BindContextKeyName)
 	if !exists {
 		return nil
 	}
 	// 类型断言
-	res, ok := claims.(*tokenhelper.Claims)
+	res, ok := claims.(*app.Claims)
 	if !ok {
 		return nil
 	}

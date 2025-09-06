@@ -1,6 +1,12 @@
-package tokenhelper
+package app
 
-// TokenService Token服务接口
+import (
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+)
+
+// TokenServiceInterface Token服务接口
 type TokenServiceInterface interface {
 	// GenerateToken 生成JWT令牌
 	GenerateToken(user *ClaimsUser) (string, error)
@@ -40,4 +46,38 @@ type TokenServiceInterface interface {
 
 	// RefreshAccessToken 使用Refresh Token刷新Access Token
 	RefreshAccessToken(refreshTokenString string, user *ClaimsUser) (string, error)
+}
+
+// ClaimsUser 用户声明信息
+type ClaimsUser struct {
+	UserID   uint   `json:"userId"`   // 用户ID
+	Username string `json:"username"` // 用户名
+}
+
+// Claims JWT声明结构
+type Claims struct {
+	ClaimsUser
+	jwt.RegisteredClaims
+}
+
+// RefreshTokenClaims Refresh Token声明结构
+type RefreshTokenClaims struct {
+	UserID uint `json:"userId"`
+	jwt.RegisteredClaims
+}
+
+// RefreshTokenInfo Refresh Token信息
+type RefreshTokenInfo struct {
+	UserID    uint      `json:"userId"`
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expiresAt"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+// TokenInfo Token信息
+type TokenInfo struct {
+	UserID    uint      `json:"userId"`
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expiresAt"`
+	CreatedAt time.Time `json:"createdAt"`
 }

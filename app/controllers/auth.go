@@ -7,8 +7,6 @@ import (
 	"gin-fast/app/utils/common"
 	"gin-fast/app/utils/passwordhelper"
 
-	"gin-fast/app/utils/tokenhelper"
-
 	"github.com/dchest/captcha"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -50,17 +48,15 @@ func (ac *AuthController) Login(c *gin.Context) {
 	// 生成token
 	user.Password = ""
 	// // token 不记录缓存
-	// token, err := app.TokenService.GenerateToken(&tokenhelper.ClaimsUser{
+	// token, err := app.TokenService.GenerateToken(&app.ClaimsUser{
 	// 	UserID:   user.ID,
 	// 	Username: user.Username,
-	// 	RawData:  *user,
 	// })
 
 	// // token 将记录缓存
-	token, err := app.TokenService.GenerateTokenWithCache(&tokenhelper.ClaimsUser{
+	token, err := app.TokenService.GenerateTokenWithCache(&app.ClaimsUser{
 		UserID:   user.ID,
 		Username: user.Username,
-		RawData:  *user,
 	})
 	if err != nil {
 		app.ZapLog.Error("生成token失败", zap.Error(err))
@@ -121,7 +117,7 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 
 	// 从数据库中获取用户信息
 	var user models.User
-	if err = app.GormDbMysql.First(&user, claims.UserID).Error; err != nil {
+	if err = app.DB().First(&user, claims.UserID).Error; err != nil {
 		app.ZapLog.Error("用户不存在", zap.Error(err))
 		app.Response.Fail(c, "用户不存在")
 		return
@@ -129,10 +125,9 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 
 	// 使用refresh token刷新access token
 	user.Password = ""
-	newAccessToken, err := app.TokenService.RefreshAccessToken(refreshToken, &tokenhelper.ClaimsUser{
+	newAccessToken, err := app.TokenService.RefreshAccessToken(refreshToken, &app.ClaimsUser{
 		UserID:   user.ID,
 		Username: user.Username,
-		RawData:  user,
 	})
 	if err != nil {
 		app.ZapLog.Error("刷新token失败", zap.Error(err))

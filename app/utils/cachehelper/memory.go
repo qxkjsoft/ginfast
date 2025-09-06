@@ -3,6 +3,7 @@ package cachehelper
 import (
 	"container/heap"
 	"context"
+	"gin-fast/app/global/app"
 	"sync"
 	"time"
 )
@@ -19,6 +20,7 @@ type memoryHelper struct {
 
 // cacheItem 缓存项结构
 type cacheItem struct {
+	key        string // 添加键字段
 	value      interface{}
 	expiration time.Time
 	index      int // 在堆中的索引
@@ -49,7 +51,7 @@ func (h *expiryHeap) Pop() interface{} {
 }
 
 // NewMemoryHelper 创建内存缓存助手实例
-func NewMemoryHelper() CacheInterf {
+func NewMemoryHelper() app.CacheInterf {
 	mh := &memoryHelper{
 		data:     make(map[string]*cacheItem),
 		ctx:      context.Background(),
@@ -73,6 +75,7 @@ func (m *memoryHelper) SetVal(ctx context.Context, key string, value interface{}
 
 	expirationTime := time.Now().Add(expiration)
 	item := &cacheItem{
+		key:        key,
 		value:      value,
 		expiration: expirationTime,
 	}
@@ -241,7 +244,7 @@ func (m *memoryHelper) cleanupExpired() {
 		// 从堆中移除
 		heap.Pop(&m.expiryQueue)
 		// 从map中移除
-		delete(m.data, item.value.(string))
+		delete(m.data, item.key)
 	}
 
 	// 重置定时器

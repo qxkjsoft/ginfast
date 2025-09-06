@@ -1,11 +1,12 @@
-package cachehelper
+package app
 
 import (
 	"context"
 	"time"
 )
 
-// RedisHelper Redis助手接口
+// CacheInterf 缓存接口
+// 定义了缓存操作的标准接口，支持Redis和内存缓存的统一抽象
 type CacheInterf interface {
 	// Set 设置键值对，并指定过期时间
 	Set(ctx context.Context, key string, value string, expiration time.Duration) error

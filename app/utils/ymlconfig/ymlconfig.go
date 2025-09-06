@@ -1,6 +1,8 @@
 package ymlconfig
 
 import (
+	"gin-fast/app/global/app"
+
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 
@@ -15,7 +17,7 @@ func init() {
 	lastChangeTime = time.Now()
 }
 
-func CreateYamlFactory(path string, fileName ...string) YmlConfigInterf {
+func CreateYamlFactory(path string, fileName ...string) app.YmlConfigInterf {
 
 	yamlConfig := viper.New()
 	// 配置文件所在目录

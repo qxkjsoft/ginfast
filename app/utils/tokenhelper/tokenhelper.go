@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gin-fast/app/utils/cachehelper"
+	"gin-fast/app/global/app"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -13,7 +13,7 @@ import (
 // TokenService Token服务
 type TokenService struct {
 	Ctx            context.Context
-	RedisHelper    cachehelper.CacheInterf
+	RedisHelper    app.CacheInterf
 	JWTSecret      string
 	TokenExpire    time.Duration
 	RefreshExpire  time.Duration
@@ -21,11 +21,11 @@ type TokenService struct {
 }
 
 /**
-	token管理，非缓存模式
+	token管理（非缓存模式）
 **/
 // GenerateToken 生成JWT令牌
-func (s *TokenService) GenerateToken(user *ClaimsUser) (string, error) {
-	claims := &Claims{
+func (s *TokenService) GenerateToken(user *app.ClaimsUser) (string, error) {
+	claims := &app.Claims{
 		ClaimsUser: *user,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.TokenExpire * time.Second)), // 过期时间
@@ -38,8 +38,8 @@ func (s *TokenService) GenerateToken(user *ClaimsUser) (string, error) {
 }
 
 // ParseToken 解析JWT令牌
-func (s *TokenService) ParseToken(tokenString string) (*Claims, error) {
-	claims := &Claims{}
+func (s *TokenService) ParseToken(tokenString string) (*app.Claims, error) {
+	claims := &app.Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(s.JWTSecret), nil
 	})
@@ -54,22 +54,22 @@ func (s *TokenService) ParseToken(tokenString string) (*Claims, error) {
 }
 
 // ValidateToken 验证JWT令牌
-func (s *TokenService) ValidateToken(tokenString string) (*Claims, error) {
+func (s *TokenService) ValidateToken(tokenString string) (*app.Claims, error) {
 	return s.ParseToken(tokenString)
 }
 
 /**
-	token管理，缓存模式
+	token管理（缓存模式）
 **/
 // GenerateTokenWithCache 生成JWT令牌并存储到缓存
-func (s *TokenService) GenerateTokenWithCache(user *ClaimsUser) (string, error) {
+func (s *TokenService) GenerateTokenWithCache(user *app.ClaimsUser) (string, error) {
 	tokenString, err := s.GenerateToken(user)
 	if err != nil {
 		return "", err
 	}
 
 	// 存储token到Redis
-	tokenInfo := &TokenInfo{
+	tokenInfo := &app.TokenInfo{
 		UserID:    user.UserID,
 		Token:     tokenString,
 		ExpiresAt: time.Now().Add(s.TokenExpire * time.Second),
@@ -85,13 +85,13 @@ func (s *TokenService) GenerateTokenWithCache(user *ClaimsUser) (string, error) 
 }
 
 // StoreToken 存储Token到Redis
-func (s *TokenService) StoreToken(info *TokenInfo) error {
+func (s *TokenService) StoreToken(info *app.TokenInfo) error {
 	key := s.getTokenKey(info.UserID, info.Token)
 	return s.RedisHelper.Set(s.Ctx, key, "1", time.Until(info.ExpiresAt))
 }
 
 // ValidateTokenWithCache 验证JWT令牌（带缓存检查）
-func (s *TokenService) ValidateTokenWithCache(tokenString string) (*Claims, error) {
+func (s *TokenService) ValidateTokenWithCache(tokenString string) (*app.Claims, error) {
 	// 先验证JWT签名
 	claims, err := s.ParseToken(tokenString)
 	if err != nil {
@@ -132,7 +132,7 @@ func (s *TokenService) getTokenKey(userID uint, tokenString string) string {
 // GenerateRefreshToken 生成Refresh Token
 func (s *TokenService) GenerateRefreshToken(userID uint) (string, error) {
 	expirationTime := time.Now().Add(s.RefreshExpire * time.Second)
-	claims := &RefreshTokenClaims{
+	claims := &app.RefreshTokenClaims{
 		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
@@ -148,7 +148,7 @@ func (s *TokenService) GenerateRefreshToken(userID uint) (string, error) {
 	}
 
 	// 存储refresh token到Redis
-	refreshTokenInfo := &RefreshTokenInfo{
+	refreshTokenInfo := &app.RefreshTokenInfo{
 		UserID:    userID,
 		Token:     tokenString,
 		ExpiresAt: expirationTime,
@@ -164,14 +164,14 @@ func (s *TokenService) GenerateRefreshToken(userID uint) (string, error) {
 }
 
 // StoreRefreshToken 存储Refresh Token到Redis
-func (s *TokenService) StoreRefreshToken(info *RefreshTokenInfo) error {
+func (s *TokenService) StoreRefreshToken(info *app.RefreshTokenInfo) error {
 	key := s.getRefreshTokenKey(info.UserID)
 	return s.RedisHelper.Set(s.Ctx, key, info.Token, time.Until(info.ExpiresAt))
 }
 
 // ParseRefreshToken 解析Refresh Token
-func (s *TokenService) ParseRefreshToken(tokenString string) (*RefreshTokenClaims, error) {
-	claims := &RefreshTokenClaims{}
+func (s *TokenService) ParseRefreshToken(tokenString string) (*app.RefreshTokenClaims, error) {
+	claims := &app.RefreshTokenClaims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(s.JWTSecret), nil
 	})
@@ -185,7 +185,7 @@ func (s *TokenService) ParseRefreshToken(tokenString string) (*RefreshTokenClaim
 }
 
 // ValidateRefreshToken 验证Refresh Token
-func (s *TokenService) ValidateRefreshToken(tokenString string) (*RefreshTokenClaims, error) {
+func (s *TokenService) ValidateRefreshToken(tokenString string) (*app.RefreshTokenClaims, error) {
 	claims, err := s.ParseRefreshToken(tokenString)
 	if err != nil {
 		return nil, err
@@ -210,7 +210,7 @@ func (s *TokenService) RevokeRefreshToken(userID uint) error {
 }
 
 // RefreshAccessToken 使用Refresh Token刷新Access Token
-func (s *TokenService) RefreshAccessToken(refreshTokenString string, user *ClaimsUser) (string, error) {
+func (s *TokenService) RefreshAccessToken(refreshTokenString string, user *app.ClaimsUser) (string, error) {
 	// 验证refresh token
 	if _, err := s.ValidateRefreshToken(refreshTokenString); err != nil {
 		return "", err

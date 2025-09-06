@@ -23,8 +23,8 @@ import (
 )
 
 func init() {
+	// 检查必要的文件夹是否存在
 	checkRequiredFolders()
-
 	// 配置文件
 	app.ConfigYml = ymlconfig.CreateYamlFactory(app.BasePath + "/config")
 	app.ConfigYml.ConfigFileChangeListen()
@@ -160,7 +160,7 @@ func createZapFactory(entry func(zapcore.Entry) error) *zap.Logger {
 }
 
 // newCache 初始化缓存
-func newCache() cachehelper.CacheInterf {
+func newCache() app.CacheInterf {
 	cacheType := app.ConfigYml.GetString("Server.CacheType")
 	if cacheType == "redis" {
 		redisHelper, err := cachehelper.NewRedisHelper(
@@ -177,7 +177,7 @@ func newCache() cachehelper.CacheInterf {
 	return cachehelper.NewMemoryHelper()
 }
 
-func newTokenService(cache cachehelper.CacheInterf) tokenhelper.TokenServiceInterface {
+func newTokenService(cache app.CacheInterf) app.TokenServiceInterface {
 	return &tokenhelper.TokenService{
 		RedisHelper:    cache,
 		JWTSecret:      app.ConfigYml.GetString("Token.JwtTokenSignKey"),
