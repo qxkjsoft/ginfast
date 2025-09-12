@@ -11,23 +11,23 @@ type TokenServiceInterface interface {
 	// GenerateToken 生成JWT令牌
 	GenerateToken(user *ClaimsUser) (string, error)
 
-	// GenerateTokenWithCache 生成JWT令牌并存储到缓存
-	GenerateTokenWithCache(user *ClaimsUser) (string, error)
-
-	// StoreToken 存储Token到Redis
-	StoreToken(info *TokenInfo) error
-
-	// ValidateTokenWithCache 验证JWT令牌（带缓存检查）
-	ValidateTokenWithCache(tokenString string) (*Claims, error)
-
-	// RevokeToken 撤销Token（从缓存中移除）
-	RevokeToken(tokenString string) error
-
 	// ParseToken 解析JWT令牌
 	ParseToken(tokenString string) (*Claims, error)
 
 	// ValidateToken 验证JWT令牌
 	ValidateToken(tokenString string) (*Claims, error)
+
+	// GenerateTokenWithCache 生成JWT令牌并存储到缓存
+	GenerateTokenWithCache(user *ClaimsUser) (string, error)
+
+	// StoreToken 存储Token到Redis
+	StoreTokenWithCache(info *TokenInfo) error
+
+	// ValidateTokenWithCache 验证JWT令牌（带缓存检查）
+	ValidateTokenWithCache(tokenString string) (*Claims, error)
+
+	// RevokeToken 撤销Token（从缓存中移除）
+	RevokeTokenWithCache(tokenString string) error
 
 	// GenerateRefreshToken 生成Refresh Token
 	GenerateRefreshToken(userID uint) (string, error)
@@ -46,6 +46,9 @@ type TokenServiceInterface interface {
 
 	// RefreshAccessToken 使用Refresh Token刷新Access Token
 	RefreshAccessToken(refreshTokenString string, user *ClaimsUser) (string, error)
+
+	// RefreshAccessToken 使用Refresh Token刷新Access Token并记录在缓存中
+	RefreshAccessTokenWithCache(refreshTokenString string, user *ClaimsUser) (string, error)
 }
 
 // ClaimsUser 用户声明信息

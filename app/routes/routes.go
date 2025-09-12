@@ -28,7 +28,7 @@ func InitRoutes(engine *gin.Engine) {
 	// 公开路由
 	public := engine.Group("/api")
 	{
-		public.POST("/login", middleware.CaptchaMiddleware(false), authControllers.Login)
+		public.POST("/login", middleware.CaptchaMiddleware(app.ConfigYml.GetBool("Captcha.open")), authControllers.Login)
 		public.POST("/refreshToken", authControllers.RefreshToken)
 		// 生成验证码ID
 		public.GET("/captcha/id", authControllers.GetCaptchaId)

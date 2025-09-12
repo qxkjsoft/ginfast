@@ -6,7 +6,7 @@ HttpServer:
   AllowCrossDomain: true    #是否允许跨域
 Token:
   JwtTokenSignKey:  "gin-fast"   #设置token生成时加密的签名
-  JwtTokenExpire:  43200    #设置token过期时间，单位秒 默认43200=12小时
+  JwtTokenExpire:  3600    #设置token过期时间，单位秒 默认43200=12小时
   JwtTokenRefreshExpire:  2592000  #设置刷新token过期时间，单位秒 默认2592000=30天
   CacheKeyPrefix: "gin-fast:"  # 缓存前缀
 Redis:
@@ -44,6 +44,7 @@ Casbin:
     [matchers]
     m = g(r.sub, p.sub) && keyMatch2(r.obj, p.obj) && r.act == p.act
 Captcha:
+  open : true  # 是否开启验证码功能
   length: 4   # 验证码生成时的长度
 Gormv2: # 只针对 gorm  操作数据库有效
   UseDbType: "mysql"   # 默认使用的数据库类型（mysql、sqlserver、postgresql）

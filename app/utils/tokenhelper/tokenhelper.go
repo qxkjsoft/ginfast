@@ -76,7 +76,7 @@ func (s *TokenService) GenerateTokenWithCache(user *app.ClaimsUser) (string, err
 		CreatedAt: time.Now(),
 	}
 
-	err = s.StoreToken(tokenInfo)
+	err = s.StoreTokenWithCache(tokenInfo)
 	if err != nil {
 		return "", err
 	}
@@ -85,8 +85,8 @@ func (s *TokenService) GenerateTokenWithCache(user *app.ClaimsUser) (string, err
 }
 
 // StoreToken 存储Token到Redis
-func (s *TokenService) StoreToken(info *app.TokenInfo) error {
-	key := s.getTokenKey(info.UserID, info.Token)
+func (s *TokenService) StoreTokenWithCache(info *app.TokenInfo) error {
+	key := s.getTokenKeyWithCache(info.UserID, info.Token)
 	return s.RedisHelper.Set(s.Ctx, key, "1", time.Until(info.ExpiresAt))
 }
 
@@ -99,7 +99,7 @@ func (s *TokenService) ValidateTokenWithCache(tokenString string) (*app.Claims, 
 	}
 
 	// 检查缓存中是否存在该token（白名单模式）
-	key := s.getTokenKey(claims.UserID, tokenString)
+	key := s.getTokenKeyWithCache(claims.UserID, tokenString)
 	exists, err := s.RedisHelper.Exists(s.Ctx, key)
 	if err != nil || exists == 0 {
 		return nil, errors.New("token not found")
@@ -109,18 +109,18 @@ func (s *TokenService) ValidateTokenWithCache(tokenString string) (*app.Claims, 
 }
 
 // RevokeToken 撤销Token（从缓存中移除）
-func (s *TokenService) RevokeToken(tokenString string) error {
+func (s *TokenService) RevokeTokenWithCache(tokenString string) error {
 	claims, err := s.ParseToken(tokenString)
 	if err != nil {
 		return err
 	}
 
-	key := s.getTokenKey(claims.UserID, tokenString)
+	key := s.getTokenKeyWithCache(claims.UserID, tokenString)
 	return s.RedisHelper.Del(s.Ctx, key)
 }
 
 // getTokenKey 获取Redis中存储Token的key
-func (s *TokenService) getTokenKey(userID uint, tokenString string) string {
+func (s *TokenService) getTokenKeyWithCache(userID uint, tokenString string) string {
 	// 使用token的简短哈希作为key的一部分，避免key过长
 	tokenHash := fmt.Sprintf("%x", len(tokenString))
 	return fmt.Sprintf("%stoken:%d:%s", s.CacheKeyPrefix, userID, tokenHash)
@@ -217,6 +217,21 @@ func (s *TokenService) RefreshAccessToken(refreshTokenString string, user *app.C
 	}
 
 	newAccessToken, err := s.GenerateToken(user)
+	if err != nil {
+		return "", err
+	}
+
+	return newAccessToken, nil
+}
+
+// RefreshAccessToken 使用Refresh Token刷新Access Token 并记录到缓存中
+func (s *TokenService) RefreshAccessTokenWithCache(refreshTokenString string, user *app.ClaimsUser) (string, error) {
+	// 验证refresh token
+	if _, err := s.ValidateRefreshToken(refreshTokenString); err != nil {
+		return "", err
+	}
+
+	newAccessToken, err := s.GenerateTokenWithCache(user)
 	if err != nil {
 		return "", err
 	}

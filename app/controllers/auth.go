@@ -17,7 +17,14 @@ import (
 type AuthController struct {
 }
 
-// Login 用户登录
+/*
+*
+
+	Login 用户登录
+	目前accesstoken是无缓存模式, 想要改成缓存模式需要调整:  Login、RefreshToken、Logout及
+
+*
+*/
 func (ac *AuthController) Login(c *gin.Context) {
 	var req models.LoginRequest
 	if err := req.Validate(c); err != nil {
@@ -47,17 +54,17 @@ func (ac *AuthController) Login(c *gin.Context) {
 
 	// 生成token
 	user.Password = ""
-	// // token 不记录缓存
-	// token, err := app.TokenService.GenerateToken(&app.ClaimsUser{
-	// 	UserID:   user.ID,
-	// 	Username: user.Username,
-	// })
-
-	// // token 将记录缓存
-	token, err := app.TokenService.GenerateTokenWithCache(&app.ClaimsUser{
+	// token 不记录缓存
+	token, err := app.TokenService.GenerateToken(&app.ClaimsUser{
 		UserID:   user.ID,
 		Username: user.Username,
 	})
+
+	// // token 将记录缓存
+	// token, err := app.TokenService.GenerateTokenWithCache(&app.ClaimsUser{
+	// 	UserID:   user.ID,
+	// 	Username: user.Username,
+	// })
 	if err != nil {
 		app.ZapLog.Error("生成token失败", zap.Error(err))
 		app.Response.Fail(c, "生成token失败")
@@ -134,7 +141,7 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 		app.Response.Fail(c, "刷新token失败")
 		return
 	}
-	claims1, err := app.TokenService.ParseRefreshToken(newAccessToken)
+	claims1, err := app.TokenService.ParseToken(newAccessToken)
 	if err != nil {
 		app.ZapLog.Error("解析token失败", zap.Error(err))
 		app.Response.Fail(c, "解析token失败")
@@ -154,15 +161,16 @@ func (ac *AuthController) Logout(c *gin.Context) {
 		app.Response.Fail(c, "用户未登录")
 		return
 	}
-	// 撤销 access token
-	tokenString, err := common.GetAccessToken(c)
-	if err != nil {
-		app.Response.Fail(c, "获取access token失败")
-		return
-	}
-	app.TokenService.RevokeToken(tokenString)
+	// 撤销 access token（缓存模式）
+	// tokenString, err := common.GetAccessToken(c)
+	// if err != nil {
+	// 	app.Response.Fail(c, "获取access token失败")
+	// 	return
+	// }
+	// app.TokenService.RevokeTokenWithCache(tokenString)
+
 	// 撤销refresh token
-	err = app.TokenService.RevokeRefreshToken(claims.UserID)
+	err := app.TokenService.RevokeRefreshToken(claims.UserID)
 	if err != nil {
 		app.ZapLog.Error("登出失败", zap.Error(err))
 		app.Response.Fail(c, "登出失败")

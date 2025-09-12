@@ -69,10 +69,10 @@ func (r *CaptchaImgRequest) Validate(c *gin.Context) error {
 		return err
 	}
 	if r.Width == 0 {
-		r.Width = 130
+		r.Width = 160
 	}
 	if r.Height == 0 {
-		r.Height = 30
+		r.Height = 50
 	}
 	return nil
 }

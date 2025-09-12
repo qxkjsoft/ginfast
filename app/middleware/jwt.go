@@ -19,15 +19,23 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		// 带缓存检查
-		claims, err := app.TokenService.ValidateTokenWithCache(tokenString)
+		// // 带缓存检查
+		// claims, err := app.TokenService.ValidateTokenWithCache(tokenString)
+		// if err != nil {
+		// 	app.ZapLog.Error("Invalid token", zap.Error(err))
+		// 	c.JSON(http.StatusUnauthorized, gin.H{"message": "Invalid token"})
+		// 	c.Abort()
+		// 	return
+		// }
+
+		// 非缓存模式
+		claims, err := app.TokenService.ValidateToken(tokenString)
 		if err != nil {
 			app.ZapLog.Error("Invalid token", zap.Error(err))
 			c.JSON(http.StatusUnauthorized, gin.H{"message": "Invalid token"})
 			c.Abort()
 			return
 		}
-
 		// 将用户信息存储到上下文中
 		c.Set(consts.BindContextKeyName, claims)
 		c.Next()
