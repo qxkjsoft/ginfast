@@ -15,6 +15,7 @@ var sysMenuControllers = &controllers.SysMenuController{}
 var sysDepartmentControllers = &controllers.SysDepartmentController{}
 var sysRoleControllers = &controllers.SysRoleController{}
 var sysDictControllers = &controllers.SysDictController{}
+var sysDictItemControllers = &controllers.SysDictItemController{}
 var sysApiControllers = &controllers.SysApiController{}
 
 // InitRoutes 初始化路由
@@ -124,6 +125,35 @@ func InitRoutes(engine *gin.Engine) {
 			sysDict.GET("/getAllDicts", sysDictControllers.GetAllDicts)
 			// 根据字典编码获取字典及其字典项
 			sysDict.GET("/getByCode/:code", sysDictControllers.GetDictByCode)
+			// 字典分页列表
+			sysDict.GET("/list", sysDictControllers.List)
+			// 根据ID获取字典信息
+			sysDict.GET("/:id", sysDictControllers.GetByID)
+			// 新增字典
+			sysDict.POST("/add", sysDictControllers.Add)
+			// 更新字典
+			sysDict.PUT("/edit", sysDictControllers.Update)
+			// 删除字典
+			sysDict.DELETE("/delete", sysDictControllers.Delete)
+		}
+
+		// 系统字典项路由组
+		sysDictItem := protected.Group("/sysDictItem")
+		{
+			// 字典项列表（无分页）
+			sysDictItem.GET("/list", sysDictItemControllers.List)
+			// 根据ID获取字典项信息
+			sysDictItem.GET("/:id", sysDictItemControllers.GetByID)
+			// 根据字典ID获取字典项列表
+			sysDictItem.GET("/getByDictId/:dictId", sysDictItemControllers.GetByDictID)
+			// 根据字典编码获取字典项列表
+			sysDictItem.GET("/getByDictCode/:dictCode", sysDictItemControllers.GetByDictCode)
+			// 新增字典项
+			sysDictItem.POST("/add", sysDictItemControllers.Add)
+			// 更新字典项
+			sysDictItem.PUT("/edit", sysDictItemControllers.Update)
+			// 删除字典项
+			sysDictItem.DELETE("/delete", sysDictItemControllers.Delete)
 		}
 
 		// 系统API路由组
