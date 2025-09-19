@@ -10,11 +10,11 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
 type UserController struct {
+	Common
 }
 
 // 获取当前登录用户信息
@@ -22,70 +22,20 @@ func (uc *UserController) GetProfile(c *gin.Context) {
 	// 从上下文中获取用户ID
 	claims := common.GetClaims(c)
 	if claims == nil {
-		app.Response.Fail(c, "用户未登录")
-		return
+		uc.FailAndAbort(c, "用户未登录", nil)
 	}
 
-	// 获取用户信息
-	user := models.NewUser()
-	err := user.GetUserByID(claims.UserID)
+	user, err := service.UserServices.GetUserProfile(claims.UserID)
 	if err != nil {
-		app.ZapLog.Error("用户不存在", zap.Error(err))
-		app.Response.Fail(c, "用户不存在")
-		return
+		uc.FailAndAbort(c, "获取用户信息失败", err)
 	}
-
-	// 查询关联角色关联的按钮菜单权限
-	permissions := []string{}
-	if !user.Roles.IsEmpty() {
-		// 获取所有角色ID
-		roleIDs := user.Roles.Map(func(role *models.SysRole) interface{} {
-			return role.ID
-		})
-
-		// 查询角色关联的菜单ID
-		roleMenuList := models.NewSysRoleMenuList()
-		err = roleMenuList.Find(func(db *gorm.DB) *gorm.DB {
-			return db.Where("role_id IN ?", roleIDs)
-		})
-		if err != nil {
-			app.ZapLog.Error("查询角色菜单关联失败", zap.Error(err))
-		} else if len(roleMenuList) > 0 {
-			// 获取菜单ID列表
-			menuIDs := roleMenuList.Map(func(roleMenu *models.SysRoleMenu) uint {
-				return roleMenu.MenuID
-			})
-
-			// 查询按钮类型的菜单（type=3）
-			buttonMenus := models.NewSysMenuList()
-			err = buttonMenus.Find(func(db *gorm.DB) *gorm.DB {
-				return db.Select("permission").Where("id IN ? AND type = ? AND permission !=''", menuIDs, 3)
-			})
-			if err != nil {
-				app.ZapLog.Error("查询按钮菜单失败", zap.Error(err))
-			} else {
-				// 提取权限标识
-				permissionSet := make(map[string]bool)
-				for _, menu := range buttonMenus {
-					permissionSet[menu.Permission] = true
-				}
-				// 转换为切片
-				for permission := range permissionSet {
-					permissions = append(permissions, permission)
-				}
-			}
-		}
-	}
-
-	app.Response.Success(c, gin.H{
-		"id":       user.ID,
-		"avatar":   user.Avatar,
-		"username": user.Username,
-		"nickname": user.NickName,
-		"roles": user.Roles.Map(func(role *models.SysRole) interface{} {
-			return role.ID
-		}),
-		"permissions": permissions,
+	uc.Success(c, gin.H{
+		"id":          user.ID,
+		"avatar":      user.Avatar,
+		"username":    user.Username,
+		"nickname":    user.NickName,
+		"roles":       user.Roles.GetRoleIDs(),
+		"permissions": user.Permissions,
 	})
 }
 
@@ -93,24 +43,21 @@ func (uc *UserController) GetProfile(c *gin.Context) {
 func (uc *UserController) List(c *gin.Context) {
 	var req models.UserListRequest
 	if err := req.Validate(c); err != nil {
-		app.Response.Fail(c, err.Error())
-		return
+		uc.FailAndAbort(c, err.Error(), err)
 	}
 	var count int64
 	err := app.DB().Model(&models.User{}).Count(&count).Error
 	if err != nil {
-		app.Response.Fail(c, err.Error())
-		return
+		uc.FailAndAbort(c, err.Error(), err)
 	}
 	userList := models.NewUserList()
 	err = userList.Find(req.Paginate(), func(d *gorm.DB) *gorm.DB {
 		return d.Omit("password").Preload("Roles")
 	})
 	if err != nil {
-		app.Response.Fail(c, err.Error())
-		return
+		uc.FailAndAbort(c, err.Error(), err)
 	}
-	app.Response.Success(c, gin.H{
+	uc.Success(c, gin.H{
 		"list":  userList,
 		"total": count,
 	})
@@ -123,50 +70,37 @@ func (uc *UserController) GetUserByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		app.ZapLog.Error("用户不存在", zap.Error(err))
-		app.Response.Fail(c, "Invalid user ID")
-		return
+		uc.FailAndAbort(c, "Invalid user ID", err)
 	}
 
 	// 获取用户信息
-	user := models.NewUser()
-	err = user.GetUserByID(uint(id))
+	user, err := service.UserServices.GetUserProfile(uint(id))
 	if err != nil {
-		app.ZapLog.Error("用户不存在", zap.Error(err))
-		app.Response.Fail(c, "用户不存在")
-		return
+		uc.FailAndAbort(c, "获取用户信息失败", err)
 	}
-
-	app.Response.Success(c, user)
+	user.Password = ""
+	uc.Success(c, user)
 }
 
 // 新增用户
 func (uc *UserController) Add(c *gin.Context) {
 	var req models.AddRequest
 	if err := req.Validate(c); err != nil {
-		app.Response.Fail(c, err.Error())
-		return
+		uc.FailAndAbort(c, err.Error(), err)
 	}
 	// 检查用户名是否已存在
 	user := models.NewUser()
 	err := user.GetUserByUsername(req.UserName)
 	if err != nil {
-		app.ZapLog.Error("新增用户失败", zap.Error(err))
-		app.Response.Fail(c, err.Error())
-		return
+		uc.FailAndAbort(c, err.Error(), err)
 	}
 	if !user.IsEmpty() {
-		app.ZapLog.Error("用户已存在", zap.Error(err))
-		app.Response.Fail(c, "用户已存在")
-		return
-
+		uc.FailAndAbort(c, "用户已存在", nil)
 	}
 	// 密码加密
 	hashedPassword, err := passwordhelper.HashPassword(req.Password)
 	if err != nil {
-		app.ZapLog.Error("新增用户失败", zap.Error(err))
-		app.Response.Fail(c, "Failed to hash password")
-		return
+		uc.FailAndAbort(c, "Failed to hash password", err)
 	}
 
 	// 使用事务创建用户和角色关联
@@ -205,60 +139,41 @@ func (uc *UserController) Add(c *gin.Context) {
 	})
 
 	if err != nil {
-		app.ZapLog.Error("新增用户失败", zap.Error(err))
-		app.Response.Fail(c, "Failed to create user")
-		return
-	}
-	// casbin 为用户分配角色
-	// err = app.CasbinV2.AddRolesForUserByID(user.ID, req.Roles)
-	// if err != nil {
-	// 	app.ZapLog.Error("新增用户失败", zap.Error(err))
-	// 	app.Response.Fail(c, "Failed to create user")
-	// 	return
-	// }
-	if err = service.CasbinService.AddRoleForUser(user.ID, req.Roles); err != nil {
-		app.ZapLog.Error("新增用户失败", zap.Error(err))
-		app.Response.Fail(c, "Failed to create user")
-		return
+		uc.FailAndAbort(c, "Failed to create user", err)
 	}
 
-	app.Response.Success(c, nil, "User created successfully")
+	if err = service.CasbinService.AddRoleForUser(user.ID, req.Roles); err != nil {
+		uc.FailAndAbort(c, "Failed to create user", err)
+	}
+
+	uc.SuccessWithMessage(c, "User created successfully", nil)
 }
 
 // UpdateProfile 更新用户资料
 func (uc *UserController) Update(c *gin.Context) {
 	var req models.UpdateRequest
 	if err := req.Validate(c); err != nil {
-		app.Response.Fail(c, err.Error())
-		return
+		uc.FailAndAbort(c, err.Error(), err)
 	}
 
 	// 检查用户是否存在
 	user := models.NewUser()
 	err := user.GetUserByID(req.Id)
 	if err != nil {
-		app.ZapLog.Error("更新用户失败", zap.Error(err))
-		app.Response.Fail(c, err.Error())
-		return
+		uc.FailAndAbort(c, err.Error(), err)
 	}
 	if user.IsEmpty() {
-		app.ZapLog.Error("用户不存在")
-		app.Response.Fail(c, "用户不存在")
-		return
+		uc.FailAndAbort(c, "用户不存在", nil)
 	}
 
 	// 检查用户名是否与其他用户冲突（排除当前用户）
 	existUser := models.NewUser()
 	err = existUser.GetUserByUsername(req.UserName)
 	if err != nil {
-		app.ZapLog.Error("更新用户失败", zap.Error(err))
-		app.Response.Fail(c, err.Error())
-		return
+		uc.FailAndAbort(c, err.Error(), err)
 	}
 	if !existUser.IsEmpty() && existUser.ID != req.Id {
-		app.ZapLog.Error("用户名已被其他用户使用")
-		app.Response.Fail(c, "用户名已被其他用户使用")
-		return
+		uc.FailAndAbort(c, "用户名已被其他用户使用", nil)
 	}
 
 	// 使用事务更新用户和角色关联
@@ -300,54 +215,31 @@ func (uc *UserController) Update(c *gin.Context) {
 	})
 
 	if err != nil {
-		app.ZapLog.Error("更新用户失败", zap.Error(err))
-		app.Response.Fail(c, "更新用户失败")
-		return
-	}
-	// casbin 修改用户角色
-	// err = app.CasbinV2.DeleteRolesForUserByID(user.ID, nil)
-	// if err != nil {
-	// 	app.ZapLog.Error("更新用户失败", zap.Error(err))
-	// 	app.Response.Fail(c, "更新用户失败")
-	// 	return
-	// }
-	// if len(req.Roles) > 0 {
-	// 	err = app.CasbinV2.AddRolesForUserByID(user.ID, req.Roles)
-	// 	if err != nil {
-	// 		app.ZapLog.Error("更新用户失败", zap.Error(err))
-	// 		app.Response.Fail(c, "更新用户失败")
-	// 		return
-	// 	}
-	// }
-	if err = service.CasbinService.EditUserRoles(user.ID, req.Roles); err != nil {
-		app.ZapLog.Error("更新用户失败", zap.Error(err))
-		app.Response.Fail(c, "更新用户失败")
-		return
+		uc.FailAndAbort(c, "更新用户失败", err)
 	}
 
-	app.Response.Success(c, nil, "更新成功")
+	if err = service.CasbinService.EditUserRoles(user.ID, req.Roles); err != nil {
+		uc.FailAndAbort(c, "更新用户失败", err)
+	}
+
+	uc.SuccessWithMessage(c, "更新成功", nil)
 }
 
 // Delete 删除用户
 func (uc *UserController) Delete(c *gin.Context) {
 	var req models.DeleteRequest
 	if err := req.Validate(c); err != nil {
-		app.Response.Fail(c, err.Error())
-		return
+		uc.FailAndAbort(c, err.Error(), err)
 	}
 
 	// 检查用户是否存在
 	user := models.NewUser()
 	err := user.GetUserByID(req.Id)
 	if err != nil {
-		app.ZapLog.Error("删除用户失败", zap.Error(err))
-		app.Response.Fail(c, err.Error())
-		return
+		uc.FailAndAbort(c, err.Error(), err)
 	}
 	if user.IsEmpty() {
-		app.ZapLog.Error("用户不存在")
-		app.Response.Fail(c, "用户不存在")
-		return
+		uc.FailAndAbort(c, "用户不存在", nil)
 	}
 
 	// 使用事务删除用户和角色关联
@@ -366,22 +258,74 @@ func (uc *UserController) Delete(c *gin.Context) {
 	})
 
 	if err != nil {
-		app.ZapLog.Error("删除用户失败", zap.Error(err))
-		app.Response.Fail(c, "删除用户失败")
-		return
+		uc.FailAndAbort(c, "删除用户失败", err)
 	}
 
-	// casbin 移除用户角色
-	// err = app.CasbinV2.DeleteRolesForUserByID(user.ID, nil)
-	// if err != nil {
-	// 	app.ZapLog.Error("删除用户失败", zap.Error(err))
-	// 	app.Response.Fail(c, "删除用户失败")
-	// 	return
-	// }
 	if err = service.CasbinService.DeleteUserRoles(user.ID, nil); err != nil {
-		app.ZapLog.Error("删除用户失败", zap.Error(err))
-		app.Response.Fail(c, "删除用户失败")
-		return
+		uc.FailAndAbort(c, "删除用户失败", err)
 	}
-	app.Response.Success(c, nil, "删除成功")
+	uc.SuccessWithMessage(c, "删除成功", nil)
+}
+
+// UpdateAccount 更新用户账户信息（密码、手机号、邮箱）
+func (uc *UserController) UpdateAccount(c *gin.Context) {
+	var req models.UpdateAccountRequest
+	if err := req.Validate(c); err != nil {
+		uc.FailAndAbort(c, err.Error(), err)
+	}
+
+	// 检查用户是否存在
+	user := models.NewUser()
+	err := user.GetUserByID(req.ID)
+	if err != nil {
+		uc.FailAndAbort(c, err.Error(), err)
+	}
+	if user.IsEmpty() {
+		uc.FailAndAbort(c, "用户不存在", nil)
+	}
+
+	// 检查手机号是否已被其他用户使用
+	if req.Phone != "" {
+		existUser := models.NewUser()
+		err = existUser.GetUserByPhone(req.Phone)
+		if err != nil {
+			uc.FailAndAbort(c, err.Error(), err)
+		}
+		if !existUser.IsEmpty() && existUser.ID != req.ID {
+			uc.FailAndAbort(c, "手机号已被其他用户使用", nil)
+		}
+	}
+
+	// 检查邮箱是否已被其他用户使用
+	if req.Email != "" {
+		existUser := models.NewUser()
+		err = existUser.GetUserByEmail(req.Email)
+		if err != nil {
+			uc.FailAndAbort(c, err.Error(), err)
+		}
+		if !existUser.IsEmpty() && existUser.ID != req.ID {
+			uc.FailAndAbort(c, "邮箱已被其他用户使用", nil)
+		}
+	}
+
+	// 加密新密码
+	hashedPassword, err := passwordhelper.HashPassword(req.Password)
+	if err != nil {
+		uc.FailAndAbort(c, "密码加密失败", err)
+	}
+
+	// 更新用户信息
+	user.Password = string(hashedPassword)
+	if req.Phone != "" {
+		user.Phone = req.Phone
+	}
+	if req.Email != "" {
+		user.Email = req.Email
+	}
+
+	if err := app.DB().Save(user).Error; err != nil {
+		uc.FailAndAbort(c, "更新用户信息失败", err)
+	}
+
+	uc.SuccessWithMessage(c, "账户信息更新成功", nil)
 }

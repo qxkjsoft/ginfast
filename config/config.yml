@@ -2,11 +2,13 @@ Server:
   AppDebug: true   # 设置程序所处的模式，debug=true 调试模式，日志优先显示在控制台， debug=false 非调试模式，日志将写入日志文件
   CacheType: "redis" #缓存模式 memory OR redis
 HttpServer:
-  Port: ":8080"
+  Port: ":8080"    # 服务端口
   AllowCrossDomain: true    #是否允许跨域
+  ServerRootPath: "/public" # 静态资源路由路径
+  ServerRoot: "./resource/public" # 静态资源根目录
 Token:
   JwtTokenSignKey:  "gin-fast"   #设置token生成时加密的签名
-  JwtTokenExpire:  3600    #设置token过期时间，单位秒 默认43200=12小时
+  JwtTokenExpire:  10    #设置token过期时间，单位秒 默认43200=12小时
   JwtTokenRefreshExpire:  2592000  #设置刷新token过期时间，单位秒 默认2592000=30天
   CacheKeyPrefix: "gin-fast:"  # 缓存前缀
 Redis:
@@ -29,7 +31,7 @@ Logs:
   MaxAge: 15                                            #保留旧日志最大天数
   Compress: false                                      #日志备份时，是否进行压缩
 Casbin:
-  AutoLoadPolicySeconds: 30 # 扫描数据库策略的频率(单位：秒)
+  AutoLoadPolicySeconds: 120 # 扫描数据库策略的频率(单位：秒)
   TablePrefix: ""
   TableName: "casbin_rule" 
   ModelConfig: | # 竖线 | 表示以下整段文本保持换行格式
@@ -44,7 +46,7 @@ Casbin:
     [matchers]
     m = g(r.sub, p.sub) && keyMatch2(r.obj, p.obj) && r.act == p.act
 Captcha:
-  open : true  # 是否开启验证码功能
+  open : false  # 是否开启验证码功能
   length: 4   # 验证码生成时的长度
 Gormv2: # 只针对 gorm  操作数据库有效
   UseDbType: "mysql"   # 默认使用的数据库类型（mysql、sqlserver、postgresql）

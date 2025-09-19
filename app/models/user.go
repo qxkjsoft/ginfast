@@ -9,18 +9,19 @@ import (
 // User 用户模型
 type User struct {
 	BaseModel
-	Username    string      `gorm:"column:username;uniqueIndex;not null;size:50;comment:用户名" json:"userName"`
-	Password    string      `gorm:"column:password;not null;size:255;comment:密码" json:"passWord"`
-	Email       string      `gorm:"column:email;size:100;comment:邮箱" json:"email"`
-	Status      int8        `gorm:"column:status;default:1;comment:是否启用 0停用 1启用" json:"status"`
-	Description string      `gorm:"column:description;not null;size:500;comment:描述" json:"description"`
-	DeptID      uint        `gorm:"column:dept_id;default:0;comment:部门ID" json:"deptId"`
-	Phone       string      `gorm:"column:phone;size:64;comment:电话" json:"phone"`
-	Sex         string      `gorm:"column:sex;size:64;comment:性别" json:"sex"`
-	NickName    string      `gorm:"column:nick_name;size:100;comment:昵称" json:"nickName"`
-	Avatar      string      `gorm:"column:avatar;size:255;comment:头像" json:"avatar"`
-	CreatedBy   uint        `gorm:"column:created_by;default:0;comment:创建人" json:"createdBy"`
-	Roles       SysRoleList `gorm:"many2many:sys_user_role;foreignKey:id;joinForeignKey:user_id;References:id;joinReferences:role_id" json:"roles"`
+	Username    string        `gorm:"column:username;uniqueIndex;not null;size:50;comment:用户名" json:"userName"`
+	Password    string        `gorm:"column:password;not null;size:255;comment:密码" json:"passWord"`
+	Email       string        `gorm:"column:email;size:100;comment:邮箱" json:"email"`
+	Status      int8          `gorm:"column:status;default:1;comment:是否启用 0停用 1启用" json:"status"`
+	Description string        `gorm:"column:description;not null;size:500;comment:描述" json:"description"`
+	DeptID      uint          `gorm:"column:dept_id;default:0;comment:部门ID" json:"deptId"`
+	Phone       string        `gorm:"column:phone;size:64;comment:电话" json:"phone"`
+	Sex         string        `gorm:"column:sex;size:64;comment:性别" json:"sex"`
+	NickName    string        `gorm:"column:nick_name;size:100;comment:昵称" json:"nickName"`
+	Avatar      string        `gorm:"column:avatar;size:255;comment:头像" json:"avatar"`
+	CreatedBy   uint          `gorm:"column:created_by;default:0;comment:创建人" json:"createdBy"`
+	Roles       SysRoleList   `gorm:"many2many:sys_user_role;foreignKey:id;joinForeignKey:user_id;references:id;joinReferences:role_id" json:"roles"`
+	Department  SysDepartment `gorm:"foreignKey:id;references:dept_id" json:"department"`
 }
 
 // TableName 设置User表名
@@ -42,13 +43,27 @@ func (u *User) Find(funcs ...func(*gorm.DB) *gorm.DB) error {
 
 func (u *User) GetUserByID(id uint) (err error) {
 	return u.Find(func(db *gorm.DB) *gorm.DB {
-		return db.Preload("Roles").Where("id = ?", id)
+		return db.Where("id = ?", id)
 	})
 }
 
 func (u *User) GetUserByUsername(username string) (err error) {
 	return u.Find(func(db *gorm.DB) *gorm.DB {
-		return db.Preload("Roles").Where("username = ?", username)
+		return db.Where("username = ?", username)
+	})
+}
+
+// GetUserByPhone 根据手机号获取用户
+func (u *User) GetUserByPhone(phone string) (err error) {
+	return u.Find(func(db *gorm.DB) *gorm.DB {
+		return db.Where("phone = ?", phone)
+	})
+}
+
+// GetUserByEmail 根据邮箱获取用户
+func (u *User) GetUserByEmail(email string) (err error) {
+	return u.Find(func(db *gorm.DB) *gorm.DB {
+		return db.Where("email = ?", email)
 	})
 }
 

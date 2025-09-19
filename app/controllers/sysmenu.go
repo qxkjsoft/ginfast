@@ -13,6 +13,7 @@ import (
 )
 
 type SysMenuController struct {
+	Common
 }
 
 // GetRouters 获取当前用户有权限的菜单数据不含按钮
@@ -20,21 +21,18 @@ func (sm *SysMenuController) GetRouters(c *gin.Context) {
 	// 从上下文中获取用户ID
 	claims := common.GetClaims(c)
 	if claims == nil {
-		app.Response.Fail(c, "用户未登录")
-		return
+		sm.FailAndAbort(c, "用户未登录", nil)
 	}
 	sysUserRoleList := models.NewSysUserRoleList()
 	err := sysUserRoleList.Find(func(d *gorm.DB) *gorm.DB {
 		return d.Where("user_id = ?", claims.UserID)
 	})
 	if err != nil {
-		app.Response.Fail(c, "获取用户角色失败")
-		return
+		sm.FailAndAbort(c, "获取用户角色失败", err)
 	}
 
 	if sysUserRoleList.IsEmpty() {
-		app.Response.Fail(c, "用户未分配角色")
-		return
+		sm.FailAndAbort(c, "用户未分配角色", nil)
 	}
 	roleIds := sysUserRoleList.Map(func(sur *models.SysUserRole) uint {
 		return sur.RoleID
@@ -46,15 +44,14 @@ func (sm *SysMenuController) GetRouters(c *gin.Context) {
 			Where("id in (?)", app.DB().Model(&models.SysRoleMenu{}).Where("role_id in (?)", roleIds).Select("menu_id"))
 	})
 	if err != nil {
-		app.Response.Fail(c, "获取菜单失败")
-		return
+		sm.FailAndAbort(c, "获取菜单失败", err)
 	}
 
 	if !menuList.IsEmpty() {
 		menuList = menuList.BuildTree().TreeSort()
 	}
 
-	app.Response.Success(c, menuList)
+	sm.Success(c, menuList)
 }
 
 // 获取完整的菜单列表
@@ -64,27 +61,24 @@ func (sm *SysMenuController) GetMenuList(c *gin.Context) {
 		return db.Preload("Apis").Where("disable = ?", 0)
 	})
 	if err != nil {
-		app.Response.Fail(c, "获取菜单失败")
-		return
+		sm.FailAndAbort(c, "获取菜单失败", err)
 	}
 
 	if !menuList.IsEmpty() {
 		menuList = menuList.BuildTree().TreeSort()
 	}
 
-	app.Response.Success(c, menuList)
+	sm.Success(c, menuList)
 }
 
 // Add 新增菜单
 func (sm *SysMenuController) Add(c *gin.Context) {
 	var req models.SysMenuAddRequest
 	if err := req.Validate(c); err != nil {
-		app.Response.Fail(c, err.Error())
-		return
+		sm.FailAndAbort(c, err.Error(), err)
 	}
 	if req.Type == 3 && req.ParentID == 0 {
-		app.Response.Fail(c, "请选择父级菜单")
-		return
+		sm.FailAndAbort(c, "请选择父级菜单", nil)
 	}
 	if req.Type == 1 || req.Type == 2 {
 		// 检查菜单名称是否已存在
@@ -93,14 +87,10 @@ func (sm *SysMenuController) Add(c *gin.Context) {
 			return d.Where("name = ?", req.Name)
 		})
 		if err != nil {
-			app.ZapLog.Error("检查菜单名称失败", zap.Error(err))
-			app.Response.Fail(c, "检查菜单名称失败")
-			return
+			sm.FailAndAbort(c, "检查菜单名称失败", err)
 		}
 		if !existMenu.IsEmpty() {
-			app.ZapLog.Error("菜单名称已存在")
-			app.Response.Fail(c, "菜单名称已存在")
-			return
+			sm.FailAndAbort(c, "菜单名称已存在", nil)
 		}
 
 		// 检查路由路径是否已存在
@@ -109,14 +99,10 @@ func (sm *SysMenuController) Add(c *gin.Context) {
 			return d.Where("path = ?", req.Path)
 		})
 		if err != nil {
-			app.ZapLog.Error("检查路由路径失败", zap.Error(err))
-			app.Response.Fail(c, "检查路由路径失败")
-			return
+			sm.FailAndAbort(c, "检查路由路径失败", err)
 		}
 		if !existPath.IsEmpty() {
-			app.ZapLog.Error("路由路径已存在")
-			app.Response.Fail(c, "路由路径已存在")
-			return
+			sm.FailAndAbort(c, "路由路径已存在", nil)
 		}
 	}
 
@@ -127,14 +113,10 @@ func (sm *SysMenuController) Add(c *gin.Context) {
 			return d.Where("permission = ? AND type = 3", req.Permission)
 		})
 		if err != nil {
-			app.ZapLog.Error("检查按钮权限标识失败", zap.Error(err))
-			app.Response.Fail(c, "检查按钮权限标识失败")
-			return
+			sm.FailAndAbort(c, "检查按钮权限标识失败", err)
 		}
 		if !existPermission.IsEmpty() {
-			app.ZapLog.Error("按钮权限标识已存在")
-			app.Response.Fail(c, "按钮权限标识已存在")
-			return
+			sm.FailAndAbort(c, "按钮权限标识已存在", nil)
 		}
 	}
 
@@ -145,38 +127,26 @@ func (sm *SysMenuController) Add(c *gin.Context) {
 			return d.Where("id = ?", req.ParentID)
 		})
 		if err != nil {
-			app.ZapLog.Error("检查父级菜单失败", zap.Error(err))
-			app.Response.Fail(c, "检查父级菜单失败")
-			return
+			sm.FailAndAbort(c, "检查父级菜单失败", err)
 		}
 		if parentMenu.IsEmpty() {
-			app.ZapLog.Error("父级菜单不存在")
-			app.Response.Fail(c, "父级菜单不存在")
-			return
+			sm.FailAndAbort(c, "父级菜单不存在", nil)
 		}
 
 		// 根据父级类型和当前类型进行权限检查
 		switch parentMenu.Type {
 		case 1: // 父级是目录
 			if req.Type != 1 && req.Type != 2 {
-				app.ZapLog.Error("目录下只能添加目录或菜单")
-				app.Response.Fail(c, "目录下只能添加目录或菜单")
-				return
+				sm.FailAndAbort(c, "目录下只能添加目录或菜单", nil)
 			}
 		case 2: // 父级是菜单
 			if req.Type != 3 {
-				app.ZapLog.Error("菜单下只能添加按钮")
-				app.Response.Fail(c, "菜单下只能添加按钮")
-				return
+				sm.FailAndAbort(c, "菜单下只能添加按钮", nil)
 			}
 		case 3: // 父级是按钮
-			app.ZapLog.Error("按钮下不能添加子项")
-			app.Response.Fail(c, "按钮下不能添加子项")
-			return
+			sm.FailAndAbort(c, "按钮下不能添加子项", nil)
 		default:
-			app.ZapLog.Error("未知的父级菜单类型")
-			app.Response.Fail(c, "未知的父级菜单类型")
-			return
+			sm.FailAndAbort(c, "未知的父级菜单类型", nil)
 		}
 	}
 
@@ -205,20 +175,17 @@ func (sm *SysMenuController) Add(c *gin.Context) {
 
 	err := app.DB().Create(menu).Error
 	if err != nil {
-		app.ZapLog.Error("新增菜单失败", zap.Error(err))
-		app.Response.Fail(c, "新增菜单失败")
-		return
+		sm.FailAndAbort(c, "新增菜单失败", err)
 	}
 
-	app.Response.Success(c, menu, "菜单创建成功")
+	sm.SuccessWithMessage(c, "菜单创建成功", menu)
 }
 
 // Update 更新菜单
 func (sm *SysMenuController) Update(c *gin.Context) {
 	var req models.SysMenuUpdateRequest
 	if err := req.Validate(c); err != nil {
-		app.Response.Fail(c, err.Error())
-		return
+		sm.FailAndAbort(c, err.Error(), err)
 	}
 
 	// 检查菜单是否存在
@@ -227,18 +194,13 @@ func (sm *SysMenuController) Update(c *gin.Context) {
 		return d.Where("id = ?", req.ID)
 	})
 	if err != nil {
-		app.ZapLog.Error("查询菜单失败", zap.Error(err))
-		app.Response.Fail(c, "查询菜单失败")
-		return
+		sm.FailAndAbort(c, "查询菜单失败", err)
 	}
 	if menu.IsEmpty() {
-		app.ZapLog.Error("菜单不存在")
-		app.Response.Fail(c, "菜单不存在")
-		return
+		sm.FailAndAbort(c, "菜单不存在", nil)
 	}
 	if req.Type == 3 && req.ParentID == 0 {
-		app.Response.Fail(c, "请选择父级菜单")
-		return
+		sm.FailAndAbort(c, "请选择父级菜单", nil)
 	}
 	if req.Type == 1 || req.Type == 2 {
 		// 检查菜单名称是否与其他菜单冲突（排除当前菜单）
@@ -247,14 +209,10 @@ func (sm *SysMenuController) Update(c *gin.Context) {
 			return d.Where("name = ? AND id != ?", req.Name, req.ID)
 		})
 		if err != nil {
-			app.ZapLog.Error("检查菜单名称失败", zap.Error(err))
-			app.Response.Fail(c, "检查菜单名称失败")
-			return
+			sm.FailAndAbort(c, "检查菜单名称失败", err)
 		}
 		if !existMenu.IsEmpty() {
-			app.ZapLog.Error("菜单名称已被其他菜单使用")
-			app.Response.Fail(c, "菜单名称已被其他菜单使用")
-			return
+			sm.FailAndAbort(c, "菜单名称已被其他菜单使用", nil)
 		}
 
 		// 检查路由路径是否与其他菜单冲突（排除当前菜单）
@@ -263,14 +221,10 @@ func (sm *SysMenuController) Update(c *gin.Context) {
 			return d.Where("path = ? AND id != ?", req.Path, req.ID)
 		})
 		if err != nil {
-			app.ZapLog.Error("检查路由路径失败", zap.Error(err))
-			app.Response.Fail(c, "检查路由路径失败")
-			return
+			sm.FailAndAbort(c, "检查路由路径失败", err)
 		}
 		if !existPath.IsEmpty() {
-			app.ZapLog.Error("路由路径已被其他菜单使用")
-			app.Response.Fail(c, "路由路径已被其他菜单使用")
-			return
+			sm.FailAndAbort(c, "路由路径已被其他菜单使用", nil)
 		}
 	}
 
@@ -281,61 +235,43 @@ func (sm *SysMenuController) Update(c *gin.Context) {
 			return d.Where("permission = ? AND type = 3 AND id != ?", req.Permission, req.ID)
 		})
 		if err != nil {
-			app.ZapLog.Error("检查按钮权限标识失败", zap.Error(err))
-			app.Response.Fail(c, "检查按钮权限标识失败")
-			return
+			sm.FailAndAbort(c, "检查按钮权限标识失败", err)
 		}
 		if !existPermission.IsEmpty() {
-			app.ZapLog.Error("按钮权限标识已被其他按钮使用")
-			app.Response.Fail(c, "按钮权限标识已被其他按钮使用")
-			return
+			sm.FailAndAbort(c, "按钮权限标识已被其他按钮使用", nil)
 		}
 	}
 
 	// 如果指定了父级ID，检查父级菜单是否存在且不能是自己
 	if req.ParentID > 0 {
 		if req.ParentID == req.ID {
-			app.ZapLog.Error("不能将自己设置为父级菜单")
-			app.Response.Fail(c, "不能将自己设置为父级菜单")
-			return
+			sm.FailAndAbort(c, "不能将自己设置为父级菜单", nil)
 		}
 		parentMenu := models.NewSysMenu()
 		err := parentMenu.Find(func(d *gorm.DB) *gorm.DB {
 			return d.Where("id = ?", req.ParentID)
 		})
 		if err != nil {
-			app.ZapLog.Error("检查父级菜单失败", zap.Error(err))
-			app.Response.Fail(c, "检查父级菜单失败")
-			return
+			sm.FailAndAbort(c, "检查父级菜单失败", err)
 		}
 		if parentMenu.IsEmpty() {
-			app.ZapLog.Error("父级菜单不存在")
-			app.Response.Fail(c, "父级菜单不存在")
-			return
+			sm.FailAndAbort(c, "父级菜单不存在", nil)
 		}
 
 		// 根据父级类型和当前类型进行权限检查
 		switch parentMenu.Type {
 		case 1: // 父级是目录
 			if req.Type != 1 && req.Type != 2 {
-				app.ZapLog.Error("目录下只能添加目录或菜单")
-				app.Response.Fail(c, "目录下只能添加目录或菜单")
-				return
+				sm.FailAndAbort(c, "目录下只能添加目录或菜单", nil)
 			}
 		case 2: // 父级是菜单
 			if req.Type != 3 {
-				app.ZapLog.Error("菜单下只能添加按钮")
-				app.Response.Fail(c, "菜单下只能添加按钮")
-				return
+				sm.FailAndAbort(c, "菜单下只能添加按钮", nil)
 			}
 		case 3: // 父级是按钮
-			app.ZapLog.Error("按钮下不能添加子项")
-			app.Response.Fail(c, "按钮下不能添加子项")
-			return
+			sm.FailAndAbort(c, "按钮下不能添加子项", nil)
 		default:
-			app.ZapLog.Error("未知的父级菜单类型")
-			app.Response.Fail(c, "未知的父级菜单类型")
-			return
+			sm.FailAndAbort(c, "未知的父级菜单类型", nil)
 		}
 	}
 
@@ -362,20 +298,17 @@ func (sm *SysMenuController) Update(c *gin.Context) {
 
 	err = app.DB().Save(menu).Error
 	if err != nil {
-		app.ZapLog.Error("更新菜单失败", zap.Error(err))
-		app.Response.Fail(c, "更新菜单失败")
-		return
+		sm.FailAndAbort(c, "更新菜单失败", err)
 	}
 
-	app.Response.Success(c, menu, "菜单更新成功")
+	sm.SuccessWithMessage(c, "菜单更新成功", menu)
 }
 
 // Delete 删除菜单
 func (sm *SysMenuController) Delete(c *gin.Context) {
 	var req models.SysMenuDeleteRequest
 	if err := req.Validate(c); err != nil {
-		app.Response.Fail(c, err.Error())
-		return
+		sm.FailAndAbort(c, err.Error(), err)
 	}
 
 	// 检查菜单是否存在
@@ -384,14 +317,10 @@ func (sm *SysMenuController) Delete(c *gin.Context) {
 		return d.Where("id = ?", req.ID)
 	})
 	if err != nil {
-		app.ZapLog.Error("查询菜单失败", zap.Error(err))
-		app.Response.Fail(c, "查询菜单失败")
-		return
+		sm.FailAndAbort(c, "查询菜单失败", err)
 	}
 	if menu.IsEmpty() {
-		app.ZapLog.Error("菜单不存在")
-		app.Response.Fail(c, "菜单不存在")
-		return
+		sm.FailAndAbort(c, "菜单不存在", nil)
 	}
 
 	// 检查是否有子菜单
@@ -400,28 +329,20 @@ func (sm *SysMenuController) Delete(c *gin.Context) {
 		return d.Where("parent_id = ?", req.ID)
 	})
 	if err != nil {
-		app.ZapLog.Error("检查子菜单失败", zap.Error(err))
-		app.Response.Fail(c, "检查子菜单失败")
-		return
+		sm.FailAndAbort(c, "检查子菜单失败", err)
 	}
 	if !childMenus.IsEmpty() {
-		app.ZapLog.Error("存在子菜单，无法删除")
-		app.Response.Fail(c, "存在子菜单，无法删除")
-		return
+		sm.FailAndAbort(c, "存在子菜单，无法删除", nil)
 	}
 
 	// 检查是否有角色关联此菜单
 	var roleMenuCount int64
 	err = app.DB().Model(&models.SysRoleMenu{}).Where("menu_id = ?", req.ID).Count(&roleMenuCount).Error
 	if err != nil {
-		app.ZapLog.Error("检查角色菜单关联失败", zap.Error(err))
-		app.Response.Fail(c, "检查角色菜单关联失败")
-		return
+		sm.FailAndAbort(c, "检查角色菜单关联失败", err)
 	}
 	if roleMenuCount > 0 {
-		app.ZapLog.Error("存在角色关联此菜单，无法删除")
-		app.Response.Fail(c, "存在角色关联此菜单，无法删除")
-		return
+		sm.FailAndAbort(c, "存在角色关联此菜单，无法删除", nil)
 	}
 
 	// 使用事务删除菜单和相关数据
@@ -440,12 +361,10 @@ func (sm *SysMenuController) Delete(c *gin.Context) {
 	})
 
 	if err != nil {
-		app.ZapLog.Error("删除菜单失败", zap.Error(err))
-		app.Response.Fail(c, "删除菜单失败")
-		return
+		sm.FailAndAbort(c, "删除菜单失败", err)
 	}
 
-	app.Response.Success(c, nil, "菜单删除成功")
+	sm.SuccessWithMessage(c, "菜单删除成功", nil)
 }
 
 // GetByID 根据ID获取菜单信息
@@ -454,9 +373,7 @@ func (sm *SysMenuController) GetByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		app.ZapLog.Error("菜单ID格式错误", zap.Error(err))
-		app.Response.Fail(c, "菜单ID格式错误")
-		return
+		sm.FailAndAbort(c, "菜单ID格式错误", err)
 	}
 
 	// 查询菜单信息
@@ -465,17 +382,13 @@ func (sm *SysMenuController) GetByID(c *gin.Context) {
 		return d.Where("id = ?", uint(id))
 	})
 	if err != nil {
-		app.ZapLog.Error("查询菜单失败", zap.Error(err))
-		app.Response.Fail(c, "查询菜单失败")
-		return
+		sm.FailAndAbort(c, "查询菜单失败", err)
 	}
 	if menu.IsEmpty() {
-		app.ZapLog.Error("菜单不存在")
-		app.Response.Fail(c, "菜单不存在")
-		return
+		sm.FailAndAbort(c, "菜单不存在", nil)
 	}
 
-	app.Response.Success(c, menu)
+	sm.Success(c, menu)
 }
 
 // GetMenuApiIds 根据menuId查询api_id集合
@@ -484,9 +397,7 @@ func (sm *SysMenuController) GetMenuApiIds(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		app.ZapLog.Error("菜单ID格式错误", zap.Error(err))
-		app.Response.Fail(c, "菜单ID格式错误")
-		return
+		sm.FailAndAbort(c, "菜单ID格式错误", err)
 	}
 
 	// 检查菜单是否存在
@@ -495,34 +406,27 @@ func (sm *SysMenuController) GetMenuApiIds(c *gin.Context) {
 		return d.Where("id = ?", uint(id))
 	})
 	if err != nil {
-		app.ZapLog.Error("查询菜单失败", zap.Error(err))
-		app.Response.Fail(c, "查询菜单失败")
-		return
+		sm.FailAndAbort(c, "查询菜单失败", err)
 	}
 	if menu.IsEmpty() {
-		app.ZapLog.Error("菜单不存在")
-		app.Response.Fail(c, "菜单不存在")
-		return
+		sm.FailAndAbort(c, "菜单不存在", nil)
 	}
 
 	// 查询菜单关联的API ID集合
 	var apiIds []uint
 	err = app.DB().Model(&models.SysMenuApi{}).Where("menu_id = ?", uint(id)).Pluck("api_id", &apiIds).Error
 	if err != nil {
-		app.ZapLog.Error("查询菜单API关联失败", zap.Error(err))
-		app.Response.Fail(c, "查询菜单API关联失败")
-		return
+		sm.FailAndAbort(c, "查询菜单API关联失败", err)
 	}
 
-	app.Response.Success(c, apiIds)
+	sm.Success(c, apiIds)
 }
 
 // SetMenuApis 设置菜单关联的API
 func (sm *SysMenuController) SetMenuApis(c *gin.Context) {
 	var req models.SysMenuApiAssignRequest
 	if err := req.Validate(c); err != nil {
-		app.Response.Fail(c, err.Error())
-		return
+		sm.FailAndAbort(c, err.Error(), err)
 	}
 
 	// 检查菜单是否存在
@@ -531,13 +435,10 @@ func (sm *SysMenuController) SetMenuApis(c *gin.Context) {
 		return d.Where("id = ?", req.MenuID)
 	})
 	if err != nil {
-		app.ZapLog.Error("查询菜单失败", zap.Error(err), zap.Uint("menuId", req.MenuID))
-		app.Response.Fail(c, "查询菜单失败")
-		return
+		sm.FailAndAbort(c, "查询菜单失败", err)
 	}
 	if menu.IsEmpty() {
-		app.Response.Fail(c, "菜单不存在")
-		return
+		sm.FailAndAbort(c, "菜单不存在", nil)
 	}
 
 	// 当ApiIDs不为空时，检查API ID是否存在
@@ -546,15 +447,12 @@ func (sm *SysMenuController) SetMenuApis(c *gin.Context) {
 		var existingApiCount int64
 		err = app.DB().Model(&models.SysApi{}).Where("id in ?", req.ApiIDs).Count(&existingApiCount).Error
 		if err != nil {
-			app.ZapLog.Error("查询API失败", zap.Error(err), zap.Uint("menuId", req.MenuID), zap.Any("apiIds", req.ApiIDs))
-			app.Response.Fail(c, "查询API失败")
-			return
+			sm.FailAndAbort(c, "查询API失败", err)
 		}
 
 		// 验证所有请求的API ID是否都存在
 		if int64(len(req.ApiIDs)) != existingApiCount {
-			app.Response.Fail(c, "存在不存在的API ID")
-			return
+			sm.FailAndAbort(c, "存在不存在的API ID", nil)
 		}
 	}
 
@@ -587,16 +485,12 @@ func (sm *SysMenuController) SetMenuApis(c *gin.Context) {
 	})
 
 	if err != nil {
-		app.ZapLog.Error("设置菜单API关联失败", zap.Error(err), zap.Uint("menuId", req.MenuID), zap.Any("apiIds", req.ApiIDs))
-		app.Response.Fail(c, "设置菜单API关联失败")
-		return
+		sm.FailAndAbort(c, "设置菜单API关联失败", err)
 	}
 
 	// 调整与菜单关联的角色的API权限
 	if err = service.CasbinService.UpdateRoleApiPermissionsByMenuID(req.MenuID); err != nil {
-		app.ZapLog.Error("更新角色API权限失败", zap.Error(err), zap.Uint("menuId", req.MenuID))
-		app.Response.Fail(c, "更新角色API权限失败")
-		return
+		sm.FailAndAbort(c, "更新角色API权限失败", err)
 	}
 	// 根据ApiIDs是否为空返回不同的成功消息
 	var successMsg string
@@ -605,5 +499,5 @@ func (sm *SysMenuController) SetMenuApis(c *gin.Context) {
 	} else {
 		successMsg = "设置菜单API关联成功"
 	}
-	app.Response.Success(c, nil, successMsg)
+	sm.SuccessWithMessage(c, successMsg, nil)
 }

@@ -5,24 +5,32 @@
 ## 功能特性
 
 - 🔐 **JWT 认证**：基于 JWT 的用户认证系统，支持 Token 刷新机制
-- 🛡️ **权限控制**：集成 Casbin 权限管理框架
+- 🛡️ **权限控制**：集成 Casbin 权限管理框架，支持 RBAC 权限模型
 - 🗄️ **数据库支持**：支持 MySQL、SQL Server、PostgreSQL 数据库
 - 🔧 **配置管理**：基于 YAML 的配置文件管理
 - 📝 **日志系统**：集成 Zap 日志框架，支持日志切割和归档
 - 🌐 **跨域支持**：内置 CORS 中间件
 - 🚀 **性能监控**：集成 pprof 性能分析工具
 - 💾 **缓存支持**：支持 Redis 和内存缓存
+- 🔢 **验证码支持**：集成图形验证码功能，支持登录安全验证
+- 📋 **完整的后台管理**：包含用户管理、角色管理、菜单管理、部门管理、字典管理、API管理等模块
+- 🔗 **菜单与API权限关联**：支持菜单与API权限的动态关联管理
+- 🏗️ **分层架构**：采用Controller-Service-Model分层架构，代码结构清晰
 
 ## 技术栈
 
 - **Web 框架**：Gin
 - **ORM 框架**：GORM
-- **认证授权**：JWT
+- **认证授权**：JWT (golang-jwt/jwt/v5)
 - **权限控制**：Casbin
-- **日志系统**：Zap
+- **日志系统**：Zap + Lumberjack
 - **配置管理**：Viper
 - **数据库**：MySQL、SQL Server、PostgreSQL
 - **缓存**：Redis
+- **验证码**：Captcha (dchest/captcha)
+- **参数验证**：Gookit Validate
+- **密码加密**：Bcrypt
+- **性能监控**：Pprof
 
 ## 项目结构
 
@@ -31,27 +39,58 @@ gin-fast/
 ├── app/                    # 应用核心代码
 │   ├── controllers/        # 控制器层
 │   │   ├── auth.go         # 认证控制器
-│   │   └── user.go         # 用户控制器
-│   ├── global/             # 全局变量和常量
+│   │   ├── common.go       # 通用控制器基类
+│   │   ├── user.go         # 用户控制器
+│   │   ├── sysapi.go       # 系统API管理控制器
+│   │   ├── sysdepartment.go # 部门管理控制器
+│   │   ├── sysdict.go      # 字典管理控制器
+│   │   ├── sysdictitem.go  # 字典项管理控制器
+│   │   ├── sysmenu.go      # 菜单管理控制器
+│   │   └── sysrole.go      # 角色管理控制器
+│   ├── global/             # 全局变量和接口
+│   │   ├── app/            # 全局应用接口
 │   │   ├── consts/         # 常量定义
-│   │   ├── g/              # 全局变量
 │   │   └── myerrors/       # 错误定义
 │   ├── middleware/         # 中间件
+│   │   ├── captcha.go      # 验证码中间件
 │   │   ├── casbin.go       # 权限控制中间件
 │   │   ├── cors.go         # 跨域中间件
-│   │   └── jwt.go          # JWT 认证中间件
+│   │   ├── jwt.go          # JWT 认证中间件
+│   │   └── requestaborted.go # 请求中断处理中间件
 │   ├── models/             # 数据模型
-│   │   ├── common/         # 通用模型
-│   │   └── usermodel/      # 用户模型
+│   │   ├── base.go         # 基础模型
+│   │   ├── user.go         # 用户模型
+│   │   ├── sysapi.go       # 系统API模型
+│   │   ├── sysdepartment.go # 部门模型
+│   │   ├── sysdict.go      # 字典模型
+│   │   ├── sysdictitem.go  # 字典项模型
+│   │   ├── sysmenu.go      # 菜单模型
+│   │   ├── sysrole.go      # 角色模型
+│   │   └── *param.go       # 各种参数模型
 │   ├── routes/             # 路由配置
+│   │   └── routes.go       # 路由定义
 │   ├── service/            # 服务层
+│   │   ├── casbinservice.go # 权限服务
+│   │   ├── userservice.go  # 用户服务
+│   │   └── zaphooks.go     # 日志钩子
 │   └── utils/              # 工具类
+│       ├── cachehelper/    # 缓存助手
+│       ├── casbinhelper/   # 权限助手
+│       ├── common/         # 通用工具
+│       ├── ginhelper/      # Gin助手
+│       ├── gormhelper/     # GORM助手
+│       ├── passwordhelper/ # 密码助手
+│       ├── response/       # 响应助手
+│       ├── tokenhelper/    # Token助手
+│       └── ymlconfig/      # 配置助手
 ├── bootstrap/              # 应用初始化
+│   └── init.go             # 初始化配置
 ├── config/                 # 配置文件
 │   └── config.yml          # 主配置文件
 ├── resource/               # 资源文件
 │   ├── database/           # 数据库脚本
-│   ├── logs/               # 日志文件
+│   │   └── gin-fast.sql    # 数据库初始化脚本
+│   ├── logs/               # 日志文件目录
 │   └── public/             # 静态资源
 ├── main.go                 # 应用入口
 └── go.mod                  # 依赖管理
@@ -61,7 +100,7 @@ gin-fast/
 
 ### 环境要求
 
-- Go 1.20+
+- Go 1.25+
 - MySQL 5.7+ 或其他支持的数据库
 - Redis (可选，用于缓存)
 
@@ -101,13 +140,15 @@ Server:
 HttpServer:
   Port: ":8080"          # 服务端口
   AllowCrossDomain: true # 是否允许跨域
+  ServerRootPath: "/public" # 静态资源路由路径
+  ServerRoot: "./resource/public" # 静态资源根目录
 ```
 
 ### JWT 配置
 ```yaml
 Token:
   JwtTokenSignKey: "gin-fast"          # JWT 签名密钥
-  JwtTokenExpire: 43200                # Token 过期时间（秒）
+  JwtTokenExpire: 10                   # Token 过期时间（秒）
   JwtTokenRefreshExpire: 2592000       # 刷新 Token 过期时间（秒）
   CacheKeyPrefix: "gin-fast:"          # 缓存前缀
 ```
@@ -126,9 +167,54 @@ Gormv2:
       Pass: "root"
 ```
 
+### 验证码配置
+```yaml
+Captcha:
+  open: false    # 是否开启验证码功能
+  length: 4      # 验证码生成时的长度
+```
+
+### Casbin 权限配置
+```yaml
+Casbin:
+  AutoLoadPolicySeconds: 120 # 扫描数据库策略的频率（单位：秒）
+  TablePrefix: ""
+  TableName: "casbin_rule"
+  ModelConfig: |
+    [request_definition]
+    r = sub, obj, act
+    [policy_definition]
+    p = sub, obj, act
+    [role_definition]
+    g = _, _
+    [policy_effect]
+    e = some(where (p.eft == allow))
+    [matchers]
+    m = g(r.sub, p.sub) && keyMatch2(r.obj, p.obj) && r.act == p.act
+```
+
+### Redis 配置
+```yaml
+Redis:
+  Host: "127.0.0.1"
+  Port: 6379
+  Password: ""  # 设置你的redis密码
+  IndexDb: 1    # 默认连接的redis是1号数据库
+```
+
 ## API 接口
 
 ### 认证接口
+
+#### 获取验证码ID
+```
+GET /api/captcha/id
+```
+
+#### 获取验证码图片
+```
+GET /api/captcha/image?captchaId=xxx&width=130&height=30
+```
 
 #### 用户登录
 ```
@@ -137,13 +223,15 @@ Content-Type: application/json
 
 {
   "username": "admin",
-  "password": "password"
+  "password": "password",
+  "captchaId": "captcha-id",
+  "captcha": "1234"
 }
 ```
 
 #### 刷新 Token
 ```
-POST /api/refresh
+POST /api/refreshToken
 Content-Type: application/json
 
 {
@@ -151,13 +239,7 @@ Content-Type: application/json
 }
 ```
 
-#### 用户登出
-```
-POST /api/logout
-Authorization: Bearer your-access-token
-```
-
-### 用户接口
+### 用户管理接口
 
 #### 获取当前用户信息
 ```
@@ -165,20 +247,9 @@ GET /api/users/profile
 Authorization: Bearer your-access-token
 ```
 
-#### 更新用户信息
+#### 用户列表
 ```
-PUT /api/users/profile
-Authorization: Bearer your-access-token
-Content-Type: application/json
-
-{
-  "email": "new-email@example.com"
-}
-```
-
-#### 根据ID获取用户
-```
-GET /api/users/:id
+GET /api/users/list?page=1&pageSize=10
 Authorization: Bearer your-access-token
 ```
 
@@ -190,8 +261,88 @@ Content-Type: application/json
 
 {
   "username": "newuser",
-  "password": "password"
+  "password": "password",
+  "email": "user@example.com"
 }
+```
+
+#### 更新用户信息
+```
+PUT /api/users/edit
+Authorization: Bearer your-access-token
+Content-Type: application/json
+
+{
+  "id": 1,
+  "email": "new-email@example.com"
+}
+```
+
+#### 删除用户
+```
+DELETE /api/users/delete
+Authorization: Bearer your-access-token
+Content-Type: application/json
+
+{
+  "ids": [1, 2, 3]
+}
+```
+
+### 系统管理接口
+
+#### 菜单管理
+```
+# 获取用户菜单数据
+GET /api/sysMenu/getRouters
+
+# 获取完整菜单列表
+GET /api/sysMenu/getMenuList
+
+# 为菜单分配API权限
+POST /api/sysMenu/setApis
+```
+
+#### 角色管理
+```
+# 获取所有角色数据
+GET /api/sysRole/getRoles
+
+# 为角色分配菜单权限
+POST /api/sysRole/addRoleMenu
+
+# 获取角色权限
+GET /api/sysRole/getUserPermission/:roleId
+```
+
+#### 部门管理
+```
+# 获取部门列表
+GET /api/sysDepartment/getDivision
+
+# 新增部门
+POST /api/sysDepartment/add
+```
+
+#### 字典管理
+```
+# 获取所有字典数据
+GET /api/sysDict/getAllDicts
+
+# 根据编码获取字典
+GET /api/sysDict/getByCode/:code
+
+# 获取字典项列表
+GET /api/sysDictItem/getByDictCode/:dictCode
+```
+
+#### API管理
+```
+# API列表
+GET /api/sysApi/list
+
+# 新增API
+POST /api/sysApi/add
 ```
 
 ## 开发指南
@@ -199,16 +350,19 @@ Content-Type: application/json
 ### 添加新的控制器
 
 1. 在 `app/controllers/` 目录下创建新的控制器文件
-2. 实现控制器结构体和方法
+2. 继承 `Common` 结构体并实现控制器方法
 3. 在 `app/routes/routes.go` 中添加路由
 
 示例：
 ```go
 // app/controllers/product.go
-type ProductController struct{}
+type ProductController struct {
+    Common
+}
 
 func (pc *ProductController) GetProducts(c *gin.Context) {
-    // 实现获取产品列表逻辑
+    // 使用 Common 结构体的方法进行响应处理
+    pc.Success(c, "获取产品列表成功", products)
 }
 
 // app/routes/routes.go
@@ -219,6 +373,7 @@ func InitRoutes(engine *gin.Engine) {
     
     protected := engine.Group("/api")
     protected.Use(middleware.JWTAuthMiddleware())
+    protected.Use(middleware.CasbinMiddleware())
     {
         protected.GET("/products", productControllers.GetProducts)
     }
@@ -228,24 +383,32 @@ func InitRoutes(engine *gin.Engine) {
 ### 添加新的数据模型
 
 1. 在 `app/models/` 目录下创建新的模型文件
-2. 定义模型结构体和方法
+2. 继承 `BaseModel` 并定义模型结构体
 3. 使用 GORM 标签定义数据库字段
 
 示例：
 ```go
-// app/models/productmodel/product.go
+// app/models/product.go
 type Product struct {
-    gorm.Model
-    Name  string  `gorm:"not null" json:"name"`
-    Price float64 `gorm:"not null" json:"price"`
+    BaseModel
+    Name  string  `gorm:"column:name;not null;size:100" json:"name"`
+    Price float64 `gorm:"column:price;not null" json:"price"`
 }
 
 func (Product) TableName() string {
     return "products"
 }
 
-func CreateProduct(product *Product) error {
-    return g.DB().Create(product).Error
+func (p *Product) IsEmpty() bool {
+    return p.ID <= 0
+}
+
+func (p *Product) Create() error {
+    return app.DB().Create(p).Error
+}
+
+func (p *Product) Find(id uint) error {
+    return app.DB().Where("id = ?", id).First(p).Error
 }
 ```
 
@@ -260,9 +423,16 @@ func CreateProduct(product *Product) error {
 // app/middleware/logger.go
 func LoggerMiddleware() gin.HandlerFunc {
     return func(c *gin.Context) {
-        // 记录请求日志
+        start := time.Now()
+        
         c.Next()
-        // 记录响应日志
+        
+        latency := time.Since(start)
+        app.ZapLog.Info("请求日志",
+            zap.String("method", c.Request.Method),
+            zap.String("path", c.Request.URL.Path),
+            zap.Duration("latency", latency),
+        )
     }
 }
 
@@ -270,6 +440,31 @@ func LoggerMiddleware() gin.HandlerFunc {
 func InitRoutes(engine *gin.Engine) {
     engine.Use(middleware.LoggerMiddleware())
     // 其他路由...
+}
+```
+
+### 添加新的服务
+
+1. 在 `app/service/` 目录下创建新的服务文件
+2. 实现业务逻辑方法
+3. 在控制器中调用服务方法
+
+示例：
+```go
+// app/service/productservice.go
+type ProductService struct{}
+
+func (ps *ProductService) GetProducts(page, pageSize int) ([]models.Product, int64, error) {
+    var products []models.Product
+    var total int64
+    
+    db := app.DB().Model(&models.Product{})
+    db.Count(&total)
+    
+    offset := (page - 1) * pageSize
+    err := db.Offset(offset).Limit(pageSize).Find(&products).Error
+    
+    return products, total, err
 }
 ```
 

@@ -42,6 +42,10 @@ func (list *SysDictList) Find(funcs ...func(*gorm.DB) *gorm.DB) (err error) {
 	return
 }
 
+func (s *SysDict) IsEmpty() bool {
+	return s == nil || s.ID == 0
+}
+
 func (s *SysDict) Create() (err error) {
 	err = app.DB().Create(s).Error
 	return

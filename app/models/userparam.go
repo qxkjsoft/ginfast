@@ -95,3 +95,22 @@ type DeleteRequest struct {
 func (r *DeleteRequest) Validate(c *gin.Context) error {
 	return r.Check(c, r)
 }
+
+// 用户权限信息
+type UserProfile struct {
+	User
+	Permissions []string `json:"permissions"`
+}
+
+// UpdateAccountRequest 更新用户账户信息请求结构
+type UpdateAccountRequest struct {
+	Validator
+	ID       uint   `form:"id" validate:"required" message:"用户ID不能为空"`
+	Password string `form:"password" validate:"required" message:"密码不能为空"`
+	Phone    string `form:"phone" validate:"required" message:"手机号不能为空"`
+	Email    string `form:"email" validate:"email" message:"邮箱格式不正确"`
+}
+
+func (r *UpdateAccountRequest) Validate(c *gin.Context) error {
+	return r.Check(c, r)
+}

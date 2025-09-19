@@ -27,7 +27,9 @@ func init() {
 	checkRequiredFolders()
 	// 配置文件
 	app.ConfigYml = ymlconfig.CreateYamlFactory(app.BasePath + "/config")
-	app.ConfigYml.ConfigFileChangeListen()
+	app.ConfigYml.ConfigFileChangeListen(func() {
+		log.Println("配置文件发生变化，重新加载配置")
+	})
 	// 日志
 	app.ZapLog = createZapFactory(service.ZapLogHandler)
 	// 初始化数据库

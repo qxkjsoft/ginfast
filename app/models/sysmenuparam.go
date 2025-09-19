@@ -35,8 +35,8 @@ type SysMenuUpdateRequest struct {
 	Validator
 	ID         uint   `form:"id" json:"id" validate:"required" message:"菜单ID不能为空"`
 	ParentID   uint   `form:"parentId" json:"parentId" validate:"gte:0" message:"父级ID不能为负数"`
-	Path       string `form:"path" json:"path" validate:"required" message:"路由路径不能为空"`
-	Name       string `form:"name" json:"name" validate:"required" message:"路由名称不能为空"`
+	Path       string `form:"path" json:"path"`
+	Name       string `form:"name" json:"name"`
 	Component  string `form:"component" json:"component"`
 	Title      string `form:"title" json:"title" validate:"required" message:"菜单标题不能为空"`
 	IsFull     bool   `form:"isFull" json:"isFull"`

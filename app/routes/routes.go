@@ -20,16 +20,19 @@ var sysApiControllers = &controllers.SysApiController{}
 
 // InitRoutes 初始化路由
 func InitRoutes(engine *gin.Engine) {
+	// 添加自定义 recovery 中间件来处理 FailAndAbort 的 panic
+	engine.Use(middleware.RequestAbortedRecovery())
+
 	// 跨域
 	if app.ConfigYml.GetBool("HttpServer.AllowCrossDomain") {
 		engine.Use(middleware.CorsNext())
 	}
 	// 静态文件
-	engine.Static("/public", "./resource/public")
+	engine.Static(app.ConfigYml.GetString("HttpServer.ServerRootPath"), app.ConfigYml.GetString("HttpServer.ServerRoot"))
 	// 公开路由
 	public := engine.Group("/api")
 	{
-		public.POST("/login", middleware.CaptchaMiddleware(app.ConfigYml.GetBool("Captcha.open")), authControllers.Login)
+		public.POST("/login", middleware.CaptchaMiddleware(), authControllers.Login)
 		public.POST("/refreshToken", authControllers.RefreshToken)
 		// 生成验证码ID
 		public.GET("/captcha/id", authControllers.GetCaptchaId)
@@ -59,6 +62,8 @@ func InitRoutes(engine *gin.Engine) {
 			users.DELETE("/delete", userControllers.Delete)
 			// 用户登出
 			users.POST("/logout", authControllers.Logout)
+			// 更新密码、邮箱及手机号
+			users.PUT("/updateAccount", userControllers.UpdateAccount)
 		}
 
 		// 系统菜单路由组

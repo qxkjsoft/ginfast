@@ -11,9 +11,9 @@ import (
 )
 
 // CaptchaMiddleware 验证码验证中间件
-func CaptchaMiddleware(open bool) gin.HandlerFunc {
+func CaptchaMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if !open {
+		if !app.ConfigYml.GetBool("Captcha.open") {
 			c.Next()
 			return
 		}

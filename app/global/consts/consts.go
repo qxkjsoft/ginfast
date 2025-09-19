@@ -10,4 +10,5 @@ const (
 	DbTypeMySql      = "mysql"
 	DbTypeSqlServer  = "sqlserver"
 	DbTypePostgreSql = "postgresql"
+	RequestAborted   = "request_aborted"
 )

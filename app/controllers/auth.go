@@ -9,47 +9,33 @@ import (
 
 	"github.com/dchest/captcha"
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 )
 
 // LoginRequest 登录请求结构
 
 type AuthController struct {
+	Common
 }
 
-/*
-*
-
-	Login 用户登录
-	目前accesstoken是无缓存模式, 想要改成缓存模式需要调整:  Login、RefreshToken、Logout及
-
-*
-*/
+// Login 用户登录
 func (ac *AuthController) Login(c *gin.Context) {
 	var req models.LoginRequest
 	if err := req.Validate(c); err != nil {
-		app.Response.Fail(c, err.Error())
-		return
+		ac.FailAndAbort(c, err.Error(), err)
 	}
 	// 根据用户名查找用户
 	user := models.NewUser()
 	err := user.GetUserByUsername(req.Username)
 	if err != nil {
-		app.ZapLog.Error("用户查询错误", zap.Error(err))
-		app.Response.Fail(c, "用户查询错误")
-		return
+		ac.FailAndAbort(c, "用户查询错误", err)
 	}
 
 	if user.IsEmpty() {
-		app.ZapLog.Error("用户不存在")
-		app.Response.Fail(c, "用户不存在")
-		return
+		ac.FailAndAbort(c, "用户不存在", nil)
 	}
 	// 验证密码
 	if err = passwordhelper.ComparePassword(user.Password, req.Password); err != nil {
-		app.ZapLog.Error("密码错误", zap.Error(err))
-		app.Response.Fail(c, "密码错误")
-		return
+		ac.FailAndAbort(c, "密码错误", err)
 	}
 
 	// 生成token
@@ -66,32 +52,24 @@ func (ac *AuthController) Login(c *gin.Context) {
 	// 	Username: user.Username,
 	// })
 	if err != nil {
-		app.ZapLog.Error("生成token失败", zap.Error(err))
-		app.Response.Fail(c, "生成token失败")
-		return
+		ac.FailAndAbort(c, "生成token失败", err)
 	}
 
 	// 生成refresh token
 	refreshToken, err := app.TokenService.GenerateRefreshToken(user.ID)
 	if err != nil {
-		app.ZapLog.Error("生成refresh token失败", zap.Error(err))
-		app.Response.Fail(c, "生成refresh token失败")
-		return
+		ac.FailAndAbort(c, "生成refresh token失败", err)
 	}
 	claims, err := app.TokenService.ParseToken(token)
 	if err != nil {
-		app.ZapLog.Error("解析token失败", zap.Error(err))
-		app.Response.Fail(c, "解析token失败")
-		return
+		ac.FailAndAbort(c, "解析token失败", err)
 	}
 	claims1, err := app.TokenService.ParseRefreshToken(refreshToken)
 	if err != nil {
-		app.ZapLog.Error("解析refreshToken失败", zap.Error(err))
-		app.Response.Fail(c, "解析refreshToken失败")
-		return
+		ac.FailAndAbort(c, "解析refreshToken失败", err)
 	}
 
-	app.Response.Success(c, gin.H{
+	ac.Success(c, gin.H{
 		"accessToken":         token,
 		"accessTokenExpires":  claims.ExpiresAt.Unix(),
 		"refreshToken":        refreshToken,
@@ -107,9 +85,7 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 		// 如果header中没有，尝试从body中获取
 		var req models.RefreshRequest
 		if err := c.ShouldBind(&req); err != nil {
-			app.ZapLog.Error("刷新token失败", zap.Error(err))
-			app.Response.Fail(c, "refreshToken不能为空")
-			return
+			ac.FailAndAbort(c, "refreshToken不能为空", err)
 		}
 		refreshToken = req.RefreshToken
 	}
@@ -117,17 +93,13 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 	// 解析refreshToken获取用户ID
 	claims, err := app.TokenService.ParseRefreshToken(refreshToken)
 	if err != nil {
-		app.ZapLog.Error("解析refreshToken失败", zap.Error(err))
-		app.Response.Fail(c, "无效的refreshToken")
-		return
+		ac.FailAndAbort(c, "无效的refreshToken", err)
 	}
 
 	// 从数据库中获取用户信息
 	var user models.User
 	if err = app.DB().First(&user, claims.UserID).Error; err != nil {
-		app.ZapLog.Error("用户不存在", zap.Error(err))
-		app.Response.Fail(c, "用户不存在")
-		return
+		ac.FailAndAbort(c, "用户不存在", err)
 	}
 
 	// 使用refresh token刷新access token
@@ -137,17 +109,13 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 		Username: user.Username,
 	})
 	if err != nil {
-		app.ZapLog.Error("刷新token失败", zap.Error(err))
-		app.Response.Fail(c, "刷新token失败")
-		return
+		ac.FailAndAbort(c, "刷新token失败", err)
 	}
 	claims1, err := app.TokenService.ParseToken(newAccessToken)
 	if err != nil {
-		app.ZapLog.Error("解析token失败", zap.Error(err))
-		app.Response.Fail(c, "解析token失败")
-		return
+		ac.FailAndAbort(c, "解析token失败", err)
 	}
-	app.Response.Success(c, gin.H{
+	ac.Success(c, gin.H{
 		"accessToken":        newAccessToken,
 		"accessTokenExpires": claims1.ExpiresAt,
 	})
@@ -158,8 +126,7 @@ func (ac *AuthController) Logout(c *gin.Context) {
 	// 从上下文中获取用户信息
 	claims := common.GetClaims(c)
 	if claims == nil {
-		app.Response.Fail(c, "用户未登录")
-		return
+		ac.FailAndAbort(c, "用户未登录", nil)
 	}
 	// 撤销 access token（缓存模式）
 	// tokenString, err := common.GetAccessToken(c)
@@ -172,12 +139,10 @@ func (ac *AuthController) Logout(c *gin.Context) {
 	// 撤销refresh token
 	err := app.TokenService.RevokeRefreshToken(claims.UserID)
 	if err != nil {
-		app.ZapLog.Error("登出失败", zap.Error(err))
-		app.Response.Fail(c, "登出失败")
-		return
+		ac.FailAndAbort(c, "登出失败", err)
 	}
 
-	app.Response.Success(c, gin.H{
+	ac.Success(c, gin.H{
 		"message": "登出成功",
 	})
 }
@@ -187,7 +152,7 @@ func (ac *AuthController) GetCaptchaId(c *gin.Context) {
 	length := app.ConfigYml.GetInt("Captcha.length")
 	var captchaId string
 	captchaId = captcha.NewLen(length)
-	app.Response.Success(c, gin.H{
+	ac.Success(c, gin.H{
 		"captchaId": captchaId,
 	})
 }
@@ -196,9 +161,7 @@ func (ac *AuthController) GetCaptchaId(c *gin.Context) {
 func (ac *AuthController) GetCaptchaImg(c *gin.Context) {
 	var req models.CaptchaImgRequest
 	if err := req.Validate(c); err != nil {
-		//app.Response.Fail(c, err.Error())
-		app.ZapLog.Error("获取验证码图片失败", zap.Error(err))
-		return
+		ac.FailAndAbort(c, "获取验证码图片失败", err)
 	}
 	if req.Time != "" {
 		captcha.Reload(req.CaptchaId)

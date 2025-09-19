@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50726
 File Encoding         : 65001
 
-Date: 2025-09-12 18:00:55
+Date: 2025-09-19 18:10:20
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -30,7 +30,7 @@ CREATE TABLE `casbin_rule` (
   `v5` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_casbin_rule` (`ptype`,`v0`,`v1`,`v2`,`v3`,`v4`,`v5`)
-) ENGINE=InnoDB AUTO_INCREMENT=518 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=950 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- ----------------------------
 -- Records of casbin_rule
@@ -72,71 +72,91 @@ INSERT INTO `casbin_rule` VALUES ('49', 'g', 'role_49', 'role_15', null, null, n
 INSERT INTO `casbin_rule` VALUES ('50', 'g', 'role_50', 'role_15', null, null, null, null);
 INSERT INTO `casbin_rule` VALUES ('51', 'g', 'role_52', 'role_51', null, null, null, null);
 INSERT INTO `casbin_rule` VALUES ('54', 'g', 'role_53', 'role_51', '', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('93', 'g', 'user_1', 'role_1', '', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('907', 'g', 'user_1', 'role_1', '', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('949', 'g', 'user_19', 'role_16', '', '', '', '');
 INSERT INTO `casbin_rule` VALUES ('231', 'g', 'user_3', 'role_2', '', '', '', '');
 INSERT INTO `casbin_rule` VALUES ('232', 'g', 'user_3', 'role_3', '', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('495', 'p', 'role_1', '/api/sysApi/*', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('494', 'p', 'role_1', '/api/sysApi/add', 'POST', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('504', 'p', 'role_1', '/api/sysApi/delete', 'DELETE', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('509', 'p', 'role_1', '/api/sysApi/edit', 'PUT', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('502', 'p', 'role_1', '/api/sysApi/list', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('496', 'p', 'role_1', '/api/sysDepartment/add', 'POST', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('511', 'p', 'role_1', '/api/sysDepartment/delete', 'DELETE', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('510', 'p', 'role_1', '/api/sysDepartment/edit', 'PUT', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('512', 'p', 'role_1', '/api/sysDepartment/getDivision', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('499', 'p', 'role_1', '/api/sysDict/getAllDicts', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('507', 'p', 'role_1', '/api/sysMenu/add', 'POST', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('517', 'p', 'role_1', '/api/sysMenu/apis/*', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('493', 'p', 'role_1', '/api/sysMenu/delete', 'DELETE', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('508', 'p', 'role_1', '/api/sysMenu/edit', 'PUT', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('501', 'p', 'role_1', '/api/sysMenu/getMenuList', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('491', 'p', 'role_1', '/api/sysMenu/getRouters', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('503', 'p', 'role_1', '/api/sysMenu/setApis', 'POST', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('505', 'p', 'role_1', '/api/sysRole/add', 'POST', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('492', 'p', 'role_1', '/api/sysRole/addRoleMenu', 'POST', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('506', 'p', 'role_1', '/api/sysRole/delete', 'DELETE', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('498', 'p', 'role_1', '/api/sysRole/edit', 'PUT', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('513', 'p', 'role_1', '/api/sysRole/getRoles', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('516', 'p', 'role_1', '/api/sysRole/getUserPermission/*', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('514', 'p', 'role_1', '/api/users/add', 'POST', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('497', 'p', 'role_1', '/api/users/delete', 'DELETE', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('515', 'p', 'role_1', '/api/users/edit', 'PUT', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('500', 'p', 'role_1', '/api/users/list', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('490', 'p', 'role_1', '/api/users/profile', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('341', 'p', 'role_16', '/api/sysDepartment/getDivision', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('339', 'p', 'role_16', '/api/sysDict/getAllDicts', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('338', 'p', 'role_16', '/api/sysMenu/getRouters', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('334', 'p', 'role_16', '/api/sysRole/getRoles', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('335', 'p', 'role_16', '/api/users/add', 'POST', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('336', 'p', 'role_16', '/api/users/edit', 'PUT', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('340', 'p', 'role_16', '/api/users/list', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('337', 'p', 'role_16', '/api/users/profile', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('368', 'p', 'role_2', '/api/sysDepartment/getDivision', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('366', 'p', 'role_2', '/api/sysDict/getAllDicts', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('373', 'p', 'role_2', '/api/sysMenu/getRouters', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('369', 'p', 'role_2', '/api/sysRole/getRoles', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('370', 'p', 'role_2', '/api/users/add', 'POST', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('371', 'p', 'role_2', '/api/users/edit', 'PUT', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('367', 'p', 'role_2', '/api/users/list', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('372', 'p', 'role_2', '/api/users/profile', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('400', 'p', 'role_3', '/api/sysDict/getAllDicts', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('406', 'p', 'role_3', '/api/sysMenu/getMenuList', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('403', 'p', 'role_3', '/api/sysMenu/getRouters', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('401', 'p', 'role_3', '/api/sysRole/add', 'POST', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('402', 'p', 'role_3', '/api/sysRole/addRoleMenu', 'POST', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('405', 'p', 'role_3', '/api/sysRole/edit', 'PUT', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('404', 'p', 'role_3', '/api/sysRole/getRoles', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('398', 'p', 'role_3', '/api/sysRole/getUserPermission/*', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('399', 'p', 'role_3', '/api/users/profile', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('407', 'p', 'role_4', '/api/sysDict/getAllDicts', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('414', 'p', 'role_4', '/api/sysMenu/getMenuList', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('412', 'p', 'role_4', '/api/sysMenu/getRouters', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('409', 'p', 'role_4', '/api/sysRole/add', 'POST', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('410', 'p', 'role_4', '/api/sysRole/addRoleMenu', 'POST', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('413', 'p', 'role_4', '/api/sysRole/edit', 'PUT', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('408', 'p', 'role_4', '/api/sysRole/getRoles', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('415', 'p', 'role_4', '/api/sysRole/getUserPermission/*', 'GET', '', '', '');
-INSERT INTO `casbin_rule` VALUES ('411', 'p', 'role_4', '/api/users/profile', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('917', 'p', 'role_1', '/api/sysApi/*', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('926', 'p', 'role_1', '/api/sysApi/add', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('908', 'p', 'role_1', '/api/sysApi/delete', 'DELETE', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('946', 'p', 'role_1', '/api/sysApi/edit', 'PUT', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('937', 'p', 'role_1', '/api/sysApi/list', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('918', 'p', 'role_1', '/api/sysDepartment/add', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('927', 'p', 'role_1', '/api/sysDepartment/delete', 'DELETE', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('919', 'p', 'role_1', '/api/sysDepartment/edit', 'PUT', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('944', 'p', 'role_1', '/api/sysDepartment/getDivision', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('920', 'p', 'role_1', '/api/sysDict/add', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('943', 'p', 'role_1', '/api/sysDict/delete', 'DELETE', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('935', 'p', 'role_1', '/api/sysDict/edit', 'PUT', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('932', 'p', 'role_1', '/api/sysDict/getAllDicts', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('936', 'p', 'role_1', '/api/sysDict/list', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('909', 'p', 'role_1', '/api/sysDictItem/add', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('928', 'p', 'role_1', '/api/sysDictItem/delete', 'DELETE', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('921', 'p', 'role_1', '/api/sysDictItem/edit', 'PUT', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('930', 'p', 'role_1', '/api/sysDictItem/getByDictId/*', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('923', 'p', 'role_1', '/api/sysMenu/add', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('916', 'p', 'role_1', '/api/sysMenu/apis/*', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('915', 'p', 'role_1', '/api/sysMenu/delete', 'DELETE', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('924', 'p', 'role_1', '/api/sysMenu/edit', 'PUT', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('929', 'p', 'role_1', '/api/sysMenu/getMenuList', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('940', 'p', 'role_1', '/api/sysMenu/getRouters', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('925', 'p', 'role_1', '/api/sysMenu/setApis', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('941', 'p', 'role_1', '/api/sysRole/add', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('934', 'p', 'role_1', '/api/sysRole/addRoleMenu', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('939', 'p', 'role_1', '/api/sysRole/delete', 'DELETE', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('914', 'p', 'role_1', '/api/sysRole/edit', 'PUT', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('911', 'p', 'role_1', '/api/sysRole/getRoles', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('942', 'p', 'role_1', '/api/sysRole/getUserPermission/*', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('910', 'p', 'role_1', '/api/users/*', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('913', 'p', 'role_1', '/api/users/add', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('945', 'p', 'role_1', '/api/users/delete', 'DELETE', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('938', 'p', 'role_1', '/api/users/edit', 'PUT', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('933', 'p', 'role_1', '/api/users/list', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('922', 'p', 'role_1', '/api/users/logout', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('931', 'p', 'role_1', '/api/users/profile', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('912', 'p', 'role_1', '/api/users/updateAccount', 'PUT', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('895', 'p', 'role_16', '/api/sysDepartment/getDivision', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('898', 'p', 'role_16', '/api/sysDict/getAllDicts', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('897', 'p', 'role_16', '/api/sysMenu/getRouters', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('899', 'p', 'role_16', '/api/sysRole/getRoles', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('903', 'p', 'role_16', '/api/users/*', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('896', 'p', 'role_16', '/api/users/add', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('900', 'p', 'role_16', '/api/users/edit', 'PUT', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('904', 'p', 'role_16', '/api/users/list', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('901', 'p', 'role_16', '/api/users/logout', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('902', 'p', 'role_16', '/api/users/profile', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('872', 'p', 'role_2', '/api/sysDepartment/getDivision', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('870', 'p', 'role_2', '/api/sysDict/getAllDicts', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('863', 'p', 'role_2', '/api/sysMenu/getRouters', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('864', 'p', 'role_2', '/api/sysRole/getRoles', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('869', 'p', 'role_2', '/api/users/*', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('865', 'p', 'role_2', '/api/users/add', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('866', 'p', 'role_2', '/api/users/edit', 'PUT', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('871', 'p', 'role_2', '/api/users/list', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('867', 'p', 'role_2', '/api/users/logout', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('868', 'p', 'role_2', '/api/users/profile', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('882', 'p', 'role_3', '/api/sysDict/getAllDicts', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('879', 'p', 'role_3', '/api/sysMenu/getMenuList', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('877', 'p', 'role_3', '/api/sysMenu/getRouters', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('883', 'p', 'role_3', '/api/sysRole/add', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('880', 'p', 'role_3', '/api/sysRole/addRoleMenu', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('873', 'p', 'role_3', '/api/sysRole/edit', 'PUT', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('878', 'p', 'role_3', '/api/sysRole/getRoles', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('874', 'p', 'role_3', '/api/sysRole/getUserPermission/*', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('881', 'p', 'role_3', '/api/users/*', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('875', 'p', 'role_3', '/api/users/logout', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('876', 'p', 'role_3', '/api/users/profile', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('886', 'p', 'role_4', '/api/sysDict/getAllDicts', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('888', 'p', 'role_4', '/api/sysMenu/getMenuList', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('891', 'p', 'role_4', '/api/sysMenu/getRouters', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('892', 'p', 'role_4', '/api/sysRole/add', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('894', 'p', 'role_4', '/api/sysRole/addRoleMenu', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('893', 'p', 'role_4', '/api/sysRole/edit', 'PUT', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('887', 'p', 'role_4', '/api/sysRole/getRoles', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('889', 'p', 'role_4', '/api/sysRole/getUserPermission/*', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('885', 'p', 'role_4', '/api/users/*', 'GET', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('884', 'p', 'role_4', '/api/users/logout', 'POST', '', '', '');
+INSERT INTO `casbin_rule` VALUES ('890', 'p', 'role_4', '/api/users/profile', 'GET', '', '', '');
 
 -- ----------------------------
 -- Table structure for sys_api
@@ -153,7 +173,7 @@ CREATE TABLE `sys_api` (
   `deleted_at` datetime DEFAULT NULL,
   `created_by` int(11) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------
 -- Records of sys_api
@@ -191,13 +211,26 @@ INSERT INTO `sys_api` VALUES ('30', '根据ID获取API信息', '/api/sysApi/:id'
 INSERT INTO `sys_api` VALUES ('31', '新增API', '/api/sysApi/add', 'POST', 'API管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
 INSERT INTO `sys_api` VALUES ('32', '更新API', '/api/sysApi/edit', 'PUT', 'API管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
 INSERT INTO `sys_api` VALUES ('33', '删除API', '/api/sysApi/delete', 'DELETE', 'API管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, null);
-INSERT INTO `sys_api` VALUES ('34', '测试11', '/api/sysTest/test', 'POST', 'test', '2025-09-03 11:14:23', '2025-09-03 11:30:19', '2025-09-05 15:42:45', '1');
+INSERT INTO `sys_api` VALUES ('34', '测试11', '/api/sysTest/test', 'POST', 'test', '2025-09-03 11:14:23', '2025-09-03 11:30:19', null, '1');
 INSERT INTO `sys_api` VALUES ('35', '根据菜单ID获取API的ID集合', '/api/sysMenu/apis/:id', 'GET', '菜单管理', '2025-09-04 17:25:14', '2025-09-04 17:25:14', null, '1');
 INSERT INTO `sys_api` VALUES ('36', '设置菜单API权限', '/api/sysMenu/setApis', 'POST', '菜单管理', '2025-09-04 17:26:04', '2025-09-04 17:26:04', null, '1');
 INSERT INTO `sys_api` VALUES ('37', '根据ID获取部门信息', '/api/sysDepartment/:id', 'GET', '部门管理', '2025-09-12 14:46:42', '2025-09-12 14:46:42', null, '1');
 INSERT INTO `sys_api` VALUES ('38', '新增部门', '/api/sysDepartment/add', 'POST', '部门管理', '2025-09-12 14:47:27', '2025-09-12 14:47:27', null, '1');
 INSERT INTO `sys_api` VALUES ('39', '更新部门', '/api/sysDepartment/edit', 'PUT', '部门管理', '2025-09-12 14:48:15', '2025-09-12 14:48:27', null, '1');
 INSERT INTO `sys_api` VALUES ('40', '删除部门', '/api/sysDepartment/delete', 'DELETE', '部门管理', '2025-09-12 14:49:15', '2025-09-12 14:49:15', null, '1');
+INSERT INTO `sys_api` VALUES ('41', '字典分页列表', '/api/sysDict/list', 'GET', '字典管理', '2025-09-16 16:31:15', '2025-09-16 16:31:15', null, '1');
+INSERT INTO `sys_api` VALUES ('42', '根据ID获取字典信息', '/api/sysDict/:id', 'GET', '字典管理', '2025-09-16 16:31:15', '2025-09-16 16:31:15', null, '1');
+INSERT INTO `sys_api` VALUES ('43', '新增字典', '/api/sysDict/add', 'POST', '字典管理', '2025-09-16 16:31:15', '2025-09-16 16:31:15', null, '1');
+INSERT INTO `sys_api` VALUES ('44', '更新字典', '/api/sysDict/edit', 'PUT', '字典管理', '2025-09-16 16:31:15', '2025-09-16 16:31:15', null, '1');
+INSERT INTO `sys_api` VALUES ('45', '删除字典', '/api/sysDict/delete', 'DELETE', '字典管理', '2025-09-16 16:31:15', '2025-09-16 16:31:15', null, '1');
+INSERT INTO `sys_api` VALUES ('46', '字典项列表', '/api/sysDictItem/list', 'GET', '字典项管理', '2025-09-16 16:31:15', '2025-09-16 16:31:15', null, '1');
+INSERT INTO `sys_api` VALUES ('47', '根据ID获取字典项信息', '/api/sysDictItem/:id', 'GET', '字典项管理', '2025-09-16 16:31:15', '2025-09-16 16:31:15', null, '1');
+INSERT INTO `sys_api` VALUES ('48', '根据字典ID获取字典项列表', '/api/sysDictItem/getByDictId/:dictId', 'GET', '字典项管理', '2025-09-16 16:31:15', '2025-09-16 16:31:15', null, '1');
+INSERT INTO `sys_api` VALUES ('49', '根据字典编码获取字典项列表', '/api/sysDictItem/getByDictCode/:dictCode', 'GET', '字典项管理', '2025-09-16 16:31:15', '2025-09-16 16:31:15', null, '1');
+INSERT INTO `sys_api` VALUES ('50', '新增字典项', '/api/sysDictItem/add', 'POST', '字典项管理', '2025-09-16 16:31:15', '2025-09-16 16:31:15', null, '1');
+INSERT INTO `sys_api` VALUES ('51', '更新字典项', '/api/sysDictItem/edit', 'PUT', '字典项管理', '2025-09-16 16:31:15', '2025-09-16 16:31:15', null, '1');
+INSERT INTO `sys_api` VALUES ('52', '删除字典项', '/api/sysDictItem/delete', 'DELETE', '字典项管理', '2025-09-16 16:31:15', '2025-09-16 16:31:15', null, '1');
+INSERT INTO `sys_api` VALUES ('53', '修改用户密码、手机号及邮箱', '/api/users/updateAccount', 'PUT', '用户管理', '2025-09-18 18:11:01', '2025-09-18 18:11:01', null, '1');
 
 -- ----------------------------
 -- Table structure for sys_department
@@ -251,7 +284,7 @@ CREATE TABLE `sys_dict` (
   `deleted_at` datetime DEFAULT NULL,
   `created_by` int(11) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------
 -- Records of sys_dict
@@ -260,6 +293,7 @@ INSERT INTO `sys_dict` VALUES ('1', '性别', 'gender', '1', '这是一个性别
 INSERT INTO `sys_dict` VALUES ('2', '状态', 'status', '1', '状态字段可以用这个', '2024-07-01 10:00:00', null, null, null);
 INSERT INTO `sys_dict` VALUES ('3', '岗位', 'post', '1', '岗位字段', '2024-07-01 10:00:00', null, null, null);
 INSERT INTO `sys_dict` VALUES ('4', '任务状态', 'taskStatus', '1', '任务状态字段可以用它', '2024-07-01 10:00:00', null, null, null);
+INSERT INTO `sys_dict` VALUES ('5', '测试字典', 'testStart', '1', '测试字典', '2025-09-16 17:47:37', '2025-09-16 17:47:37', null, '1');
 
 -- ----------------------------
 -- Table structure for sys_dict_item
@@ -272,7 +306,7 @@ CREATE TABLE `sys_dict_item` (
   `status` tinyint(1) DEFAULT NULL COMMENT '状态',
   `dict_id` int(11) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=43 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=46 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------
 -- Records of sys_dict_item
@@ -290,6 +324,8 @@ INSERT INTO `sys_dict_item` VALUES ('35', '普通职员', '5', '1', '3');
 INSERT INTO `sys_dict_item` VALUES ('36', '其它', '999', '1', '3');
 INSERT INTO `sys_dict_item` VALUES ('41', '失败', '0', '1', '4');
 INSERT INTO `sys_dict_item` VALUES ('42', '成功', '1', '1', '4');
+INSERT INTO `sys_dict_item` VALUES ('43', '测试状态1', '1', '1', '5');
+INSERT INTO `sys_dict_item` VALUES ('45', '测试状态2', '2', '1', '5');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -324,7 +360,7 @@ CREATE TABLE `sys_menu` (
   KEY `idx_parent_id` (`parent_id`),
   KEY `idx_sort` (`sort`),
   KEY `idx_type` (`type`)
-) ENGINE=InnoDB AUTO_INCREMENT=140232 DEFAULT CHARSET=utf8mb4 COMMENT='系统菜单路由表';
+) ENGINE=InnoDB AUTO_INCREMENT=140239 DEFAULT CHARSET=utf8mb4 COMMENT='系统菜单路由表';
 
 -- ----------------------------
 -- Records of sys_menu
@@ -380,7 +416,7 @@ INSERT INTO `sys_menu` VALUES ('1003', '10', '/system/menu', 'menu', null, 'syst
 INSERT INTO `sys_menu` VALUES ('1004', '10', '/system/division', 'division', null, 'system/division/division', 'division', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '4', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
 INSERT INTO `sys_menu` VALUES ('1005', '10', '/system/dictionary', 'dictionary', null, 'system/dictionary/dictionary', 'dictionary', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '5', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
 INSERT INTO `sys_menu` VALUES ('1006', '10', '/system/log', 'log', null, 'system/log/log', 'log', '0', '1', '0', '1', '0', '', '0', '', 'icon-menu', '6', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
-INSERT INTO `sys_menu` VALUES ('1007', '10', '/system/userinfo', 'userinfo', null, 'system/userinfo/userinfo', 'userinfo', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '7', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
+INSERT INTO `sys_menu` VALUES ('1007', '10', '/system/userinfo', 'userinfo', '', 'system/userinfo/userinfo', 'userinfo', '0', '1', '0', '1', '0', '', '0', '', 'icon-menu', '7', '2', '0', '', '2025-08-27 09:09:44', '2025-09-17 11:19:11', null, '0');
 INSERT INTO `sys_menu` VALUES ('1301', '13', '/permission/btn-perm', 'btn-perm', null, 'permission/btn-perm/btn-perm', 'btn-perm', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '1', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
 INSERT INTO `sys_menu` VALUES ('1302', '13', '/permission/admin-page', 'admin-page', null, 'permission/admin-page/admin-page', 'admin-page', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '2', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
 INSERT INTO `sys_menu` VALUES ('1303', '13', '/permission/common-page', 'common-page', null, 'permission/common-page/common-page', 'common-page', '0', '0', '0', '1', '0', '', '0', '', 'icon-menu', '3', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, null);
@@ -433,6 +469,13 @@ INSERT INTO `sys_menu` VALUES ('140228', '140213', '', '', '', '', '删除', '0'
 INSERT INTO `sys_menu` VALUES ('140229', '1004', '', '', '', '', '新增部门', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:division:add', '2025-09-12 14:50:55', '2025-09-12 14:50:55', null, '1');
 INSERT INTO `sys_menu` VALUES ('140230', '1004', '', '', '', '', '编辑部门', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:division:edit', '2025-09-12 14:51:17', '2025-09-12 14:51:17', null, '1');
 INSERT INTO `sys_menu` VALUES ('140231', '1004', '', '', '', '', '删除部门', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:division:delete', '2025-09-12 14:51:51', '2025-09-12 14:51:51', null, '1');
+INSERT INTO `sys_menu` VALUES ('140232', '1005', '', '', '', '', '新增', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:dict:add', '2025-09-16 16:38:06', '2025-09-16 16:38:06', null, '1');
+INSERT INTO `sys_menu` VALUES ('140233', '1005', '', '', '', '', '编辑', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:dict:edit', '2025-09-16 16:39:58', '2025-09-16 16:39:58', null, '1');
+INSERT INTO `sys_menu` VALUES ('140234', '1005', '', '', '', '', '删除', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:dict:delete', '2025-09-16 16:40:19', '2025-09-16 16:40:19', null, '1');
+INSERT INTO `sys_menu` VALUES ('140235', '1005', '', '', '', '', '字典项管理', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:dictitem:list', '2025-09-16 17:09:58', '2025-09-16 17:31:35', null, '1');
+INSERT INTO `sys_menu` VALUES ('140236', '1005', '', '', '', '', '新增字典项', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:dictitem:add', '2025-09-16 17:32:06', '2025-09-16 17:32:06', null, '1');
+INSERT INTO `sys_menu` VALUES ('140237', '1005', '', '', '', '', '编辑字典项', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:dictitem:edit', '2025-09-16 17:33:16', '2025-09-16 17:33:16', null, '1');
+INSERT INTO `sys_menu` VALUES ('140238', '1005', '', '', '', '', '删除字典项', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:dictitem:delete', '2025-09-16 17:33:41', '2025-09-16 17:33:41', null, '1');
 
 -- ----------------------------
 -- Table structure for sys_menu_api
@@ -447,16 +490,19 @@ CREATE TABLE `sys_menu_api` (
 -- ----------------------------
 -- Records of sys_menu_api
 -- ----------------------------
+INSERT INTO `sys_menu_api` VALUES ('1', '5');
 INSERT INTO `sys_menu_api` VALUES ('1', '6');
+INSERT INTO `sys_menu_api` VALUES ('1', '7');
 INSERT INTO `sys_menu_api` VALUES ('1', '12');
 INSERT INTO `sys_menu_api` VALUES ('1', '27');
-INSERT INTO `sys_menu_api` VALUES ('1', '34');
 INSERT INTO `sys_menu_api` VALUES ('1001', '8');
 INSERT INTO `sys_menu_api` VALUES ('1001', '18');
 INSERT INTO `sys_menu_api` VALUES ('1001', '19');
 INSERT INTO `sys_menu_api` VALUES ('1002', '19');
 INSERT INTO `sys_menu_api` VALUES ('1003', '13');
 INSERT INTO `sys_menu_api` VALUES ('1004', '18');
+INSERT INTO `sys_menu_api` VALUES ('1005', '41');
+INSERT INTO `sys_menu_api` VALUES ('1007', '53');
 INSERT INTO `sys_menu_api` VALUES ('140213', '29');
 INSERT INTO `sys_menu_api` VALUES ('140214', '9');
 INSERT INTO `sys_menu_api` VALUES ('140215', '10');
@@ -480,6 +526,13 @@ INSERT INTO `sys_menu_api` VALUES ('140228', '33');
 INSERT INTO `sys_menu_api` VALUES ('140229', '38');
 INSERT INTO `sys_menu_api` VALUES ('140230', '39');
 INSERT INTO `sys_menu_api` VALUES ('140231', '40');
+INSERT INTO `sys_menu_api` VALUES ('140232', '43');
+INSERT INTO `sys_menu_api` VALUES ('140233', '44');
+INSERT INTO `sys_menu_api` VALUES ('140234', '45');
+INSERT INTO `sys_menu_api` VALUES ('140235', '48');
+INSERT INTO `sys_menu_api` VALUES ('140236', '50');
+INSERT INTO `sys_menu_api` VALUES ('140237', '51');
+INSERT INTO `sys_menu_api` VALUES ('140238', '52');
 
 -- ----------------------------
 -- Table structure for sys_role
@@ -673,6 +726,13 @@ INSERT INTO `sys_role_menu` VALUES ('1', '140228');
 INSERT INTO `sys_role_menu` VALUES ('1', '140229');
 INSERT INTO `sys_role_menu` VALUES ('1', '140230');
 INSERT INTO `sys_role_menu` VALUES ('1', '140231');
+INSERT INTO `sys_role_menu` VALUES ('1', '140232');
+INSERT INTO `sys_role_menu` VALUES ('1', '140233');
+INSERT INTO `sys_role_menu` VALUES ('1', '140234');
+INSERT INTO `sys_role_menu` VALUES ('1', '140235');
+INSERT INTO `sys_role_menu` VALUES ('1', '140236');
+INSERT INTO `sys_role_menu` VALUES ('1', '140237');
+INSERT INTO `sys_role_menu` VALUES ('1', '140238');
 INSERT INTO `sys_role_menu` VALUES ('2', '1');
 INSERT INTO `sys_role_menu` VALUES ('2', '10');
 INSERT INTO `sys_role_menu` VALUES ('2', '1001');
@@ -716,6 +776,7 @@ CREATE TABLE `sys_user_role` (
 INSERT INTO `sys_user_role` VALUES ('1', '1');
 INSERT INTO `sys_user_role` VALUES ('3', '2');
 INSERT INTO `sys_user_role` VALUES ('3', '3');
+INSERT INTO `sys_user_role` VALUES ('19', '16');
 
 -- ----------------------------
 -- Table structure for users
@@ -739,25 +800,26 @@ CREATE TABLE `users` (
   `created_by` int(11) unsigned DEFAULT '0' COMMENT '创建人',
   PRIMARY KEY (`id`),
   UNIQUE KEY `username` (`username`)
-) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- ----------------------------
 -- Records of users
 -- ----------------------------
-INSERT INTO `users` VALUES ('1', 'admin', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'admin@example.com', '1', '1', '18800000001', '男', '超级管理员', '', '', '2025-08-18 14:55:05', '2025-09-04 17:47:15', null, '0');
-INSERT INTO `users` VALUES ('3', 'zhangsan', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'zhangsan@example.com', '1', '1', '13800000001', '男', '张三', '', '', '2025-08-28 15:26:45', '2025-09-05 11:04:26', null, '1');
-INSERT INTO `users` VALUES ('4', 'lisi', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'lisi@example.com', '1', '1', '13800000002', '男', '李四', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
-INSERT INTO `users` VALUES ('5', 'wangwu', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'wangwu@example.com', '1', '1', '13800000003', '男', '王五', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
-INSERT INTO `users` VALUES ('6', 'zhaoliu', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'zhaoliu@example.com', '1', '1', '13800000004', '男', '赵六', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
-INSERT INTO `users` VALUES ('7', 'sunqi', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'sunqi@example.com', '1', '1', '13800000005', '男', '孙七', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
-INSERT INTO `users` VALUES ('8', 'zhouba', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'zhouba@example.com', '1', '1', '13800000006', '男', '周八', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
-INSERT INTO `users` VALUES ('9', 'wujiu', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'wujiu@example.com', '1', '1', '13800000007', '男', '吴九', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
-INSERT INTO `users` VALUES ('10', 'zhengshi', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'zhengshi@example.com', '1', '1', '13800000008', '男', '郑十', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
-INSERT INTO `users` VALUES ('11', 'lihua', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'lihua@example.com', '1', '1', '13800000009', '女', '李华', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
-INSERT INTO `users` VALUES ('12', 'hanmei', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'hanmei@example.com', '1', '1', '13800000010', '女', '韩梅', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
-INSERT INTO `users` VALUES ('13', 'lucy', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'lucy@example.com', '1', '1', '13800000011', '女', '露西', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
-INSERT INTO `users` VALUES ('14', 'tom', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'tom@example.com', '1', '1', '13800000012', '男', '汤姆', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
-INSERT INTO `users` VALUES ('15', 'jerry', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'jerry@example.com', '1', '1', '13800000013', '男', '杰瑞', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
-INSERT INTO `users` VALUES ('16', 'alice', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'alice@example.com', '1', '1', '13800000014', '女', '爱丽丝', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
-INSERT INTO `users` VALUES ('17', 'bob', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'bob@example.com', '1', '1', '13800000015', '男', '鲍勃', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
+INSERT INTO `users` VALUES ('1', 'admin', '$2a$10$2i5mEP7yLJRiJogOuCYgauPCBCTMSKC.M3cpfln/a7dLSmPMPK3qy', 'admin@example.com', '1', '1', '18800000001', '1', '超级管理员', '', 'test', '2025-08-18 14:55:05', '2025-09-19 18:08:13', null, '0');
+INSERT INTO `users` VALUES ('3', 'zhangsan', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'zhangsan@example.com', '1', '1', '13800000001', '1', '张三', '', '', '2025-08-28 15:26:45', '2025-09-05 11:04:26', null, '1');
+INSERT INTO `users` VALUES ('4', 'lisi', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'lisi@example.com', '1', '1', '13800000002', '1', '李四', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
+INSERT INTO `users` VALUES ('5', 'wangwu', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'wangwu@example.com', '1', '1', '13800000003', '1', '王五', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
+INSERT INTO `users` VALUES ('6', 'zhaoliu', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'zhaoliu@example.com', '1', '1', '13800000004', '1', '赵六', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
+INSERT INTO `users` VALUES ('7', 'sunqi', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'sunqi@example.com', '1', '1', '13800000005', '1', '孙七', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
+INSERT INTO `users` VALUES ('8', 'zhouba', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'zhouba@example.com', '1', '1', '13800000006', '1', '周八', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
+INSERT INTO `users` VALUES ('9', 'wujiu', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'wujiu@example.com', '1', '1', '13800000007', '1', '吴九', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
+INSERT INTO `users` VALUES ('10', 'zhengshi', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'zhengshi@example.com', '1', '1', '13800000008', '1', '郑十', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
+INSERT INTO `users` VALUES ('11', 'lihua', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'lihua@example.com', '1', '1', '13800000009', '1', '李华', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
+INSERT INTO `users` VALUES ('12', 'hanmei', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'hanmei@example.com', '1', '1', '13800000010', '1', '韩梅', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
+INSERT INTO `users` VALUES ('13', 'lucy', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'lucy@example.com', '1', '1', '13800000011', '1', '露西', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
+INSERT INTO `users` VALUES ('14', 'tom', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'tom@example.com', '1', '1', '13800000012', '1', '汤姆', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
+INSERT INTO `users` VALUES ('15', 'jerry', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'jerry@example.com', '1', '1', '13800000013', '1', '杰瑞', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
+INSERT INTO `users` VALUES ('16', 'alice', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'alice@example.com', '1', '1', '13800000014', '1', '爱丽丝', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
+INSERT INTO `users` VALUES ('17', 'bob', '$2a$10$XwLsucEO67/96xfPs9c1OulukfE9bLsO2RLfJHG/kRPDnOOydFzaq', 'bob@example.com', '1', '1', '13800000015', '1', '鲍勃', '', null, '2025-08-28 15:26:45', '2025-08-28 15:26:45', null, '1');
 INSERT INTO `users` VALUES ('18', 'test1', '$2a$10$DqUyiUoQXUW3qKPGus4PqOsfdJbLzRYcHkn/.ZrPeK/b0ip2WCSfy', 'test1@qq. om', '1', '4', '18888888888', '1', 'test1', '', '', '2025-09-04 10:52:42', '2025-09-04 11:05:21', null, '1');
+INSERT INTO `users` VALUES ('19', 'test2111', '$2a$10$k8/kIAoYObq.qcdVATAaTeydmwES706w0gf.SeROPAlydveYI5WH2', 'test2@qq.com', '1', '4', '18800000002', '1', '测试2', '', '123', '2025-09-18 18:17:29', '2025-09-19 18:03:21', null, '1');

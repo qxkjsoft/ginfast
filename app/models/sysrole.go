@@ -56,6 +56,14 @@ func (list SysRoleList) Map(fn func(*SysRole) interface{}) []interface{} {
 	return roles
 }
 
+func (list SysRoleList) GetRoleIDs() []uint {
+	var roleIDs []uint
+	for _, role := range list {
+		roleIDs = append(roleIDs, role.ID)
+	}
+	return roleIDs
+}
+
 func (list *SysRoleList) Find(funcs ...func(*gorm.DB) *gorm.DB) (err error) {
 	err = app.DB().Scopes(funcs...).Find(list).Error
 	return

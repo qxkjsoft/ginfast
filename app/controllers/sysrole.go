@@ -13,26 +13,23 @@ import (
 )
 
 type SysRoleController struct {
+	Common
 }
 
 // 根据用户ID获取角色菜单权限
 func (sc *SysRoleController) GetUserPermission(c *gin.Context) {
 	roleId, err := strconv.ParseUint(c.Param("roleId"), 10, 64)
 	if err != nil {
-		app.ZapLog.Error("Invalid role ID", zap.Error(err))
-		app.Response.Fail(c, "Invalid role ID")
-		return
+		sc.FailAndAbort(c, "Invalid role ID", err)
 	}
 	sysRoleMenuList := models.NewSysRoleMenuList()
 	err = sysRoleMenuList.Find(func(d *gorm.DB) *gorm.DB {
 		return d.Where("role_id = ?", roleId)
 	})
 	if err != nil {
-		app.ZapLog.Error("获取角色菜单权限失败", zap.Error(err))
-		app.Response.Fail(c, "获取角色菜单权限失败")
-		return
+		sc.FailAndAbort(c, "获取角色菜单权限失败", err)
 	}
-	app.Response.Success(c, gin.H{
+	sc.Success(c, gin.H{
 		"list": sysRoleMenuList.Map(func(m *models.SysRoleMenu) uint {
 			return m.MenuID
 		}),
@@ -44,14 +41,15 @@ func (sc *SysRoleController) GetRoles(c *gin.Context) {
 	sysRoleList := models.NewSysRoleList()
 	err := sysRoleList.Find()
 	if err != nil {
-		app.ZapLog.Error("获取角色列表失败", zap.Error(err))
-		app.Response.Fail(c, "获取角色列表失败")
-		return
+		// app.ZapLog.Error("获取角色列表失败", zap.Error(err))
+		// app.Response.Fail(c, "获取角色列表失败")
+		// return
+		sc.FailAndAbort(c, "获取角色列表失败", err)
 	}
 	if !sysRoleList.IsEmpty() {
 		sysRoleList = sysRoleList.BuildTree().TreeSort()
 	}
-	app.Response.Success(c, gin.H{
+	sc.Success(c, gin.H{
 		"list": sysRoleList,
 	})
 }
@@ -60,29 +58,24 @@ func (sc *SysRoleController) GetRoles(c *gin.Context) {
 func (sc *SysRoleController) List(c *gin.Context) {
 	var req models.SysRoleListRequest
 	if err := req.Validate(c); err != nil {
-		app.Response.Fail(c, err.Error())
-		return
+		sc.FailAndAbort(c, err.Error(), err)
 	}
 
 	// 统计总数
 	var count int64
 	err := app.DB().Model(&models.SysRole{}).Scopes(req.Handler()).Count(&count).Error
 	if err != nil {
-		app.ZapLog.Error("统计角色数量失败", zap.Error(err))
-		app.Response.Fail(c, "统计角色数量失败")
-		return
+		sc.FailAndAbort(c, "统计角色数量失败", err)
 	}
 
 	// 查询列表数据
 	sysRoleList := models.NewSysRoleList()
 	err = sysRoleList.Find(req.Paginate(), req.Handler())
 	if err != nil {
-		app.ZapLog.Error("获取角色列表失败", zap.Error(err))
-		app.Response.Fail(c, "获取角色列表失败")
-		return
+		sc.FailAndAbort(c, "获取角色列表失败", err)
 	}
 
-	app.Response.Success(c, gin.H{
+	sc.Success(c, gin.H{
 		"list":  sysRoleList,
 		"total": count,
 	})
@@ -94,9 +87,7 @@ func (sc *SysRoleController) GetByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		app.ZapLog.Error("角色ID格式错误", zap.Error(err))
-		app.Response.Fail(c, "角色ID格式错误")
-		return
+		sc.FailAndAbort(c, "角色ID格式错误", err)
 	}
 
 	// 查询角色信息
@@ -105,25 +96,20 @@ func (sc *SysRoleController) GetByID(c *gin.Context) {
 		return d.Where("id = ?", uint(id))
 	})
 	if err != nil {
-		app.ZapLog.Error("查询角色失败", zap.Error(err))
-		app.Response.Fail(c, "查询角色失败")
-		return
+		sc.FailAndAbort(c, "查询角色失败", err)
 	}
 	if role.IsEmpty() {
-		app.ZapLog.Error("角色不存在")
-		app.Response.Fail(c, "角色不存在")
-		return
+		sc.FailAndAbort(c, "角色不存在", nil)
 	}
 
-	app.Response.Success(c, role)
+	sc.Success(c, role)
 }
 
 // Add 新增角色
 func (sc *SysRoleController) Add(c *gin.Context) {
 	var req models.SysRoleAddRequest
 	if err := req.Validate(c); err != nil {
-		app.Response.Fail(c, err.Error())
-		return
+		sc.FailAndAbort(c, err.Error(), err)
 	}
 
 	// 检查角色名称是否已存在
@@ -132,14 +118,10 @@ func (sc *SysRoleController) Add(c *gin.Context) {
 		return d.Where("name = ?", req.Name)
 	})
 	if err != nil {
-		app.ZapLog.Error("检查角色名称失败", zap.Error(err))
-		app.Response.Fail(c, "检查角色名称失败")
-		return
+		sc.FailAndAbort(c, "检查角色名称失败", err)
 	}
 	if !existRole.IsEmpty() {
-		app.ZapLog.Error("角色名称已存在")
-		app.Response.Fail(c, "角色名称已存在")
-		return
+		sc.FailAndAbort(c, "角色名称已存在", nil)
 	}
 
 	// 如果指定了父级ID，检查父级角色是否存在
@@ -149,14 +131,10 @@ func (sc *SysRoleController) Add(c *gin.Context) {
 			return d.Where("id = ?", req.ParentID)
 		})
 		if err != nil {
-			app.ZapLog.Error("检查父级角色失败", zap.Error(err))
-			app.Response.Fail(c, "检查父级角色失败")
-			return
+			sc.FailAndAbort(c, "检查父级角色失败", err)
 		}
 		if parentRole.IsEmpty() {
-			app.ZapLog.Error("父级角色不存在")
-			app.Response.Fail(c, "父级角色不存在")
-			return
+			sc.FailAndAbort(c, "父级角色不存在", nil)
 		}
 	}
 
@@ -171,25 +149,20 @@ func (sc *SysRoleController) Add(c *gin.Context) {
 
 	err = app.DB().Create(role).Error
 	if err != nil {
-		app.ZapLog.Error("新增角色失败", zap.Error(err))
-		app.Response.Fail(c, "新增角色失败")
-		return
+		sc.FailAndAbort(c, "新增角色失败", err)
 	}
 	// casbin 添加角色继承关系
 	if err = service.CasbinService.AddRoleInheritance(role.ID, req.ParentID); err != nil {
-		app.ZapLog.Error("添加角色继承关系失败", zap.Error(err))
-		app.Response.Fail(c, "添加角色继承关系失败")
-		return
+		sc.FailAndAbort(c, "添加角色继承关系失败", err)
 	}
-	app.Response.Success(c, role, "角色创建成功")
+	sc.SuccessWithMessage(c, "角色创建成功", role)
 }
 
 // Update 更新角色
 func (sc *SysRoleController) Update(c *gin.Context) {
 	var req models.SysRoleUpdateRequest
 	if err := req.Validate(c); err != nil {
-		app.Response.Fail(c, err.Error())
-		return
+		sc.FailAndAbort(c, err.Error(), err)
 	}
 
 	// 检查角色是否存在
@@ -198,14 +171,10 @@ func (sc *SysRoleController) Update(c *gin.Context) {
 		return d.Where("id = ?", req.ID)
 	})
 	if err != nil {
-		app.ZapLog.Error("查询角色失败", zap.Error(err))
-		app.Response.Fail(c, "查询角色失败")
-		return
+		sc.FailAndAbort(c, "查询角色失败", err)
 	}
 	if role.IsEmpty() {
-		app.ZapLog.Error("角色不存在")
-		app.Response.Fail(c, "角色不存在")
-		return
+		sc.FailAndAbort(c, "角色不存在", nil)
 	}
 
 	// 检查角色名称是否与其他角色冲突（排除当前角色）
@@ -214,36 +183,26 @@ func (sc *SysRoleController) Update(c *gin.Context) {
 		return d.Where("name = ? AND id != ?", req.Name, req.ID)
 	})
 	if err != nil {
-		app.ZapLog.Error("检查角色名称失败", zap.Error(err))
-		app.Response.Fail(c, "检查角色名称失败")
-		return
+		sc.FailAndAbort(c, "检查角色名称失败", err)
 	}
 	if !existRole.IsEmpty() {
-		app.ZapLog.Error("角色名称已被其他角色使用")
-		app.Response.Fail(c, "角色名称已被其他角色使用")
-		return
+		sc.FailAndAbort(c, "角色名称已被其他角色使用", nil)
 	}
 
 	// 如果指定了父级ID，检查父级角色是否存在且不能是自己
 	if req.ParentID > 0 {
 		if req.ParentID == req.ID {
-			app.ZapLog.Error("不能将自己设置为父级角色")
-			app.Response.Fail(c, "不能将自己设置为父级角色")
-			return
+			sc.FailAndAbort(c, "不能将自己设置为父级角色", nil)
 		}
 		parentRole := models.NewSysRole()
 		err := parentRole.Find(func(d *gorm.DB) *gorm.DB {
 			return d.Where("id = ?", req.ParentID)
 		})
 		if err != nil {
-			app.ZapLog.Error("检查父级角色失败", zap.Error(err))
-			app.Response.Fail(c, "检查父级角色失败")
-			return
+			sc.FailAndAbort(c, "检查父级角色失败", err)
 		}
 		if parentRole.IsEmpty() {
-			app.ZapLog.Error("父级角色不存在")
-			app.Response.Fail(c, "父级角色不存在")
-			return
+			sc.FailAndAbort(c, "父级角色不存在", nil)
 		}
 	}
 
@@ -256,26 +215,21 @@ func (sc *SysRoleController) Update(c *gin.Context) {
 
 	err = app.DB().Save(role).Error
 	if err != nil {
-		app.ZapLog.Error("更新角色失败", zap.Error(err))
-		app.Response.Fail(c, "更新角色失败")
-		return
+		sc.FailAndAbort(c, "更新角色失败", err)
 	}
 
 	// 编辑角色继承关系
 	if err := service.CasbinService.EditRoleInheritance(role.ID, req.ParentID); err != nil {
-		app.ZapLog.Error("编辑角色继承关系失败", zap.Error(err))
-		app.Response.Fail(c, "编辑角色继承关系失败")
-		return
+		sc.FailAndAbort(c, "编辑角色继承关系失败", err)
 	}
-	app.Response.Success(c, role, "角色更新成功")
+	sc.SuccessWithMessage(c, "角色更新成功", role)
 }
 
 // Delete 删除角色
 func (sc *SysRoleController) Delete(c *gin.Context) {
 	var req models.SysRoleDeleteRequest
 	if err := req.Validate(c); err != nil {
-		app.Response.Fail(c, err.Error())
-		return
+		sc.FailAndAbort(c, err.Error(), err)
 	}
 
 	// 检查角色是否存在
@@ -284,14 +238,10 @@ func (sc *SysRoleController) Delete(c *gin.Context) {
 		return d.Where("id = ?", req.ID)
 	})
 	if err != nil {
-		app.ZapLog.Error("查询角色失败", zap.Error(err))
-		app.Response.Fail(c, "查询角色失败")
-		return
+		sc.FailAndAbort(c, "查询角色失败", err)
 	}
 	if role.IsEmpty() {
-		app.ZapLog.Error("角色不存在")
-		app.Response.Fail(c, "角色不存在")
-		return
+		sc.FailAndAbort(c, "角色不存在", nil)
 	}
 
 	// 检查是否有子角色
@@ -300,28 +250,20 @@ func (sc *SysRoleController) Delete(c *gin.Context) {
 		return d.Where("parent_id = ?", req.ID)
 	})
 	if err != nil {
-		app.ZapLog.Error("检查子角色失败", zap.Error(err))
-		app.Response.Fail(c, "检查子角色失败")
-		return
+		sc.FailAndAbort(c, "检查子角色失败", err)
 	}
 	if !childRoles.IsEmpty() {
-		app.ZapLog.Error("存在子角色，无法删除")
-		app.Response.Fail(c, "存在子角色，无法删除")
-		return
+		sc.FailAndAbort(c, "存在子角色，无法删除", nil)
 	}
 
 	// 检查是否有用户关联此角色
 	var userRoleCount int64
 	err = app.DB().Model(&models.SysUserRole{}).Where("role_id = ?", req.ID).Count(&userRoleCount).Error
 	if err != nil {
-		app.ZapLog.Error("检查用户角色关联失败", zap.Error(err))
-		app.Response.Fail(c, "检查用户角色关联失败")
-		return
+		sc.FailAndAbort(c, "检查用户角色关联失败", err)
 	}
 	if userRoleCount > 0 {
-		app.ZapLog.Error("存在用户关联此角色，无法删除")
-		app.Response.Fail(c, "存在用户关联此角色，无法删除")
-		return
+		sc.FailAndAbort(c, "存在用户关联此角色，无法删除", nil)
 	}
 
 	// 使用事务删除角色和相关数据
@@ -340,25 +282,20 @@ func (sc *SysRoleController) Delete(c *gin.Context) {
 	})
 
 	if err != nil {
-		app.ZapLog.Error("删除角色失败", zap.Error(err))
-		app.Response.Fail(c, "删除角色失败")
-		return
+		sc.FailAndAbort(c, "删除角色失败", err)
 	}
 	// 删除角色继承关系
 	if err := service.CasbinService.DeleteRoleInheritance(role.ID, role.ParentID); err != nil {
-		app.ZapLog.Error("删除角色继承关系失败", zap.Error(err))
-		app.Response.Fail(c, "删除角色继承关系失败")
-		return
+		sc.FailAndAbort(c, "删除角色继承关系失败", err)
 	}
-	app.Response.Success(c, nil, "角色删除成功")
+	sc.SuccessWithMessage(c, "角色删除成功", nil)
 }
 
 // 为角色分配菜单权限
 func (sm *SysRoleController) AddRoleMenu(c *gin.Context) {
 	var req models.SysRoleMenuAssignRequest
 	if err := req.Validate(c); err != nil {
-		app.Response.Fail(c, err.Error())
-		return
+		sm.FailAndAbort(c, err.Error(), err)
 	}
 
 	// 检查角色是否存在
@@ -367,13 +304,10 @@ func (sm *SysRoleController) AddRoleMenu(c *gin.Context) {
 		return d.Where("id = ?", req.RoleID)
 	})
 	if err != nil {
-		app.ZapLog.Error("查询角色失败", zap.Error(err), zap.Uint("roleId", req.RoleID))
-		app.Response.Fail(c, "查询角色失败")
-		return
+		sm.FailAndAbort(c, "查询角色失败", err)
 	}
 	if role.IsEmpty() {
-		app.Response.Fail(c, "角色不存在")
-		return
+		sm.FailAndAbort(c, "角色不存在", nil)
 	}
 
 	// 检查菜单ID是否存在 - 优化为批量查询
@@ -382,9 +316,7 @@ func (sm *SysRoleController) AddRoleMenu(c *gin.Context) {
 		return db.Where("id in ?", req.MenuID).Select("id").Preload("Apis")
 	})
 	if err != nil {
-		app.ZapLog.Error("查询菜单失败", zap.Error(err), zap.Uint("roleId", req.RoleID), zap.Any("menuIds", req.MenuID))
-		app.Response.Fail(c, "查询菜单失败")
-		return
+		sm.FailAndAbort(c, "查询菜单失败", err)
 	}
 
 	// 验证所有请求的菜单ID是否都存在
@@ -395,8 +327,7 @@ func (sm *SysRoleController) AddRoleMenu(c *gin.Context) {
 
 	for _, menuID := range req.MenuID {
 		if !foundMenuIDs[menuID] {
-			app.Response.Fail(c, "菜单ID %d 不存在", menuID)
-			return
+			sm.FailAndAbort(c, "菜单ID不存在", nil)
 		}
 	}
 
@@ -428,17 +359,13 @@ func (sm *SysRoleController) AddRoleMenu(c *gin.Context) {
 	})
 
 	if err != nil {
-		app.ZapLog.Error("分配角色菜单权限失败", zap.Error(err), zap.Uint("roleId", req.RoleID), zap.Any("menuIds", req.MenuID))
-		app.Response.Fail(c, "分配角色菜单权限失败")
-		return
+		sm.FailAndAbort(c, "分配角色菜单权限失败", err)
 	}
 
 	// 调整casbin权限
 	apis := menuList.GetApis().Unique()
 	if err := service.CasbinService.AddPoliciesForRole(req.RoleID, apis); err != nil {
-		app.ZapLog.Error("添加角色权限策略失败", zap.Error(err), zap.Uint("roleId", req.RoleID), zap.Any("apis", apis))
-		app.Response.Fail(c, "添加角色权限策略失败")
-		return
+		sm.FailAndAbort(c, "添加角色权限策略失败", err)
 	}
-	app.Response.Success(c, nil, "分配角色菜单权限成功")
+	sm.SuccessWithMessage(c, "分配角色菜单权限成功", nil)
 }
