@@ -2,6 +2,7 @@ package tokenhelper
 
 import (
 	"context"
+	"crypto/md5"
 	"errors"
 	"fmt"
 	"gin-fast/app/global/app"
@@ -121,8 +122,9 @@ func (s *TokenService) RevokeTokenWithCache(tokenString string) error {
 
 // getTokenKey 获取Redis中存储Token的key
 func (s *TokenService) getTokenKeyWithCache(userID uint, tokenString string) string {
-	// 使用token的简短哈希作为key的一部分，避免key过长
-	tokenHash := fmt.Sprintf("%x", len(tokenString))
+	// 使用MD5哈希算法生成安全的token标识，避免key冲突
+	hash := md5.Sum([]byte(tokenString))
+	tokenHash := fmt.Sprintf("%x", hash)[:8] // 取前8位作为简短标识
 	return fmt.Sprintf("%stoken:%d:%s", s.CacheKeyPrefix, userID, tokenHash)
 }
 
@@ -224,7 +226,7 @@ func (s *TokenService) RefreshAccessToken(refreshTokenString string, user *app.C
 	return newAccessToken, nil
 }
 
-// RefreshAccessToken 使用Refresh Token刷新Access Token 并记录到缓存中
+// RefreshAccessTokenWithCache 使用Refresh Token刷新Access Token 并记录到缓存中
 func (s *TokenService) RefreshAccessTokenWithCache(refreshTokenString string, user *app.ClaimsUser) (string, error) {
 	// 验证refresh token
 	if _, err := s.ValidateRefreshToken(refreshTokenString); err != nil {
@@ -237,6 +239,58 @@ func (s *TokenService) RefreshAccessTokenWithCache(refreshTokenString string, us
 	}
 
 	return newAccessToken, nil
+}
+
+// RotateRefreshToken 轮换Refresh Token（撤销旧的，生成新的，保持相同的剩余过期时间）
+func (s *TokenService) RotateRefreshToken(oldRefreshToken string) (string, error) {
+	// 1. 验证旧的refresh token
+	claims, err := s.ValidateRefreshToken(oldRefreshToken)
+	if err != nil {
+		return "", fmt.Errorf("invalid old refresh token: %w", err)
+	}
+
+	// 2. 计算剩余有效时间
+	now := time.Now()
+	remainingDuration := claims.ExpiresAt.Time.Sub(now)
+	if remainingDuration <= 0 {
+		return "", errors.New("refresh token has expired")
+	}
+
+	// 3. 撤销旧的refresh token
+	if err := s.RevokeRefreshToken(claims.UserID); err != nil {
+		return "", fmt.Errorf("failed to revoke old refresh token: %w", err)
+	}
+
+	// 4. 生成新的refresh token，使用剩余的有效时间
+	expirationTime := now.Add(remainingDuration)
+	newClaims := &app.RefreshTokenClaims{
+		UserID: claims.UserID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, newClaims)
+	newTokenString, err := token.SignedString([]byte(s.JWTSecret))
+	if err != nil {
+		return "", fmt.Errorf("failed to sign new refresh token: %w", err)
+	}
+
+	// 5. 存储新的refresh token到Redis
+	newRefreshTokenInfo := &app.RefreshTokenInfo{
+		UserID:    claims.UserID,
+		Token:     newTokenString,
+		ExpiresAt: expirationTime,
+		CreatedAt: now,
+	}
+
+	if err := s.StoreRefreshToken(newRefreshTokenInfo); err != nil {
+		return "", fmt.Errorf("failed to store new refresh token: %w", err)
+	}
+
+	return newTokenString, nil
 }
 
 // getRefreshTokenKey 获取Redis中存储Refresh Token的key

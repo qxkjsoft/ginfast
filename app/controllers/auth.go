@@ -115,9 +115,24 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 	if err != nil {
 		ac.FailAndAbort(c, "解析token失败", err)
 	}
+
+	// 取消旧的refresh token生成新的refresh token
+	newRefreshToken, err := app.TokenService.RotateRefreshToken(refreshToken)
+	if err != nil {
+		ac.FailAndAbort(c, "轮换refresh token失败", err)
+	}
+
+	// 解析新refresh token的过期时间
+	newRefreshClaims, err := app.TokenService.ParseRefreshToken(newRefreshToken)
+	if err != nil {
+		ac.FailAndAbort(c, "解析新refresh token失败", err)
+	}
+
 	ac.Success(c, gin.H{
-		"accessToken":        newAccessToken,
-		"accessTokenExpires": claims1.ExpiresAt,
+		"accessToken":         newAccessToken,
+		"accessTokenExpires":  claims1.ExpiresAt.Unix(),
+		"refreshToken":        newRefreshToken,
+		"refreshTokenExpires": newRefreshClaims.ExpiresAt.Unix(),
 	})
 }
 
@@ -128,16 +143,16 @@ func (ac *AuthController) Logout(c *gin.Context) {
 	if claims == nil {
 		ac.FailAndAbort(c, "用户未登录", nil)
 	}
-	// 撤销 access token（缓存模式）
-	// tokenString, err := common.GetAccessToken(c)
-	// if err != nil {
-	// 	app.Response.Fail(c, "获取access token失败")
-	// 	return
-	// }
-	// app.TokenService.RevokeTokenWithCache(tokenString)
+
+	// access token如果使用缓存模式，需要撤销 access token
+	tokenString, err := common.GetAccessToken(c)
+	if err == nil && tokenString != "" {
+		// 尝试撤销access token，即使失败也继续执行
+		app.TokenService.RevokeTokenWithCache(tokenString)
+	}
 
 	// 撤销refresh token
-	err := app.TokenService.RevokeRefreshToken(claims.UserID)
+	err = app.TokenService.RevokeRefreshToken(claims.UserID)
 	if err != nil {
 		ac.FailAndAbort(c, "登出失败", err)
 	}

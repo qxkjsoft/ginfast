@@ -49,6 +49,9 @@ type TokenServiceInterface interface {
 
 	// RefreshAccessToken 使用Refresh Token刷新Access Token并记录在缓存中
 	RefreshAccessTokenWithCache(refreshTokenString string, user *ClaimsUser) (string, error)
+
+	// RotateRefreshToken 轮换Refresh Token（撤销旧的，生成新的，保持相同的剩余过期时间）
+	RotateRefreshToken(oldRefreshToken string) (string, error)
 }
 
 // ClaimsUser 用户声明信息
