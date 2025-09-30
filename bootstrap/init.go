@@ -11,6 +11,7 @@ import (
 	"gin-fast/app/utils/gormhelper"
 	"gin-fast/app/utils/response"
 	"gin-fast/app/utils/tokenhelper"
+	"gin-fast/app/utils/uploadhelper"
 	"gin-fast/app/utils/ymlconfig"
 	"log"
 	"os"
@@ -46,6 +47,9 @@ func init() {
 
 	// 初始化token管理
 	app.TokenService = newTokenService(app.Cache)
+
+	// 初始化文件上传服务
+	app.UploadService = newUploadService()
 
 	// 初始化Response
 	app.Response = response.NewResponseHandler()
@@ -180,12 +184,24 @@ func newCache() app.CacheInterf {
 }
 
 func newTokenService(cache app.CacheInterf) app.TokenServiceInterface {
+	tokenExpire := app.ConfigYml.GetDuration("Token.JwtTokenExpire")
+	refreshExpire := app.ConfigYml.GetDuration("Token.JwtTokenRefreshExpire")
+
 	return &tokenhelper.TokenService{
 		RedisHelper:    cache,
 		JWTSecret:      app.ConfigYml.GetString("Token.JwtTokenSignKey"),
 		Ctx:            context.Background(),
-		TokenExpire:    app.ConfigYml.GetDuration("Token.JwtTokenExpire"),
-		RefreshExpire:  app.ConfigYml.GetDuration("Token.JwtTokenRefreshExpire"),
+		TokenExpire:    tokenExpire,
+		RefreshExpire:  refreshExpire,
 		CacheKeyPrefix: app.ConfigYml.GetString("Token.CacheKeyPrefix"),
 	}
+}
+
+// newUploadService 初始化文件上传服务
+func newUploadService() app.FileUploadService {
+	uploadService, err := uploadhelper.CreateUploadService()
+	if err != nil {
+		log.Fatal("初始化文件上传服务失败: " + err.Error())
+	}
+	return uploadService
 }

@@ -9,8 +9,8 @@ HttpServer:
 
 Token:
   JwtTokenSignKey:  "gin-fast"   #设置token生成时加密的签名
-  JwtTokenExpire:  10    #设置token过期时间，单位秒 默认43200=12小时
-  JwtTokenRefreshExpire:  2592000  #设置刷新token过期时间，单位秒 默认2592000=30天
+  JwtTokenExpire:  10    #设置token过期时间，单位秒 示例:43200=12小时
+  JwtTokenRefreshExpire:  2592000  #设置刷新token过期时间，单位秒 示例:2592000=30天
   CacheKeyPrefix: "gin-fast:"  # 缓存前缀
 Redis:
   Host: "127.0.0.1"
@@ -131,3 +131,25 @@ Gormv2: # 只针对 gorm  操作数据库有效
       SetMaxOpenConns: 128
       SetConnMaxLifetime: 60
       SetConnMaxIdleTime: 30    # 空闲连接最大存活时间(秒)
+
+# 文件上传配置
+Upload:
+  # 上传方式: local-本地上传, qiniu-七牛云上传
+  upload_type: "local"
+  
+  # 最大文件大小(单位: MB)
+  max_size: 10
+  
+  # 允许的文件类型
+  allowed_types: [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".txt", ".zip", ".rar"]
+  
+  # 本地上传路径
+  local_path: "./resource/public/uploads"
+  
+  # 七牛云配置
+  qiniu_config:
+    access_key: ""      # 七牛云AccessKey
+    secret_key: ""      # 七牛云SecretKey
+    bucket: ""           # 七牛云存储空间名称
+    domain: ""           # 七牛云域名
+    zone: "ZoneHuadong"  # 七牛云存储区域: ZoneHuadong, ZoneHuabei, ZoneHuanan, ZoneBeimei, ZoneXinjiapo

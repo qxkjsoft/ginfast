@@ -1,6 +1,9 @@
 package models
 
 import (
+	"net/url"
+	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -44,11 +47,70 @@ func (vt *Validator) Check(c *gin.Context, obj interface{}) error {
 	if err := vt.Bind(c, obj); err != nil {
 		return err
 	}
+
+	// 解析数组参数
+	vt.parseArrayParams(c, obj)
+
 	v := validate.Struct(obj)
 	if !v.Validate() {
 		return v.Errors.OneError()
 	}
 	return nil
+}
+
+// parseArrayParams 解析数组参数
+func (vt *Validator) parseArrayParams(c *gin.Context, obj interface{}) {
+	// 获取查询参数
+	query := c.Request.URL.RawQuery
+	if query == "" {
+		return
+	}
+
+	// 解析查询参数
+	values, err := url.ParseQuery(query)
+	if err != nil {
+		return
+	}
+
+	// 使用反射设置对象字段值
+	objValue := reflect.ValueOf(obj).Elem()
+	objType := objValue.Type()
+
+	for i := 0; i < objValue.NumField(); i++ {
+		field := objValue.Field(i)
+		fieldType := objType.Field(i)
+
+		// 只处理切片类型的字段
+		if field.Kind() == reflect.Slice {
+			formTag := fieldType.Tag.Get("form")
+			if formTag != "" {
+				// 查找匹配的数组参数
+				var arrayValues []string
+				for key, vals := range values {
+					if key == formTag || (strings.HasPrefix(key, formTag+"[") && strings.HasSuffix(key, "]")) {
+						arrayValues = append(arrayValues, vals...)
+					}
+				}
+
+				// 如果找到了数组参数，则设置字段值
+				if len(arrayValues) > 0 {
+					elemType := field.Type().Elem()
+					switch elemType.Kind() {
+					case reflect.Uint:
+						uintSlice := make([]uint, len(arrayValues))
+						for j, val := range arrayValues {
+							if u, err := strconv.ParseUint(val, 10, 64); err == nil {
+								uintSlice[j] = uint(u)
+							}
+						}
+						field.Set(reflect.ValueOf(uintSlice))
+					case reflect.String:
+						field.Set(reflect.ValueOf(arrayValues))
+					}
+				}
+			}
+		}
+	}
 }
 
 // 分页

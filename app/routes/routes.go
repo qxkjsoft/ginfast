@@ -3,7 +3,6 @@ package routes
 import (
 	"gin-fast/app/controllers"
 	"gin-fast/app/global/app"
-
 	"gin-fast/app/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -17,6 +16,7 @@ var sysRoleControllers = &controllers.SysRoleController{}
 var sysDictControllers = &controllers.SysDictController{}
 var sysDictItemControllers = &controllers.SysDictItemController{}
 var sysApiControllers = &controllers.SysApiController{}
+var sysAffixControllers = &controllers.SysAffixController{}
 
 // InitRoutes 初始化路由
 func InitRoutes(engine *gin.Engine) {
@@ -64,6 +64,8 @@ func InitRoutes(engine *gin.Engine) {
 			users.POST("/logout", authControllers.Logout)
 			// 更新密码、邮箱及手机号
 			users.PUT("/updateAccount", userControllers.UpdateAccount)
+			// 上传用户头像
+			users.POST("/uploadAvatar", userControllers.UploadAvatar)
 		}
 
 		// 系统菜单路由组
@@ -121,6 +123,8 @@ func InitRoutes(engine *gin.Engine) {
 			sysRole.PUT("/edit", sysRoleControllers.Update)
 			// 删除角色
 			sysRole.DELETE("/delete", sysRoleControllers.Delete)
+			// 更新角色数据权限
+			sysRole.PUT("/dataScope", sysRoleControllers.UpdateDataScope)
 		}
 
 		// 系统字典路由组
@@ -174,6 +178,23 @@ func InitRoutes(engine *gin.Engine) {
 			sysApi.PUT("/edit", sysApiControllers.Update)
 			// 删除API
 			sysApi.DELETE("/delete", sysApiControllers.Delete)
+		}
+
+		// 系统文件附件路由组
+		sysAffix := protected.Group("/sysAffix")
+		{
+			// 上传文件
+			sysAffix.POST("/upload", sysAffixControllers.Upload)
+			// 删除文件
+			sysAffix.DELETE("/delete", sysAffixControllers.Delete)
+			// 修改文件名
+			sysAffix.PUT("/updateName", sysAffixControllers.UpdateName)
+			// 文件列表（分页查询）
+			sysAffix.GET("/list", sysAffixControllers.List)
+			// 根据ID获取文件信息
+			sysAffix.GET("/:id", sysAffixControllers.GetByID)
+			// 获取文件URL
+			sysAffix.GET("/download/:id", sysAffixControllers.Download)
 		}
 	}
 }

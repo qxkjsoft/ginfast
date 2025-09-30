@@ -87,3 +87,12 @@ func (list *UserList) Find(funcs ...func(*gorm.DB) *gorm.DB) (err error) {
 	return
 
 }
+
+func (list *UserList) GetTotal(query ...func(*gorm.DB) *gorm.DB) (int64, error) {
+	var total int64
+	err := app.DB().Model(&User{}).Scopes(query...).Count(&total).Error
+	if err != nil {
+		return 0, err
+	}
+	return total, nil
+}

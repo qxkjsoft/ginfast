@@ -41,9 +41,6 @@ func (sc *SysRoleController) GetRoles(c *gin.Context) {
 	sysRoleList := models.NewSysRoleList()
 	err := sysRoleList.Find()
 	if err != nil {
-		// app.ZapLog.Error("获取角色列表失败", zap.Error(err))
-		// app.Response.Fail(c, "获取角色列表失败")
-		// return
 		sc.FailAndAbort(c, "获取角色列表失败", err)
 	}
 	if !sysRoleList.IsEmpty() {
@@ -368,4 +365,35 @@ func (sm *SysRoleController) AddRoleMenu(c *gin.Context) {
 		sm.FailAndAbort(c, "添加角色权限策略失败", err)
 	}
 	sm.SuccessWithMessage(c, "分配角色菜单权限成功", nil)
+}
+
+// UpdateDataScope 更新角色数据权限
+func (sc *SysRoleController) UpdateDataScope(c *gin.Context) {
+	var req models.SysRoleDataScopeUpdateRequest
+	if err := req.Validate(c); err != nil {
+		sc.FailAndAbort(c, err.Error(), err)
+	}
+
+	// 检查角色是否存在
+	role := models.NewSysRole()
+	err := role.Find(func(d *gorm.DB) *gorm.DB {
+		return d.Where("id = ?", req.ID)
+	})
+	if err != nil {
+		sc.FailAndAbort(c, "查询角色失败", err)
+	}
+	if role.IsEmpty() {
+		sc.FailAndAbort(c, "角色不存在", nil)
+	}
+
+	// 更新数据权限字段
+	role.DataScope = req.DataScope
+	role.CheckedDepts = req.CheckedDepts
+
+	err = app.DB().Save(role).Error
+	if err != nil {
+		sc.FailAndAbort(c, "更新角色数据权限失败", err)
+	}
+
+	sc.SuccessWithMessage(c, "角色数据权限更新成功", role)
 }

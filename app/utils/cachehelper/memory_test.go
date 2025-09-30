@@ -2,7 +2,6 @@ package cachehelper
 
 import (
 	"context"
-	"gin-fast/app/global/app"
 	"reflect"
 	"sync"
 	"testing"
@@ -17,10 +16,8 @@ func TestNewMemoryHelper(t *testing.T) {
 	}
 
 	// 验证返回的是正确的接口类型
-	_, ok := cache.(app.CacheInterf)
-	if !ok {
-		t.Fatal("NewMemoryHelper() 返回的不是 CacheInterf 接口")
-	}
+	// 由于 NewMemoryHelper() 已经返回了 app.CacheInterf 接口类型，无需类型断言
+	_ = cache
 }
 
 // TestMemoryHelper_SetAndGet 测试设置和获取操作

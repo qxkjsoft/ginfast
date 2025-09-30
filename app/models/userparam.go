@@ -2,6 +2,7 @@ package models
 
 import (
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // RefreshRequest 刷新token请求结构
@@ -19,7 +20,7 @@ type AddRequest struct {
 	Sex         string `form:"sex" validate:"required" message:"性别不能为空"`
 	DeptId      uint   `form:"deptId" validate:"required" message:"部门ID不能为空"`
 	Roles       []uint `form:"roles" validate:"required" message:"角色不能为空"`
-	Status      int8   `form:"status" validate:"required" message:"状态不能为空"`
+	Status      int8   `form:"status"`
 	Description string `form:"description"`
 }
 
@@ -37,7 +38,7 @@ type UpdateRequest struct {
 	Sex         string `form:"sex" validate:"required" message:"性别不能为空"`
 	DeptId      uint   `form:"deptId" validate:"required" message:"部门ID不能为空"`
 	Roles       []uint `form:"roles" validate:"required" message:"角色不能为空"`
-	Status      int8   `form:"status" validate:"required" message:"状态不能为空"`
+	Status      int8   `form:"status" `
 	Description string `form:"description"`
 }
 
@@ -80,10 +81,40 @@ func (r *CaptchaImgRequest) Validate(c *gin.Context) error {
 type UserListRequest struct {
 	BasePaging
 	Validator
+	Ids        []uint   `form:"ids"`
+	DeptIds    []uint   `form:"deptIds"`
+	Name       string   `form:"name"`
+	Phone      string   `form:"phone"`
+	Status     string   `form:"status"`
+	CreateTime []string `form:"createTime"`
 }
 
 func (r *UserListRequest) Validate(c *gin.Context) error {
 	return r.Check(c, r)
+}
+
+func (r *UserListRequest) Handle() func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if len(r.Ids) > 0 {
+			db = db.Where("id IN ?", r.Ids)
+		}
+		if len(r.DeptIds) > 0 {
+			db = db.Where("dept_id IN ?", r.DeptIds)
+		}
+		if r.Name != "" {
+			db = db.Where("username LIKE ? OR nick_name LIKE ?", "%"+r.Name+"%", "%"+r.Name+"%")
+		}
+		if r.Phone != "" {
+			db = db.Where("phone LIKE ?", "%"+r.Phone+"%")
+		}
+		if r.Status != "" {
+			db = db.Where("status = ?", r.Status)
+		}
+		if len(r.CreateTime) > 1 {
+			db = db.Where("created_at BETWEEN ? AND ?", r.CreateTime[0], r.CreateTime[1])
+		}
+		return db
+	}
 }
 
 // DeleteRequest 删除用户请求结构

@@ -20,6 +20,7 @@ var (
 	Cache            CacheInterf           // 缓存指针
 	TokenService     TokenServiceInterface // token管理
 	Response         ResponseHandler
+	UploadService    FileUploadService // 文件上传服务
 )
 
 /*

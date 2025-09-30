@@ -25,7 +25,7 @@ type SysRoleUpdateRequest struct {
 	ID          uint   `form:"id" validate:"required" message:"角色ID不能为空"`
 	Name        string `form:"name" validate:"required" message:"角色名称不能为空"`
 	Sort        int    `form:"sort" validate:"gte:0" message:"排序值不能为负数"`
-	Status      int8   `form:"status" validate:"required|in:0,1" message:"状态值必须为0或1"`
+	Status      int8   `form:"status" validate:"in:0,1" message:"状态值必须为0或1"`
 	Description string `form:"description"`
 	ParentID    uint   `form:"parentId" validate:"gte:0" message:"父级ID不能为负数"`
 }
@@ -90,5 +90,17 @@ type SysRoleMenuAssignRequest struct {
 }
 
 func (r *SysRoleMenuAssignRequest) Validate(c *gin.Context) error {
+	return r.Check(c, r)
+}
+
+// SysRoleDataScopeUpdateRequest 角色数据权限更新请求结构
+type SysRoleDataScopeUpdateRequest struct {
+	Validator
+	ID           uint   `form:"id" json:"id" validate:"required" message:"角色ID不能为空"`
+	CheckedDepts string `form:"checkedDepts" json:"checkedDepts"`
+	DataScope    int8   `form:"dataScope" json:"dataScope" validate:"required|in:0,1,2,3,4,5" message:"数据权限必须在0-5之间"`
+}
+
+func (r *SysRoleDataScopeUpdateRequest) Validate(c *gin.Context) error {
 	return r.Check(c, r)
 }

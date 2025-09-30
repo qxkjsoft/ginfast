@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"strings"
+
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
 	"gin-fast/app/service"
@@ -45,21 +47,21 @@ func (uc *UserController) List(c *gin.Context) {
 	if err := req.Validate(c); err != nil {
 		uc.FailAndAbort(c, err.Error(), err)
 	}
-	var count int64
-	err := app.DB().Model(&models.User{}).Count(&count).Error
+
+	userList := models.NewUserList()
+	total, err := userList.GetTotal(req.Handle())
 	if err != nil {
 		uc.FailAndAbort(c, err.Error(), err)
 	}
-	userList := models.NewUserList()
-	err = userList.Find(req.Paginate(), func(d *gorm.DB) *gorm.DB {
-		return d.Omit("password").Preload("Roles")
+	err = userList.Find(req.Paginate(), req.Handle(), func(d *gorm.DB) *gorm.DB {
+		return d.Omit("password").Preload("Roles").Preload("Department")
 	})
 	if err != nil {
 		uc.FailAndAbort(c, err.Error(), err)
 	}
 	uc.Success(c, gin.H{
 		"list":  userList,
-		"total": count,
+		"total": total,
 	})
 
 }
@@ -328,4 +330,53 @@ func (uc *UserController) UpdateAccount(c *gin.Context) {
 	}
 
 	uc.SuccessWithMessage(c, "账户信息更新成功", nil)
+}
+
+// UploadAvatar 上传用户头像
+func (uc *UserController) UploadAvatar(c *gin.Context) {
+	// 从上下文中获取用户ID
+	claims := common.GetClaims(c)
+	if claims == nil {
+		uc.FailAndAbort(c, "用户未登录", nil)
+	}
+
+	// 处理文件上传
+	response, err := app.UploadService.HandleUpload(c, "file")
+	if err != nil {
+		uc.FailAndAbort(c, "文件上传失败", err)
+	}
+
+	// 验证文件是否为图片类型
+	validImageTypes := []string{".jpg", ".jpeg", ".png", ".gif", ".bmp"}
+	isImage := false
+	for _, ext := range validImageTypes {
+		if strings.EqualFold(response.FileType, ext) {
+			isImage = true
+			break
+		}
+	}
+	if !isImage {
+		uc.FailAndAbort(c, "只允许上传图片文件", nil)
+	}
+
+	// 获取用户信息
+	user := models.NewUser()
+	err = user.GetUserByID(claims.UserID)
+	if err != nil {
+		uc.FailAndAbort(c, "获取用户信息失败", err)
+	}
+	if user.IsEmpty() {
+		uc.FailAndAbort(c, "用户不存在", nil)
+	}
+
+	// 更新用户头像字段
+	user.Avatar = response.Url
+	if err := app.DB().Save(user).Error; err != nil {
+		uc.FailAndAbort(c, "更新用户头像失败", err)
+	}
+
+	// 返回成功响应
+	uc.Success(c, gin.H{
+		"url": response.Url,
+	})
 }

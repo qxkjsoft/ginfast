@@ -11,14 +11,16 @@ import (
 // SysRole 系统角色模型
 type SysRole struct {
 	BaseModel
-	Name        string      `gorm:"column:name;size:255;default:'';comment:角色名称" json:"name"`
-	Sort        int         `gorm:"column:sort;default:0;comment:排序" json:"sort"`
-	Status      int8        `gorm:"column:status;default:0;comment:状态" json:"status"`
-	Description string      `gorm:"column:description;size:255;comment:描述" json:"description"`
-	ParentID    uint        `gorm:"column:parent_id;default:0;comment:父级ID" json:"parentId"`
-	CreatedBy   uint        `gorm:"column:created_by;comment:创建人" json:"createdBy"`
-	Users       UserList    `gorm:"many2many:sys_user_role;foreignKey:id;joinForeignKey:role_id;References:id;joinReferences:user_id" json:"users"`
-	Children    SysRoleList `gorm:"-" json:"children"`
+	Name         string      `gorm:"column:name;size:255;default:'';comment:角色名称" json:"name"`
+	Sort         int         `gorm:"column:sort;default:0;comment:排序" json:"sort"`
+	Status       int8        `gorm:"column:status;default:0;comment:状态" json:"status"`
+	Description  string      `gorm:"column:description;size:255;comment:描述" json:"description"`
+	ParentID     uint        `gorm:"column:parent_id;default:0;comment:父级ID" json:"parentId"`
+	CreatedBy    uint        `gorm:"column:created_by;comment:创建人" json:"createdBy"`
+	Users        UserList    `gorm:"many2many:sys_user_role;foreignKey:id;joinForeignKey:role_id;References:id;joinReferences:user_id" json:"users"`
+	DataScope    int8        `gorm:"column:data_scope;default:0;comment:数据权限" json:"dataScope"`
+	CheckedDepts string      `gorm:"column:checked_depts;comment:已选择部门" json:"checkedDepts"`
+	Children     SysRoleList `gorm:"-" json:"children"`
 }
 
 // TableName 设置表名

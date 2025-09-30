@@ -11,4 +11,13 @@ const (
 	DbTypeSqlServer  = "sqlserver"
 	DbTypePostgreSql = "postgresql"
 	RequestAborted   = "request_aborted"
+	// 上传类型
+	UploadTypeLocal = "local"
+	UploadTypeQiniu = "qiniu"
+	// 上传文件类型
+	UploadFileTypeImage    = "image"
+	UploadFileTypeVideo    = "video"
+	UploadFileTypeAudio    = "audio"
+	UploadFileTypeDocument = "document"
+	UploadFileTypeOther    = "other"
 )
