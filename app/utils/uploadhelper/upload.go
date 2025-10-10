@@ -8,23 +8,23 @@ import (
 
 // GetUploadType 获取上传类型
 func GetUploadType() string {
-	return app.ConfigYml.GetString("Upload.upload_type")
+	return app.ConfigYml.GetString("upload.upload_type")
 }
 
 // GetUploadConfig 获取上传配置
 func GetUploadConfig() app.UploadConfig {
 	uploadType := GetUploadType()
-	maxSize := app.ConfigYml.GetInt("Upload.max_size")
-	allowedTypes := app.ConfigYml.GetStringSlice("Upload.allowed_types")
-	localPath := app.ConfigYml.GetString("Upload.local_path")
+	maxSize := app.ConfigYml.GetInt("upload.max_size")
+	allowedTypes := app.ConfigYml.GetStringSlice("upload.allowed_types")
+	localPath := app.ConfigYml.GetString("upload.local_path")
 
 	// 获取七牛云配置
 	qiniuConfig := app.QiniuConfig{
-		AccessKey: app.ConfigYml.GetString("Upload.qiniu_config.access_key"),
-		SecretKey: app.ConfigYml.GetString("Upload.qiniu_config.secret_key"),
-		Bucket:    app.ConfigYml.GetString("Upload.qiniu_config.bucket"),
-		Domain:    app.ConfigYml.GetString("Upload.qiniu_config.domain"),
-		Zone:      app.ConfigYml.GetString("Upload.qiniu_config.zone"),
+		AccessKey: app.ConfigYml.GetString("upload.qiniu_config.access_key"),
+		SecretKey: app.ConfigYml.GetString("upload.qiniu_config.secret_key"),
+		Bucket:    app.ConfigYml.GetString("upload.qiniu_config.bucket"),
+		Domain:    app.ConfigYml.GetString("upload.qiniu_config.domain"),
+		Zone:      app.ConfigYml.GetString("upload.qiniu_config.zone"),
 	}
 
 	return app.UploadConfig{

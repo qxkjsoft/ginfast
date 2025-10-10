@@ -2,6 +2,7 @@ package tokenhelper
 
 import (
 	"context"
+	"gin-fast/app/global/app"
 	"testing"
 	"time"
 
@@ -56,6 +57,10 @@ func (m *MockCacheInterf) Expire(ctx context.Context, key string, expiration tim
 
 func (m *MockCacheInterf) Close() error {
 	return nil
+}
+
+func (m *MockCacheInterf) GetAll(ctx context.Context) ([]app.CacheItem, error) {
+	return nil, nil
 }
 
 func TestRotateRefreshToken(t *testing.T) {

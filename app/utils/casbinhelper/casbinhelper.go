@@ -40,8 +40,6 @@ func NewCasbinHelper() *CasbinHelper {
 
 // InitCasbin 初始化Casbin
 func (s *CasbinHelper) InitCasbin(db *gorm.DB, config string) error {
-
-	//m, err := model.NewModelFromString(app.ConfigYml.GetString("Casbin.ModelConfig"))
 	m, err := model.NewModelFromString(config)
 	if err != nil {
 		return fmt.Errorf("failed to create model: %v", err)
@@ -59,7 +57,7 @@ func (s *CasbinHelper) InitCasbin(db *gorm.DB, config string) error {
 	}
 
 	// 创建Casbin适配器
-	adapter, err := gormadapter.NewAdapterByDBUseTableName(db, app.ConfigYml.GetString("Casbin.TablePrefix"), app.ConfigYml.GetString("Casbin.TableName"))
+	adapter, err := gormadapter.NewAdapterByDBUseTableName(db, app.ConfigYml.GetString("casbin.tableprefix"), app.ConfigYml.GetString("casbin.tablename"))
 	if err != nil {
 		return fmt.Errorf("failed to create Casbin adapter: %v\nTable: casbin_rule", err)
 	}
@@ -352,7 +350,7 @@ func (s *CasbinHelper) GetPermissionsForUser(userID uint) ([][]string, error) {
 // startAutoLoadPolicy 启动定期重载策略的goroutine
 func (s *CasbinHelper) startAutoLoadPolicy() {
 	// 从配置文件读取自动重载间隔
-	autoLoadSeconds := app.ConfigYml.GetInt("Casbin.AutoLoadPolicySeconds")
+	autoLoadSeconds := app.ConfigYml.GetInt("casbin.autoloadpolicyseconds")
 	if autoLoadSeconds <= 0 {
 		app.ZapLog.Info("AutoLoadPolicySeconds not configured or invalid, skip auto reload policy")
 		return

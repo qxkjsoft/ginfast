@@ -60,6 +60,13 @@ func (r *redisHelper) Expire(ctx context.Context, key string, expiration time.Du
 	return r.client.Expire(ctx, key, expiration).Err()
 }
 
+// GetAll 获取所有缓存项（Redis实现中不支持直接获取所有键值对）
+func (r *redisHelper) GetAll(ctx context.Context) ([]app.CacheItem, error) {
+	// Redis没有简单的方法获取所有键值对，这里返回空数组
+	// 如果需要实现此功能，需要使用SCAN命令遍历所有键，然后逐个获取值
+	return []app.CacheItem{}, nil
+}
+
 // Close 关闭连接
 func (r *redisHelper) Close() error {
 	return r.client.Close()

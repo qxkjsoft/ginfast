@@ -64,7 +64,7 @@ func (s *QiniuUploadService) HandleUpload(c *gin.Context, fileName string) (*app
 	}
 
 	// 上传文件
-	fileUrl, err := s.UploadFile(file)
+	res, err := s.UploadFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("上传文件失败: %v", err)
 	}
@@ -74,23 +74,32 @@ func (s *QiniuUploadService) HandleUpload(c *gin.Context, fileName string) (*app
 
 	// 构建响应
 	response := &app.UploadResponse{
-		Url:      fileUrl,
+		Url:      res.Url,
 		FileName: file.Filename,
 		Size:     file.Size,
 		FileType: fileExt,
+		Path:     res.Path,
 	}
 
 	return response, nil
 }
 
 // UploadFile 上传文件
-func (s *QiniuUploadService) UploadFile(file *multipart.FileHeader) (string, error) {
+func (s *QiniuUploadService) UploadFile(file *multipart.FileHeader) (*app.UploadFileResponse, error) {
 	// 生成文件名
 	fileName := s.GenerateFileName(file.Filename)
 
 	// 上传文件
 	key := fileName
-	return s.uploadFile(file, key)
+	url, err := s.uploadFile(file, key)
+	if err != nil {
+		return nil, err
+	}
+	return &app.UploadFileResponse{
+		Url:      url,
+		FileName: fileName,
+		Path:     "",
+	}, nil
 }
 
 // UploadFileWithCustomPath 上传文件到指定路径

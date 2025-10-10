@@ -15,7 +15,7 @@ import (
 
 func GetEngine() *gin.Engine {
 	var engine *gin.Engine
-	if app.ConfigYml.GetBool("Server.AppDebug") == false {
+	if app.ConfigYml.GetBool("server.appdebug") == false {
 		gin.SetMode(gin.ReleaseMode)
 		gin.DefaultWriter = io.Discard
 		engine = gin.New()

@@ -1,6 +1,10 @@
 package controllers
 
 import (
+	"context"
+	"strconv"
+	"time"
+
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
 
@@ -23,6 +27,12 @@ func (ac *AuthController) Login(c *gin.Context) {
 	if err := req.Validate(c); err != nil {
 		ac.FailAndAbort(c, err.Error(), err)
 	}
+
+	// 获取安全配置
+	loginLockThreshold := app.ConfigYml.GetInt("safe.loginlockthreshold")
+	loginLockExpire := app.ConfigYml.GetInt("safe.loginlockexpire")
+	loginLockDuration := app.ConfigYml.GetInt("safe.loginlockduration")
+
 	// 根据用户名查找用户
 	user := models.NewUser()
 	err := user.GetUserByUsername(req.Username)
@@ -33,9 +43,56 @@ func (ac *AuthController) Login(c *gin.Context) {
 	if user.IsEmpty() {
 		ac.FailAndAbort(c, "用户不存在", nil)
 	}
-	// 验证密码
-	if err = passwordhelper.ComparePassword(user.Password, req.Password); err != nil {
-		ac.FailAndAbort(c, "密码错误", err)
+
+	// 如果启用了登录锁定功能
+	if loginLockThreshold > 0 {
+		// 检查账户是否被锁定
+		lockKey := "account_locked:" + req.Username
+		if locked, _ := app.Cache.Exists(context.Background(), lockKey); locked > 0 {
+			ac.FailAndAbort(c, "账户已被锁定，请稍后再试", nil)
+			return
+		}
+
+		// 验证密码
+		if err = passwordhelper.ComparePassword(user.Password, req.Password); err != nil {
+			// 密码错误，增加失败次数
+			failCountKey := "login_fail_count:" + req.Username
+
+			// 获取当前失败次数
+			var failCount int
+			if countStr, err := app.Cache.Get(context.Background(), failCountKey); err == nil && countStr != "" {
+				failCount, _ = strconv.Atoi(countStr)
+			}
+
+			// 增加失败次数
+			failCount++
+
+			// 更新失败次数，设置过期时间
+			app.Cache.Set(context.Background(), failCountKey, strconv.Itoa(failCount), time.Duration(loginLockExpire)*time.Second)
+
+			// 检查是否达到锁定阈值
+			if failCount >= loginLockThreshold {
+				// 锁定账户
+				app.Cache.Set(context.Background(), lockKey, "1", time.Duration(loginLockDuration)*time.Second)
+				ac.FailAndAbort(c, "密码错误次数过多，账户已被锁定", nil)
+				return
+			}
+
+			// 返回密码错误，并提示剩余尝试次数
+			remainingAttempts := loginLockThreshold - failCount
+			ac.FailAndAbort(c, "密码错误，剩余尝试次数: "+strconv.Itoa(remainingAttempts), err)
+			return
+		}
+
+		// 密码正确，清除失败次数
+		failCountKey := "login_fail_count:" + req.Username
+		app.Cache.Del(context.Background(), failCountKey)
+	} else {
+		// 未启用登录锁定功能，使用原有逻辑
+		// 验证密码
+		if err = passwordhelper.ComparePassword(user.Password, req.Password); err != nil {
+			ac.FailAndAbort(c, "密码错误", err)
+		}
 	}
 
 	// 生成token
@@ -164,7 +221,7 @@ func (ac *AuthController) Logout(c *gin.Context) {
 
 // 生成验证码ID
 func (ac *AuthController) GetCaptchaId(c *gin.Context) {
-	length := app.ConfigYml.GetInt("Captcha.length")
+	length := app.ConfigYml.GetInt("captcha.length")
 	var captchaId string
 	captchaId = captcha.NewLen(length)
 	ac.Success(c, gin.H{

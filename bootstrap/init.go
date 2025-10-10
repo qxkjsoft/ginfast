@@ -29,7 +29,7 @@ func init() {
 	// 配置文件
 	app.ConfigYml = ymlconfig.CreateYamlFactory(app.BasePath + "/config")
 	app.ConfigYml.ConfigFileChangeListen(func() {
-		log.Println("配置文件发生变化，重新加载配置")
+		//log.Println("配置文件发生变化，重新加载配置")
 	})
 	// 日志
 	app.ZapLog = createZapFactory(service.ZapLogHandler)
@@ -37,7 +37,7 @@ func init() {
 	initDB()
 	// 初始化casbin
 	app.CasbinV2 = casbinhelper.NewCasbinHelper()
-	err := app.CasbinV2.InitCasbin(app.DB(), app.ConfigYml.GetString("Casbin.ModelConfig"))
+	err := app.CasbinV2.InitCasbin(app.DB(), app.ConfigYml.GetString("casbin.modelconfig"))
 	if err != nil {
 		log.Fatal("CasbinV2.InitCasbin err :" + err.Error())
 	}
@@ -58,7 +58,7 @@ func init() {
 // 初始化数据库
 func initDB() {
 	// mysql
-	if app.ConfigYml.GetInt("Gormv2.Mysql.IsInitGlobalGormMysql") == 1 {
+	if app.ConfigYml.GetInt("gormv2.mysql.isinitglobalgormmysql") == 1 {
 		if dbMysql, err := gormhelper.GetOneMysqlClient(); err != nil {
 			log.Fatal(myerrors.ErrorsGormInitFail + err.Error())
 		} else {
@@ -66,7 +66,7 @@ func initDB() {
 		}
 	}
 	//sqlserver
-	if app.ConfigYml.GetInt("Gormv2.Sqlserver.IsInitGlobalGormSqlserver") == 1 {
+	if app.ConfigYml.GetInt("gormv2.sqlserver.isinitglobalgormsqlserver") == 1 {
 		if dbSqlserver, err := gormhelper.GetOneSqlserverClient(); err != nil {
 			log.Fatal(myerrors.ErrorsGormInitFail + err.Error())
 		} else {
@@ -74,7 +74,7 @@ func initDB() {
 		}
 	}
 	//postgresql
-	if app.ConfigYml.GetInt("Gormv2.Postgresql.IsInitGlobalGormPostgresql") == 1 {
+	if app.ConfigYml.GetInt("gormv2.postgresql.isinitglobalgormpostgresql") == 1 {
 		if dbPostgresql, err := gormhelper.GetOnePostgreSqlClient(); err != nil {
 			log.Fatal(myerrors.ErrorsGormInitFail + err.Error())
 		} else {
@@ -106,7 +106,7 @@ func checkRequiredFolders() {
 // createZapFactory 创建zap日志工厂
 func createZapFactory(entry func(zapcore.Entry) error) *zap.Logger {
 	// 获取程序所处的模式：  开发调试 、 生产
-	appDebug := app.ConfigYml.GetBool("Server.AppDebug")
+	appDebug := app.ConfigYml.GetBool("server.appdebug")
 
 	// 判断程序当前所处的模式，调试模式直接返回一个便捷的zap日志管理器地址，所有的日志打印到控制台即可
 	if appDebug == true {
@@ -120,7 +120,7 @@ func createZapFactory(entry func(zapcore.Entry) error) *zap.Logger {
 	// 以下才是 非调试（生产）模式所需要的代码
 	encoderConfig := zap.NewProductionEncoderConfig()
 
-	timePrecision := app.ConfigYml.GetString("Logs.TimePrecision")
+	timePrecision := app.ConfigYml.GetString("logs.timeprecision")
 	var recordTimeFormat string
 	switch timePrecision {
 	case "second":
@@ -138,7 +138,7 @@ func createZapFactory(entry func(zapcore.Entry) error) *zap.Logger {
 	encoderConfig.TimeKey = "created_at" // 生成json格式日志的时间键字段，默认为 ts,修改以后方便日志导入到 ELK 服务器
 
 	var encoder zapcore.Encoder
-	switch app.ConfigYml.GetString("Logs.TextFormat") {
+	switch app.ConfigYml.GetString("logs.textformat") {
 	case "console":
 		encoder = zapcore.NewConsoleEncoder(encoderConfig) // 普通模式
 	case "json":
@@ -146,15 +146,14 @@ func createZapFactory(entry func(zapcore.Entry) error) *zap.Logger {
 	default:
 		encoder = zapcore.NewConsoleEncoder(encoderConfig) // 普通模式
 	}
-
-	//写入器
-	fileName := app.BasePath + app.ConfigYml.GetString("Logs.ZapLogName")
+	// 写入器
+	fileName := app.BasePath + app.ConfigYml.GetString("logs.zaplogname")
 	lumberJackLogger := &lumberjack.Logger{
 		Filename:   fileName,                                //日志文件的位置
-		MaxSize:    app.ConfigYml.GetInt("Logs.MaxSize"),    //在进行切割之前，日志文件的最大大小（以MB为单位）
-		MaxBackups: app.ConfigYml.GetInt("Logs.MaxBackups"), //保留旧文件的最大个数
-		MaxAge:     app.ConfigYml.GetInt("Logs.MaxAge"),     //保留旧文件的最大天数
-		Compress:   app.ConfigYml.GetBool("Logs.Compress"),  //是否压缩/归档旧文件
+		MaxSize:    app.ConfigYml.GetInt("logs.maxsize"),    //在进行切割之前，日志文件的最大大小（以MB为单位）
+		MaxBackups: app.ConfigYml.GetInt("logs.maxbackups"), //保留旧文件的最大个数
+		MaxAge:     app.ConfigYml.GetInt("logs.maxage"),     //保留旧文件的最大天数
+		Compress:   app.ConfigYml.GetBool("logs.compress"),  //是否压缩/归档旧文件
 	}
 	writer := zapcore.AddSync(lumberJackLogger)
 	// 开始初始化zap日志核心参数，
@@ -167,12 +166,12 @@ func createZapFactory(entry func(zapcore.Entry) error) *zap.Logger {
 
 // newCache 初始化缓存
 func newCache() app.CacheInterf {
-	cacheType := app.ConfigYml.GetString("Server.CacheType")
+	cacheType := app.ConfigYml.GetString("server.cachetype")
 	if cacheType == "redis" {
 		redisHelper, err := cachehelper.NewRedisHelper(
-			app.ConfigYml.GetString("Redis.Host")+":"+app.ConfigYml.GetString("Redis.Port"),
-			app.ConfigYml.GetString("Redis.Password"),
-			app.ConfigYml.GetInt("Redis.IndexDb"),
+			app.ConfigYml.GetString("redis.host")+":"+app.ConfigYml.GetString("redis.port"),
+			app.ConfigYml.GetString("redis.password"),
+			app.ConfigYml.GetInt("redis.indexdb"),
 		)
 		if err != nil {
 			panic(err)
@@ -184,16 +183,16 @@ func newCache() app.CacheInterf {
 }
 
 func newTokenService(cache app.CacheInterf) app.TokenServiceInterface {
-	tokenExpire := app.ConfigYml.GetDuration("Token.JwtTokenExpire")
-	refreshExpire := app.ConfigYml.GetDuration("Token.JwtTokenRefreshExpire")
+	tokenExpire := app.ConfigYml.GetDuration("token.jwttokenexpire")
+	refreshExpire := app.ConfigYml.GetDuration("token.jwttokenrefreshexpire")
 
 	return &tokenhelper.TokenService{
 		RedisHelper:    cache,
-		JWTSecret:      app.ConfigYml.GetString("Token.JwtTokenSignKey"),
+		JWTSecret:      app.ConfigYml.GetString("token.jwttokensignkey"),
 		Ctx:            context.Background(),
 		TokenExpire:    tokenExpire,
 		RefreshExpire:  refreshExpire,
-		CacheKeyPrefix: app.ConfigYml.GetString("Token.CacheKeyPrefix"),
+		CacheKeyPrefix: app.ConfigYml.GetString("token.cachekeyprefix"),
 	}
 }
 

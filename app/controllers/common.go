@@ -8,7 +8,8 @@ import (
 	"go.uber.org/zap"
 )
 
-type Common struct{}
+type Common struct {
+}
 
 func (c Common) Fail(ctx *gin.Context, msg string, err error, data ...interface{}) {
 	app.ZapLog.Error("请求失败", zap.Error(err))

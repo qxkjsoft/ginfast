@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+// CacheItem 缓存项结构
+type CacheItem struct {
+	Key       string      `json:"key"`
+	Value     interface{} `json:"value"`
+	ExpiresAt time.Time   `json:"expires_at"`
+}
+
 // CacheInterf 缓存接口
 // 定义了缓存操作的标准接口，支持Redis和内存缓存的统一抽象
 type CacheInterf interface {
@@ -22,6 +29,9 @@ type CacheInterf interface {
 
 	// Expire 设置键的过期时间
 	Expire(ctx context.Context, key string, expiration time.Duration) error
+
+	// GetAll 获取所有缓存项
+	GetAll(ctx context.Context) ([]CacheItem, error)
 
 	// Close 关闭连接
 	Close() error

@@ -188,6 +188,29 @@ func (m *memoryHelper) Expire(ctx context.Context, key string, expiration time.D
 	return nil
 }
 
+// GetAll 获取所有缓存项
+func (m *memoryHelper) GetAll(ctx context.Context) ([]app.CacheItem, error) {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+
+	var items []app.CacheItem
+	now := time.Now()
+
+	for _, item := range m.data {
+		// 跳过已过期的项
+		if now.After(item.expiration) {
+			continue
+		}
+		items = append(items, app.CacheItem{
+			Key:       item.key,
+			Value:     item.value,
+			ExpiresAt: item.expiration,
+		})
+	}
+
+	return items, nil
+}
+
 // startCleanup 启动后台清理goroutine
 func (m *memoryHelper) startCleanup() {
 	m.resetCleanupTimer()

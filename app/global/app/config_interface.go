@@ -5,7 +5,7 @@ import (
 )
 
 // YmlConfigInterf 配置文件接口
-// 定义了配置文件操作的标准接口，支持多种数据类型的配置读取
+// 定义了配置文件操作的标准接口，支持多种数据类型的配置读取和写入
 type YmlConfigInterf interface {
 	// ConfigFileChangeListen 监听配置文件变化
 	ConfigFileChangeListen(fns ...func())
@@ -36,4 +36,10 @@ type YmlConfigInterf interface {
 
 	// GetStringSlice 获取字符串切片类型配置值
 	GetStringSlice(keyName string) []string
+
+	// Set 设置配置值（任意类型）
+	Set(keyName string, value interface{})
+
+	// SaveConfig 保存配置到文件
+	SaveConfig() error
 }

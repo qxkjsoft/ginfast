@@ -29,7 +29,7 @@ func NewLocalUploadService() app.FileUploadService {
 }
 
 // UploadFile 上传文件
-func (s *LocalUploadService) UploadFile(file *multipart.FileHeader) (string, error) {
+func (s *LocalUploadService) UploadFile(file *multipart.FileHeader) (*app.UploadFileResponse, error) {
 	// 生成文件名
 	fileName := s.GenerateFileName(file.Filename)
 
@@ -41,16 +41,20 @@ func (s *LocalUploadService) UploadFile(file *multipart.FileHeader) (string, err
 
 	// 确保目录存在，包括日期文件夹
 	if err := os.MkdirAll(filepath.Join(s.config.LocalPath, dateFolder), 0755); err != nil {
-		return "", fmt.Errorf("创建目录失败: %v", err)
+		return nil, fmt.Errorf("创建目录失败: %v", err)
 	}
 
 	// 保存文件
 	if err := s.SaveFile(file, filePath); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// 返回文件URL，包含日期文件夹路径
-	return s.GetFileUrl(fmt.Sprintf("%s/%s", dateFolder, fileName)), nil
+	return &app.UploadFileResponse{
+		Url:      s.GetFileUrl(fmt.Sprintf("%s/%s", dateFolder, fileName)),
+		Path:     filePath,
+		FileName: fileName,
+	}, nil
 }
 
 // UploadFileWithCustomPath 上传文件到指定路径
@@ -94,7 +98,7 @@ func (s *LocalUploadService) DeleteFile(fileUrl string) error {
 // GetFileUrl 获取文件访问URL
 func (s *LocalUploadService) GetFileUrl(fileName string) string {
 	// 获取静态资源路由路径
-	serverRootPath := app.ConfigYml.GetString("HttpServer.ServerRootPath")
+	serverRootPath := app.ConfigYml.GetString("httpserver.serverrootpath")
 
 	// 构建URL
 	url := fmt.Sprintf("%s/uploads/%s", strings.TrimSuffix(serverRootPath, "/"), fileName)
@@ -144,7 +148,7 @@ func (s *LocalUploadService) HandleUpload(c *gin.Context, fileName string) (*app
 	}
 
 	// 上传文件
-	fileUrl, err := s.UploadFile(file)
+	res, err := s.UploadFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("上传文件失败: %v", err)
 	}
@@ -154,8 +158,9 @@ func (s *LocalUploadService) HandleUpload(c *gin.Context, fileName string) (*app
 
 	// 构建响应
 	response := &app.UploadResponse{
-		Url:      fileUrl,
-		FileName: file.Filename,
+		Url:      res.Url,
+		Path:     res.Path,
+		FileName: res.FileName,
 		Size:     file.Size,
 		FileType: fileExt,
 	}

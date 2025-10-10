@@ -1,0 +1,176 @@
+server:
+  appdebug: true   # 设置程序所处的模式，debug=true 调试模式，日志优先显示在控制台， debug=false 非调试模式，日志将写入日志文件
+  cachetype: "redis" #缓存模式 memory OR redis
+system: 
+  #系统LOGO
+  systemlogo: "/public/uploads/2025-10-10/20251010_d5b3fe78-bf41-43fb-ab36-548fc3cfaad1.svg"
+  #系统图标
+  systemicon: "/public/uploads/2025-10-10/20251010_95508faf-7cdf-4f6c-9dbc-b4c58d66379b.ico"
+  #系统名称
+  systemname: "GinFast"
+  #版权声明
+  systemcopyright: "Copyright © 2022 - present gin-fast 版权所有"
+  #备案号
+  systemrecordno: "粤ICP备12345678号"
+safe:
+  #密码错误锁定阈值(指定时间内连续登录失败次数达到该值将锁定账号,0表示不锁定)
+  loginlockthreshold: 3
+  #连续登录失败次数记录缓存时间(单位秒)
+  loginlockexpire: 60
+  #账号锁定时长(单位秒)
+  loginlockduration: 600
+  #密码最小长度
+  minpasswordlength: 6
+  #密码是否必须包含特殊字符
+  requirespecialchar: true
+captcha:
+  open : false  # 是否开启验证码功能
+  length: 4   # 验证码生成时的长度
+httpserver:
+  port: ":8080"    # 服务端口
+  allowcrossdomain: true    #是否允许跨域
+  serverrootpath: "/public" # 静态资源路由路径
+  serverroot: "./resource/public" # 静态资源根目录
+token:
+  jwttokensignkey:  "gin-fast"   #设置token生成时加密的签名
+  jwttokenexpire:  3600    #设置token过期时间，单位秒 示例:43200=12小时
+  jwttokenrefreshexpire:  2592000  #设置刷新token过期时间，单位秒 示例:2592000=30天
+  cachekeyprefix: "gin-fast:"  # 缓存前缀
+redis:
+  host: "127.0.0.1"
+  port: 6379
+  password: ""  # 设置你的redis密码
+  maxidle: 10
+  maxactive: 1000
+  idletimeout: 60
+  indexdb: 1               # 默认连接的redis是1号数据库，不是0号数据库
+  connfailretrytimes: 3    #从连接池获取连接失败，最大重试次数
+  reconnectinterval: 1     # 从连接池获取连接失败，每次重试之间间隔的秒数
+logs:
+  ginlogname: "/resource/logs/gin.log"                  #设置 gin 框架的接口访问日志，v1.5.xx 以后的版本不再生成gin原生的接口访问日志
+  zaplogname: "/resource/logs/ginfast.log"    #设置项目骨架运行时日志文件名，注意该名称不要与上一条重复 ,避免和 gin 框架的日志掺杂一起，造成混乱。
+  textformat: "console"                                   #记录日志的格式，参数选项：console、json ， console 表示一般的文本格式
+  timeprecision: "second"                   #记录日志时，相关的时间精度，该参数选项：second  、 millisecond ， 分别表示 秒 和 毫秒 ,默认为毫秒级别
+  maxsize: 10                                             #每个日志的最大尺寸(以MB为单位）， 超过该值，系统将会自动进行切割
+  maxbackups: 7                                        #保留旧日志最大个数
+  maxage: 15                                            #保留旧日志最大天数
+  compress: false                                      #日志备份时，是否进行压缩
+casbin:
+  autoloadpolicyseconds: 120 # 扫描数据库策略的频率(单位：秒)
+  tableprefix: ""
+  tablename: "casbin_rule" 
+  modelconfig: | # 竖线 | 表示以下整段文本保持换行格式
+    [request_definition]
+    r = sub, obj, act
+    [policy_definition]
+    p = sub, obj, act
+    [role_definition]
+    g = _, _
+    [policy_effect]
+    e = some(where (p.eft == allow))
+    [matchers]
+    m = g(r.sub, p.sub) && keyMatch2(r.obj, p.obj) && r.act == p.act
+gormv2: # 只针对 gorm  操作数据库有效
+  usedbtype: "mysql"   # 默认使用的数据库类型（mysql、sqlserver、postgresql）
+  mysql:
+    isinitglobalgormmysql: 1      # 随项目启动初始化一个全局变量 gorm.Db（1=开启、0=关闭）
+    slowthreshold: 30            # 慢 SQL 阈值(sql执行时间超过此时间单位（秒），就会触发系统日志记录)
+    write:
+      host: "127.0.0.1"
+      database: "gin-fast"
+      port: 3306
+      prefix: ""
+      user: "root"
+      pass: "root" 
+      charset: "utf8mb4"
+      setmaxidleconns: 10    # 最大空闲连接数
+      setmaxopenconns: 128   # 最大打开连接数
+      setconnmaxlifetime: 60    # 连接最大生存时间(秒)
+      setconnmaxidletime: 30    # 空闲连接最大存活时间(秒)
+    isopenreaddb: 0                     # 是否开启读写分离配置（1=开启、0=关闭），IsOpenReadDb=1,Read 部分参数有效，否则Read部分参数直接忽略
+    read:
+      host: "127.0.0.1"
+      database: "gin-fast"
+      port: 3306                        #注意，非3306，请自行调整
+      prefix: ""
+      user: "root"
+      pass: "root"  # 修改为你自己的数据库密码
+      charset: "utf8mb4"
+      setmaxidleconns: 10    # 最大空闲连接数
+      setmaxopenconns: 128    # 最大打开连接数
+      setconnmaxlifetime: 60    # 连接最大生存时间(秒)
+      setconnmaxidletime: 30    # 空闲连接最大存活时间(秒)
+  sqlserver:
+    isinitglobalgormsqlserver: 0  # 随项目启动初始一个全局变量 gorm.Db（1=开启、0=关闭）
+    slowthreshold: 30
+    write:
+      host: "127.0.0.1"
+      database: "gin-fast"
+      port: 1433
+      prefix: ""
+      user: ""
+      pass: ""
+      setmaxidleconns: 10
+      setmaxopenconns: 128
+      setconnmaxlifetime: 60
+      setconnmaxidletime: 30    # 空闲连接最大存活时间(秒)
+    isopenreaddb: 0            # 是否开启读写分离配置（1=开启、0=关闭
+    read:
+      host: "127.0.0.1"
+      database: "gin-fast"
+      port: 1433
+      prefix: ""
+      user: ""
+      pass: ""
+      setmaxidleconns: 10   
+      setmaxopenconns: 128
+      setconnmaxlifetime: 60  # 连接最大生存时间(秒)
+      setconnmaxidletime: 30    # 空闲连接最大存活时间(秒)
+  postgresql:
+    isinitglobalgormpostgresql: 0   # 随项目启动初始一个全局变量 gorm.Db（1=开启、0=关闭）
+    slowthreshold: 30
+    write:
+      host: "127.0.0.1"
+      database: "gin-fast"
+      port: 5432
+      prefix: ""
+      user: ""
+      pass: ""
+      setmaxidleconns: 10
+      setmaxopenconns: 128
+      setconnmaxlifetime: 60
+      setconnmaxidletime: 30    # 空闲连接最大存活时间(秒)
+    isopenreaddb: 0            # 是否开启读写分离配置（1=开启、0=关闭），IsOpenReadDb=1,Read  部分参数有效，否则Read部分参数直接忽略
+    read:
+      host: "127.0.0.1"
+      database: "gin-fast"
+      port: 5432
+      prefix: ""
+      user: ""
+      pass: ""
+      setmaxidleconns: 10
+      setmaxopenconns: 128
+      setconnmaxlifetime: 60
+      setconnmaxidletime: 30    # 空闲连接最大存活时间(秒)
+
+# 文件上传配置
+upload:
+  # 上传方式: local-本地上传, qiniu-七牛云上传
+  upload_type: "local"
+  
+  # 最大文件大小(单位: MB)
+  max_size: 10
+  
+  # 允许的文件类型
+  allowed_types: [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".txt", ".zip", ".rar", ".svg", ".ico"]
+  
+  # 本地上传路径
+  local_path: "./resource/public/uploads"
+  
+  # 七牛云配置
+  qiniu_config:
+    access_key: ""      # 七牛云AccessKey
+    secret_key: ""      # 七牛云SecretKey
+    bucket: ""           # 七牛云存储空间名称
+    domain: ""           # 七牛云域名
+    zone: "ZoneHuadong"  # 七牛云存储区域: ZoneHuadong, ZoneHuabei, ZoneHuanan, ZoneBeimei, ZoneXinjiapo

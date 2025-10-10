@@ -12,7 +12,7 @@ type FileUploadService interface {
 	// UploadFile 上传文件
 	// file: 上传的文件
 	// 返回值: 文件URL, 错误信息
-	UploadFile(file *multipart.FileHeader) (string, error)
+	UploadFile(file *multipart.FileHeader) (*UploadFileResponse, error)
 
 	// UploadFileWithCustomPath 上传文件到指定路径
 	// file: 上传的文件
@@ -111,4 +111,18 @@ type UploadResponse struct {
 
 	// FileType 文件类型
 	FileType string `json:"file_type"`
+
+	// Path 文件路径
+	Path string `json:"path"`
+}
+
+type UploadFileResponse struct {
+	// Url 文件访问URL
+	Url string `json:"url"`
+
+	// Path 文件路径
+	Path string `json:"path"`
+
+	// FileName 文件名
+	FileName string `json:"file_name"`
 }

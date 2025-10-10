@@ -1,11 +1,11 @@
 package routes
 
 import (
+	"github.com/gin-gonic/gin"
+
 	"gin-fast/app/controllers"
 	"gin-fast/app/global/app"
 	"gin-fast/app/middleware"
-
-	"github.com/gin-gonic/gin"
 )
 
 var userControllers = &controllers.UserController{}
@@ -17,6 +17,7 @@ var sysDictControllers = &controllers.SysDictController{}
 var sysDictItemControllers = &controllers.SysDictItemController{}
 var sysApiControllers = &controllers.SysApiController{}
 var sysAffixControllers = &controllers.SysAffixController{}
+var configControllers = &controllers.ConfigController{}
 
 // InitRoutes 初始化路由
 func InitRoutes(engine *gin.Engine) {
@@ -24,11 +25,11 @@ func InitRoutes(engine *gin.Engine) {
 	engine.Use(middleware.RequestAbortedRecovery())
 
 	// 跨域
-	if app.ConfigYml.GetBool("HttpServer.AllowCrossDomain") {
+	if app.ConfigYml.GetBool("httpserver.allowcrossdomain") {
 		engine.Use(middleware.CorsNext())
 	}
 	// 静态文件
-	engine.Static(app.ConfigYml.GetString("HttpServer.ServerRootPath"), app.ConfigYml.GetString("HttpServer.ServerRoot"))
+	engine.Static(app.ConfigYml.GetString("httpserver.serverrootpath"), app.ConfigYml.GetString("httpserver.serverroot"))
 	// 公开路由
 	public := engine.Group("/api")
 	{
@@ -38,6 +39,11 @@ func InitRoutes(engine *gin.Engine) {
 		public.GET("/captcha/id", authControllers.GetCaptchaId)
 		// 获取验证码图片
 		public.GET("/captcha/image", authControllers.GetCaptchaImg)
+
+		if app.ConfigYml.GetBool("server.appdebug") {
+			// 查看内存缓存项
+			public.GET("/viewCache", configControllers.GetCacheItems)
+		}
 	}
 
 	// 受保护的路由
@@ -195,6 +201,16 @@ func InitRoutes(engine *gin.Engine) {
 			sysAffix.GET("/:id", sysAffixControllers.GetByID)
 			// 获取文件URL
 			sysAffix.GET("/download/:id", sysAffixControllers.Download)
+		}
+
+		// 系统配置路由组
+		config := protected.Group("/config")
+		{
+			// 获取配置信息
+			config.GET("/get", configControllers.GetConfig)
+			// 更新配置信息
+			config.PUT("/update", configControllers.UpdateConfig)
+
 		}
 	}
 }

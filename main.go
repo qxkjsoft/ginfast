@@ -12,6 +12,6 @@ func main() {
 	// 初始化路由
 	routes.InitRoutes(engine)
 	// 启动服务器
-	_ = engine.Run(app.ConfigYml.GetString("HttpServer.Port"))
+	_ = engine.Run(app.ConfigYml.GetString("httpserver.port"))
 
 }

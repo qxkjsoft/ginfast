@@ -15,6 +15,7 @@ type SysAffix struct {
 	Ftype     string `gorm:"type:varchar(100);comment:文件类型" json:"ftype"`
 	CreatedBy uint   `gorm:"type:int(11);comment:创建者ID" json:"createdBy"`
 	Suffix    string `gorm:"type:varchar(100);comment:文件后缀" json:"suffix"`
+	Url       string `gorm:"type:varchar(255);comment:文件访问URL" json:"url"`
 	// 添加与User模型的关联
 	User User `gorm:"foreignKey:id;references:created_by" json:"user"`
 }

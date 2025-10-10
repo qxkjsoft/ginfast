@@ -33,7 +33,7 @@ func DB(sqlType ...string) *gorm.DB {
 	if len(sqlType) > 0 {
 		dbType = sqlType[0]
 	} else {
-		dbType = ConfigYml.GetString("Gormv2.UseDbType")
+		dbType = ConfigYml.GetString("gormv2.usedbtype")
 	}
 	var db *gorm.DB
 	switch dbType {

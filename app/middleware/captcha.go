@@ -13,7 +13,7 @@ import (
 // CaptchaMiddleware 验证码验证中间件
 func CaptchaMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if !app.ConfigYml.GetBool("Captcha.open") {
+		if !app.ConfigYml.GetBool("captcha.open") {
 			c.Next()
 			return
 		}

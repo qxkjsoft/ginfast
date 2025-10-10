@@ -6,7 +6,54 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
+
+func TestMemoryHelper_GetAll(t *testing.T) {
+	// 创建内存缓存实例
+	cache := NewMemoryHelper()
+	defer cache.Close()
+
+	ctx := context.Background()
+
+	// 设置一些测试数据
+	err := cache.Set(ctx, "key1", "value1", time.Minute)
+	assert.NoError(t, err)
+
+	err = cache.Set(ctx, "key2", "value2", time.Minute)
+	assert.NoError(t, err)
+
+	// 设置一个即将过期的项
+	err = cache.Set(ctx, "key3", "value3", time.Millisecond*100)
+	assert.NoError(t, err)
+
+	// 等待key3过期
+	time.Sleep(time.Millisecond * 150)
+
+	// 获取所有缓存项
+	items, err := cache.GetAll(ctx)
+	assert.NoError(t, err)
+
+	// 验证结果
+	assert.Equal(t, 2, len(items))
+
+	// 检查包含的项
+	foundKey1 := false
+	foundKey2 := false
+	for _, item := range items {
+		if item.Key == "key1" {
+			assert.Equal(t, "value1", item.Value)
+			foundKey1 = true
+		} else if item.Key == "key2" {
+			assert.Equal(t, "value2", item.Value)
+			foundKey2 = true
+		}
+	}
+
+	assert.True(t, foundKey1)
+	assert.True(t, foundKey2)
+}
 
 // TestNewMemoryHelper 测试创建内存缓存助手
 func TestNewMemoryHelper(t *testing.T) {

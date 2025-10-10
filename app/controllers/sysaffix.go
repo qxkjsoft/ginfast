@@ -35,7 +35,8 @@ func (ac *SysAffixController) Upload(c *gin.Context) {
 	// 创建文件记录
 	affix := models.NewSysAffix()
 	affix.Name = response.FileName
-	affix.Path = response.Url
+	affix.Path = response.Path
+	affix.Url = response.Url
 	affix.Size = int(response.Size)
 	affix.Suffix = response.FileType
 	affix.Ftype = filehelper.GetFileTypeBySuffix(response.FileType) // 根据后缀判断文件类型
@@ -54,7 +55,7 @@ func (ac *SysAffixController) Upload(c *gin.Context) {
 		"path":  affix.Path,
 		"size":  affix.Size,
 		"ftype": affix.Ftype,
-		"url":   response.Url,
+		"url":   affix.Url,
 	})
 }
 
