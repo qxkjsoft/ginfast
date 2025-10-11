@@ -39,7 +39,8 @@ func InitRoutes(engine *gin.Engine) {
 		public.GET("/captcha/id", authControllers.GetCaptchaId)
 		// 获取验证码图片
 		public.GET("/captcha/image", authControllers.GetCaptchaImg)
-
+		// 获取配置信息
+		public.GET("/config/get", configControllers.GetConfig)
 		if app.ConfigYml.GetBool("server.appdebug") {
 			// 查看内存缓存项
 			public.GET("/viewCache", configControllers.GetCacheItems)
@@ -61,7 +62,7 @@ func InitRoutes(engine *gin.Engine) {
 			// 用户列表
 			users.GET("/list", userControllers.List)
 			// 新增用户
-			users.POST("/add", userControllers.Add)
+			users.POST("/add", middleware.PasswordValidatorMiddleware(), userControllers.Add)
 			// 更新用户信息
 			users.PUT("/edit", userControllers.Update)
 			// 删除用户
@@ -69,7 +70,7 @@ func InitRoutes(engine *gin.Engine) {
 			// 用户登出
 			users.POST("/logout", authControllers.Logout)
 			// 更新密码、邮箱及手机号
-			users.PUT("/updateAccount", userControllers.UpdateAccount)
+			users.PUT("/updateAccount", middleware.PasswordValidatorMiddleware(), userControllers.UpdateAccount)
 			// 上传用户头像
 			users.POST("/uploadAvatar", userControllers.UploadAvatar)
 		}
@@ -206,8 +207,7 @@ func InitRoutes(engine *gin.Engine) {
 		// 系统配置路由组
 		config := protected.Group("/config")
 		{
-			// 获取配置信息
-			config.GET("/get", configControllers.GetConfig)
+
 			// 更新配置信息
 			config.PUT("/update", configControllers.UpdateConfig)
 

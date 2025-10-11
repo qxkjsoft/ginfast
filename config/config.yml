@@ -15,7 +15,7 @@ casbin:
         [matchers]
         m = g(r.sub, p.sub) && keyMatch2(r.obj, p.obj) && r.act == p.act
     tablename: casbin_rule
-    tableprefix: ""
+    tableprefix: sys_
 gormv2:
     mysql:
         isinitglobalgormmysql: 1
@@ -127,14 +127,14 @@ safe:
     loginlockexpire: 10
     loginlockthreshold: 2
     minpasswordlength: 6
-    requirespecialchar: true
+    requirespecialchar: false
 server:
     appdebug: true
     cachetype: memory
 system:
     systemcopyright: Copyright © 2022 - present gin-fast 版权所有
-    systemicon: /public/uploads/2025-10-10/20251010_95508faf-7cdf-4f6c-9dbc-b4c58d66379b.ico
-    systemlogo: /public/uploads/2025-10-10/20251010_d5b3fe78-bf41-43fb-ab36-548fc3cfaad1.svg
+    systemicon: /public/uploads/2025-10-11/20251011_3b06f7c4-2abe-48ac-9630-8deb11ceda01.ico
+    systemlogo: /public/uploads/2025-10-11/20251011_45438318-e5ac-4fe0-8e64-beb3a81e71b8.svg
     systemname: GinFast
     systemrecordno: 粤ICP备12345678号
 token:

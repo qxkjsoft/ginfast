@@ -26,7 +26,7 @@ type User struct {
 
 // TableName 设置User表名
 func (User) TableName() string {
-	return "users"
+	return "sys_users"
 }
 
 func NewUser() *User {

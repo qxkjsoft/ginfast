@@ -29,7 +29,7 @@ func init() {
 	// 配置文件
 	app.ConfigYml = ymlconfig.CreateYamlFactory(app.BasePath + "/config")
 	app.ConfigYml.ConfigFileChangeListen(func() {
-		//log.Println("配置文件发生变化，重新加载配置")
+		//配置文件发生变化
 	})
 	// 日志
 	app.ZapLog = createZapFactory(service.ZapLogHandler)

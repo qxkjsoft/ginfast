@@ -99,6 +99,31 @@ func (uc *UserController) Add(c *gin.Context) {
 	if !user.IsEmpty() {
 		uc.FailAndAbort(c, "用户已存在", nil)
 	}
+
+	// 检查手机号是否已被其他用户使用
+	if req.Phone != "" {
+		existUser := models.NewUser()
+		err = existUser.GetUserByPhone(req.Phone)
+		if err != nil {
+			uc.FailAndAbort(c, err.Error(), err)
+		}
+		if !existUser.IsEmpty() {
+			uc.FailAndAbort(c, "手机号已被其他用户使用", nil)
+		}
+	}
+
+	// 检查邮箱是否已被其他用户使用
+	if req.Email != "" {
+		existUser := models.NewUser()
+		err = existUser.GetUserByEmail(req.Email)
+		if err != nil {
+			uc.FailAndAbort(c, err.Error(), err)
+		}
+		if !existUser.IsEmpty() {
+			uc.FailAndAbort(c, "邮箱已被其他用户使用", nil)
+		}
+	}
+
 	// 密码加密
 	hashedPassword, err := passwordhelper.HashPassword(req.Password)
 	if err != nil {
@@ -309,15 +334,17 @@ func (uc *UserController) UpdateAccount(c *gin.Context) {
 			uc.FailAndAbort(c, "邮箱已被其他用户使用", nil)
 		}
 	}
+	if req.Password != "" {
+		// 加密新密码
+		hashedPassword, err := passwordhelper.HashPassword(req.Password)
+		if err != nil {
+			uc.FailAndAbort(c, "密码加密失败", err)
+		}
 
-	// 加密新密码
-	hashedPassword, err := passwordhelper.HashPassword(req.Password)
-	if err != nil {
-		uc.FailAndAbort(c, "密码加密失败", err)
+		// 更新用户信息
+		user.Password = string(hashedPassword)
 	}
 
-	// 更新用户信息
-	user.Password = string(hashedPassword)
 	if req.Phone != "" {
 		user.Phone = req.Phone
 	}

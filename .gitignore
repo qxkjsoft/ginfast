@@ -58,3 +58,6 @@ go.work.sum
 *.bak
 *.backup
 config/*.local.yml
+
+# 调试生成的文件
+__debug_bin.exe*

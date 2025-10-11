@@ -57,7 +57,7 @@ logs:
   compress: false                                      #日志备份时，是否进行压缩
 casbin:
   autoloadpolicyseconds: 120 # 扫描数据库策略的频率(单位：秒)
-  tableprefix: ""
+  tableprefix: "sys_"
   tablename: "casbin_rule" 
   modelconfig: | # 竖线 | 表示以下整段文本保持换行格式
     [request_definition]

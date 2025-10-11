@@ -137,7 +137,7 @@ type UserProfile struct {
 type UpdateAccountRequest struct {
 	Validator
 	ID       uint   `form:"id" validate:"required" message:"用户ID不能为空"`
-	Password string `form:"password" validate:"required" message:"密码不能为空"`
+	Password string `form:"password"`
 	Phone    string `form:"phone" validate:"required" message:"手机号不能为空"`
 	Email    string `form:"email" validate:"email" message:"邮箱格式不正确"`
 }
