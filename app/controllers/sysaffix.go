@@ -210,6 +210,7 @@ func (ac *SysAffixController) Download(c *gin.Context) {
 	ac.Success(c, gin.H{
 		"id":   affix.ID,
 		"name": affix.Name,
-		"url":  affix.Path,
+		"url":  affix.Url,
+		"path": affix.Path,
 	})
 }

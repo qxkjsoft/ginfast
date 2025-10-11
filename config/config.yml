@@ -123,9 +123,9 @@ redis:
     port: 6379
     reconnectinterval: 1
 safe:
-    loginlockduration: 10
-    loginlockexpire: 10
-    loginlockthreshold: 2
+    loginlockduration: 600
+    loginlockexpire: 30
+    loginlockthreshold: 3
     minpasswordlength: 6
     requirespecialchar: false
 server:
