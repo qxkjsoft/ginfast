@@ -131,6 +131,7 @@ safe:
 server:
     appdebug: true
     cachetype: memory
+    notcheckuser: [] 
 system:
     systemcopyright: Copyright © 2022 - present gin-fast 版权所有
     systemicon: /public/uploads/2025-10-11/20251011_3b06f7c4-2abe-48ac-9630-8deb11ceda01.ico
