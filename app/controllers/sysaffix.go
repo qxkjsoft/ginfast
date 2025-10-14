@@ -4,6 +4,7 @@ import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
 	"gin-fast/app/utils/common"
+	"gin-fast/app/utils/datascope"
 	"gin-fast/app/utils/filehelper"
 	"strconv"
 
@@ -22,14 +23,12 @@ func (ac *SysAffixController) Upload(c *gin.Context) {
 	var req models.UploadRequest
 	if err := req.Validate(c); err != nil {
 		ac.FailAndAbort(c, err.Error(), err)
-		return
 	}
 
 	// 处理文件上传
 	response, err := app.UploadService.HandleUpload(c, "file")
 	if err != nil {
 		ac.FailAndAbort(c, "文件上传失败", err)
-		return
 	}
 
 	// 创建文件记录
@@ -45,7 +44,6 @@ func (ac *SysAffixController) Upload(c *gin.Context) {
 	// 保存到数据库
 	if err := affix.Create(); err != nil {
 		ac.FailAndAbort(c, "保存文件记录失败", err)
-		return
 	}
 
 	// 返回成功响应
@@ -64,14 +62,12 @@ func (ac *SysAffixController) Delete(c *gin.Context) {
 	var req models.AffixDeleteRequest
 	if err := req.Validate(c); err != nil {
 		ac.FailAndAbort(c, err.Error(), err)
-		return
 	}
 
 	// 查找文件记录
 	affix := models.NewSysAffix()
 	if err := affix.GetByID(req.ID); err != nil {
 		ac.FailAndAbort(c, "文件不存在", err)
-		return
 	}
 
 	// 删除物理文件
@@ -83,7 +79,6 @@ func (ac *SysAffixController) Delete(c *gin.Context) {
 	// 删除数据库记录
 	if err := affix.Delete(); err != nil {
 		ac.FailAndAbort(c, "删除文件记录失败", err)
-		return
 	}
 
 	// 返回成功响应
@@ -95,21 +90,18 @@ func (ac *SysAffixController) UpdateName(c *gin.Context) {
 	var req models.UpdateNameRequest
 	if err := req.Validate(c); err != nil {
 		ac.FailAndAbort(c, err.Error(), err)
-		return
 	}
 
 	// 查找文件记录
 	affix := models.NewSysAffix()
 	if err := affix.GetByID(req.ID); err != nil {
 		ac.FailAndAbort(c, "文件不存在", err)
-		return
 	}
 
 	// 更新文件名
 	affix.Name = req.Name
 	if err := affix.Update(); err != nil {
 		ac.FailAndAbort(c, "更新文件名失败", err)
-		return
 	}
 
 	// 返回成功响应
@@ -127,7 +119,6 @@ func (ac *SysAffixController) List(c *gin.Context) {
 	var req models.ListRequest
 	if err := req.Validate(c); err != nil {
 		ac.FailAndAbort(c, err.Error(), err)
-		return
 	}
 
 	// 获取查询条件
@@ -138,7 +129,6 @@ func (ac *SysAffixController) List(c *gin.Context) {
 	total, err := affixList.GetTotal(query)
 	if err != nil {
 		ac.FailAndAbort(c, "获取文件总数失败", err)
-		return
 	}
 
 	// 获取了分页数据及数据权限
@@ -146,10 +136,9 @@ func (ac *SysAffixController) List(c *gin.Context) {
 		return d.Preload("User", func(d *gorm.DB) *gorm.DB {
 			return d.Preload("Department")
 		})
-	}, common.GetDataScope(c))
+	}, datascope.GetDataScope(c))
 	if err != nil {
 		ac.FailAndAbort(c, "获取文件列表失败", err)
-		return
 	}
 
 	// 返回成功响应
@@ -166,14 +155,12 @@ func (ac *SysAffixController) GetByID(c *gin.Context) {
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		ac.FailAndAbort(c, "无效的文件ID", err)
-		return
 	}
 
 	// 查找文件记录
 	affix := models.NewSysAffix()
 	if err := affix.GetByID(uint(id)); err != nil {
 		ac.FailAndAbort(c, "文件不存在", err)
-		return
 	}
 
 	// 返回成功响应
@@ -194,14 +181,12 @@ func (ac *SysAffixController) Download(c *gin.Context) {
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		ac.FailAndAbort(c, "无效的文件ID", err)
-		return
 	}
 
 	// 查找文件记录
 	affix := models.NewSysAffix()
 	if err := affix.GetByID(uint(id)); err != nil {
 		ac.FailAndAbort(c, "文件不存在", err)
-		return
 	}
 
 	// 从URL中提取文件路径

@@ -166,11 +166,11 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 		Username: user.Username,
 	})
 	if err != nil {
-		ac.FailAndAbort(c, "刷新token失败", err)
+		ac.FailAndAbort(c, "refresh token刷新失败", err)
 	}
 	claims1, err := app.TokenService.ParseToken(newAccessToken)
 	if err != nil {
-		ac.FailAndAbort(c, "解析token失败", err)
+		ac.FailAndAbort(c, "refresh token解析失败", err)
 	}
 
 	// 取消旧的refresh token生成新的refresh token

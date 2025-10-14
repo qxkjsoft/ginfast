@@ -99,9 +99,18 @@ func (s *CasbinHelper) CasbinMiddleware() gin.HandlerFunc {
 		// 从上下文中获取用户ID
 		userID := common.GetCurrentUserID(c)
 		if userID == 0 {
-			c.JSON(http.StatusForbidden, gin.H{"message": "User ID not found"})
+			c.JSON(http.StatusForbidden, gin.H{"message": "user ID not found"})
 			c.Abort()
 			return
+		}
+
+		// 检查是否需要跳过权限检查
+		notCheckUsers := app.ConfigYml.GetUintSlice("server.notcheckuser")
+		for _, uid := range notCheckUsers {
+			if userID == uid {
+				c.Next()
+				return
+			}
 		}
 
 		// 获取请求路径和方法
@@ -113,13 +122,13 @@ func (s *CasbinHelper) CasbinMiddleware() gin.HandlerFunc {
 		app.ZapLog.Info("Permission check", zap.String("uid", userSubject), zap.String("path", path), zap.String("method", method))
 		ok, err := s.Enforce(userSubject, path, method)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Error occurred when authorizing user"})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "权限检查时出现错误"})
 			c.Abort()
 			return
 		}
 
 		if !ok {
-			c.JSON(http.StatusForbidden, gin.H{"message": "You don't have permission to access this resource"})
+			c.JSON(http.StatusForbidden, gin.H{"message": "您没有权限访问此资源"})
 			c.Abort()
 			return
 		}

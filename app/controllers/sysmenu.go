@@ -23,28 +23,59 @@ func (sm *SysMenuController) GetRouters(c *gin.Context) {
 	if claims == nil {
 		sm.FailAndAbort(c, "用户未登录", nil)
 	}
-	sysUserRoleList := models.NewSysUserRoleList()
-	err := sysUserRoleList.Find(func(d *gorm.DB) *gorm.DB {
-		return d.Where("user_id = ?", claims.UserID)
-	})
-	if err != nil {
-		sm.FailAndAbort(c, "获取用户角色失败", err)
+
+	// 获取不需要检查权限的用户ID数组
+	notCheckUserIds := app.ConfigYml.GetUintSlice("server.notcheckuser")
+
+	// 检查当前用户ID是否在不需要检查权限的数组中
+	needCheckPermission := true
+	for _, userId := range notCheckUserIds {
+		if userId == claims.UserID {
+			needCheckPermission = false
+			break
+		}
 	}
 
-	if sysUserRoleList.IsEmpty() {
-		sm.FailAndAbort(c, "用户未分配角色", nil)
-	}
-	roleIds := sysUserRoleList.Map(func(sur *models.SysUserRole) uint {
-		return sur.RoleID
-	})
-	menuList := models.NewSysMenuList()
-	err = menuList.Find(func(db *gorm.DB) *gorm.DB {
-		return db.Where("disable = ?", 0).
-			Where("type = 1 or type = 2").
-			Where("id in (?)", app.DB().Model(&models.SysRoleMenu{}).Where("role_id in (?)", roleIds).Select("menu_id"))
-	})
-	if err != nil {
-		sm.FailAndAbort(c, "获取菜单失败", err)
+	var menuList models.SysMenuList
+	var err error
+
+	if !needCheckPermission {
+		// 不需要检查权限，直接返回所有菜单数据（不含按钮）
+		err = menuList.Find(func(db *gorm.DB) *gorm.DB {
+			return db.Where("disable = ?", 0).
+				Where("type = 1 or type = 2") // 只返回目录和菜单，不返回按钮
+		})
+		if err != nil {
+			sm.FailAndAbort(c, "获取菜单失败", err)
+			return
+		}
+	} else {
+		// 需要检查权限，按原有逻辑处理
+		sysUserRoleList := models.NewSysUserRoleList()
+		err := sysUserRoleList.Find(func(d *gorm.DB) *gorm.DB {
+			return d.Where("user_id = ?", claims.UserID)
+		})
+		if err != nil {
+			sm.FailAndAbort(c, "获取用户角色失败", err)
+			return
+		}
+
+		if sysUserRoleList.IsEmpty() {
+			sm.FailAndAbort(c, "用户未分配角色", nil)
+			return
+		}
+		roleIds := sysUserRoleList.Map(func(sur *models.SysUserRole) uint {
+			return sur.RoleID
+		})
+		err = menuList.Find(func(db *gorm.DB) *gorm.DB {
+			return db.Where("disable = ?", 0).
+				Where("type = 1 or type = 2").
+				Where("id in (?)", app.DB().Model(&models.SysRoleMenu{}).Where("role_id in (?)", roleIds).Select("menu_id"))
+		})
+		if err != nil {
+			sm.FailAndAbort(c, "获取菜单失败", err)
+			return
+		}
 	}
 
 	if !menuList.IsEmpty() {

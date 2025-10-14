@@ -1,8 +1,9 @@
-package common
+package datascope
 
 import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
+	"gin-fast/app/utils/common"
 	"strconv"
 	"strings"
 
@@ -119,7 +120,7 @@ func getUserIDsByDepartmentIDs(deptIDs []uint) ([]uint, error) {
 func GetDataScope(c *gin.Context) func(db *gorm.DB) *gorm.DB {
 	// 定义数据权限函数
 	return func(db *gorm.DB) *gorm.DB {
-		claims := GetClaims(c)
+		claims := common.GetClaims(c)
 		if claims == nil {
 			return db.Where("1 = 0")
 		}
@@ -127,6 +128,14 @@ func GetDataScope(c *gin.Context) func(db *gorm.DB) *gorm.DB {
 		userID := claims.UserID
 		if userID == 0 {
 			return db.Where("1 = 0")
+		}
+		notCheckUserIds := app.ConfigYml.GetUintSlice("server.notcheckuser")
+		// 检查用户是否在不检查权限的用户列表中
+		for _, notCheckUserID := range notCheckUserIds {
+			if notCheckUserID == userID {
+				// 如果用户在不检查权限的用户列表中，直接返回所有数据
+				return db
+			}
 		}
 
 		// 获取用户角色

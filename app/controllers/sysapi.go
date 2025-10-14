@@ -31,7 +31,9 @@ func (sc *SysApiController) List(c *gin.Context) {
 
 	// 查询列表数据
 	sysApiList := models.NewSysApiList()
-	err = sysApiList.Find(req.Paginate(), req.Handler())
+	err = sysApiList.Find(req.Paginate(), req.Handler(), func(d *gorm.DB) *gorm.DB {
+		return d.Preload("SysMenuList")
+	})
 	if err != nil {
 		sc.FailAndAbort(c, "获取API列表失败", err)
 	}

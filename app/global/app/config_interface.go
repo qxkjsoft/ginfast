@@ -37,6 +37,9 @@ type YmlConfigInterf interface {
 	// GetStringSlice 获取字符串切片类型配置值
 	GetStringSlice(keyName string) []string
 
+	// GetUintSlice 获取无符号整型切片类型配置值
+	GetUintSlice(keyName string) []uint
+
 	// Set 设置配置值（任意类型）
 	Set(keyName string, value interface{})
 

@@ -66,13 +66,3 @@ type UpdateNameRequest struct {
 func (r *UpdateNameRequest) Validate(c *gin.Context) error {
 	return r.Validator.Check(c, r)
 }
-
-// BeforeCreate 创建前钩子
-func (m *SysAffix) BeforeCreate(tx *gorm.DB) error {
-	if m.CreatedBy == 0 {
-		// 如果没有设置创建者，尝试从上下文获取
-		// 注意：这里不能直接从gin.Context获取，因为GORM的钩子函数中没有gin.Context
-		// m.CreatedBy 将在控制器中设置
-	}
-	return nil
-}

@@ -139,6 +139,37 @@ func (y *ymlConfig) GetStringSlice(keyName string) []string {
 	return value
 }
 
+func (y *ymlConfig) GetUintSlice(keyName string) []uint {
+	y.mu.RLock()
+	defer y.mu.RUnlock()
+
+	// 首先尝试直接获取uint切片
+	if value := y.viper.Get(keyName); value != nil {
+		if uintSlice, ok := value.([]uint); ok {
+			return uintSlice
+		}
+	}
+
+	// 如果直接获取失败，尝试从int切片转换
+	intSlice := y.viper.GetIntSlice(keyName)
+	if len(intSlice) == 0 {
+		return []uint{}
+	}
+
+	// 将int切片转换为uint切片
+	uintSlice := make([]uint, len(intSlice))
+	for i, v := range intSlice {
+		if v < 0 {
+			// 如果值为负数，设置为0
+			uintSlice[i] = 0
+		} else {
+			uintSlice[i] = uint(v)
+		}
+	}
+
+	return uintSlice
+}
+
 // Set 设置配置值
 func (y *ymlConfig) Set(keyName string, value interface{}) {
 	y.mu.Lock()

@@ -31,7 +31,7 @@ type SysDepartmentUpdateRequest struct {
 	Status   *int8  `form:"status" validate:"required|in:0,1" message:"状态值必须为0或1"`
 	Leader   string `form:"leader"`
 	Phone    string `form:"phone"`
-	Email    string `form:"email" validate:"omitempty,email" message:"邮箱格式不正确"`
+	Email    string `form:"email" validate:"email" message:"邮箱格式不正确"`
 	Sort     *int   `form:"sort" validate:"gte:0" message:"排序值不能为负数"`
 	Describe string `form:"describe"`
 }
