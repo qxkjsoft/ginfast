@@ -163,9 +163,9 @@ upload:
     local_path: ./resource/public/uploads
     max_size: 10
     qiniu_config:
-        access_key: ""
-        bucket: ""
-        domain: ""
-        secret_key: ""
-        zone: ZoneHuadong
+        access_key: "KjQc4GDQf3fZjRGDwX3iKh4eKRa19NeIeWLTYNgU"
+        bucket: "gin-fast"
+        domain: "t4476qnif.hn-bkt.clouddn.com"
+        secret_key: "vrvOz3vaTlzIzZpgvdCz44UmOWF_ps0zasllcSxS"
+        zone: ZoneHuanan
     upload_type: local
