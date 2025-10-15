@@ -16,6 +16,7 @@
 - 📋 **完整的后台管理**：包含用户管理、角色管理、菜单管理、部门管理、字典管理、API管理等模块
 - 🔗 **菜单与API权限关联**：支持菜单与API权限的动态关联管理
 - 🏗️ **分层架构**：采用Controller-Service-Model分层架构，代码结构清晰
+- 📚 **API文档**：集成 Swagger API 文档，自动生成接口文档
 
 ## 技术栈
 
@@ -31,6 +32,7 @@
 - **参数验证**：Gookit Validate
 - **密码加密**：Bcrypt
 - **性能监控**：Pprof
+- **API文档**：Swagger (swaggo)
 
 ## 项目结构
 
@@ -87,11 +89,17 @@ gin-fast/
 │   └── init.go             # 初始化配置
 ├── config/                 # 配置文件
 │   └── config.yml          # 主配置文件
+├── docs/                   # 文档
+│   ├── swagger/            # Swagger API 文档
+│   └── catalog.md          # 项目目录说明
 ├── resource/               # 资源文件
 │   ├── database/           # 数据库脚本
 │   │   └── gin-fast.sql    # 数据库初始化脚本
 │   ├── logs/               # 日志文件目录
 │   └── public/             # 静态资源
+├── scripts/                # 脚本文件
+│   ├── swagger.sh          # Swagger文档生成脚本(Linux/Mac)
+│   └── swagger.bat         # Swagger文档生成脚本(Windows)
 ├── main.go                 # 应用入口
 └── go.mod                  # 依赖管理
 ```
@@ -128,6 +136,47 @@ go run main.go
 
 应用将在 `http://localhost:8080` 启动。
 
+## API文档
+
+本项目集成了 Swagger API 文档，可以自动生成接口文档。
+
+### 访问API文档
+
+启动应用后，可以通过以下URL访问API文档：
+- Swagger UI: http://localhost:8080/swagger/index.html
+- Swagger JSON: http://localhost:8080/swagger/doc.json
+
+### 生成API文档
+
+#### Linux/Mac 系统:
+```bash
+# 进入项目根目录
+cd gin-fast
+
+# 运行脚本生成文档
+./scripts/swagger.sh
+```
+
+#### Windows 系统:
+```cmd
+# 进入项目根目录
+cd gin-fast
+
+# 运行脚本生成文档
+scripts\swagger.bat
+```
+
+#### 手动安装和生成:
+如果系统中未安装 swag 命令行工具，需要先安装:
+```bash
+go install github.com/swaggo/swag/cmd/swag@latest
+```
+
+然后生成文档:
+```bash
+swag init -g main.go -o docs/swagger
+```
+
 ## 配置说明
 
 主要配置项位于 `config/config.yml` 文件中：
@@ -144,205 +193,18 @@ HttpServer:
   ServerRoot: "./resource/public" # 静态资源根目录
 ```
 
-### JWT 配置
+### 数据库配置示例
 ```yaml
-Token:
-  JwtTokenSignKey: "gin-fast"          # JWT 签名密钥
-  JwtTokenExpire: 10                   # Token 过期时间（秒）
-  JwtTokenRefreshExpire: 2592000       # 刷新 Token 过期时间（秒）
-  CacheKeyPrefix: "gin-fast:"          # 缓存前缀
-```
-
-### 数据库配置
-```yaml
-Gormv2:
-  UseDbType: "mysql"    # 数据库类型：mysql、sqlserver、postgresql
-  Mysql:
-    IsInitGlobalGormMysql: 1
-    Write:
-      Host: "127.0.0.1"
-      DataBase: "gin-fast"
-      Port: 3306
-      User: "root"
-      Pass: "root"
-```
-
-### 验证码配置
-```yaml
-Captcha:
-  open: false    # 是否开启验证码功能
-  length: 4      # 验证码生成时的长度
-```
-
-### Casbin 权限配置
-```yaml
-Casbin:
-  AutoLoadPolicySeconds: 120 # 扫描数据库策略的频率（单位：秒）
-  TablePrefix: ""
-  TableName: "casbin_rule"
-  ModelConfig: |
-    [request_definition]
-    r = sub, obj, act
-    [policy_definition]
-    p = sub, obj, act
-    [role_definition]
-    g = _, _
-    [policy_effect]
-    e = some(where (p.eft == allow))
-    [matchers]
-    m = g(r.sub, p.sub) && keyMatch2(r.obj, p.obj) && r.act == p.act
-```
-
-### Redis 配置
-```yaml
-Redis:
-  Host: "127.0.0.1"
-  Port: 6379
-  Password: ""  # 设置你的redis密码
-  IndexDb: 1    # 默认连接的redis是1号数据库
-```
-
-## API 接口
-
-### 认证接口
-
-#### 获取验证码ID
-```
-GET /api/captcha/id
-```
-
-#### 获取验证码图片
-```
-GET /api/captcha/image?captchaId=xxx&width=130&height=30
-```
-
-#### 用户登录
-```
-POST /api/login
-Content-Type: application/json
-
-{
-  "username": "admin",
-  "password": "password",
-  "captchaId": "captcha-id",
-  "captcha": "1234"
-}
-```
-
-#### 刷新 Token
-```
-POST /api/refreshToken
-Content-Type: application/json
-
-{
-  "refreshToken": "your-refresh-token"
-}
-```
-
-### 用户管理接口
-
-#### 获取当前用户信息
-```
-GET /api/users/profile
-Authorization: Bearer your-access-token
-```
-
-#### 用户列表
-```
-GET /api/users/list?page=1&pageSize=10
-Authorization: Bearer your-access-token
-```
-
-#### 新增用户
-```
-POST /api/users/add
-Authorization: Bearer your-access-token
-Content-Type: application/json
-
-{
-  "username": "newuser",
-  "password": "password",
-  "email": "user@example.com"
-}
-```
-
-#### 更新用户信息
-```
-PUT /api/users/edit
-Authorization: Bearer your-access-token
-Content-Type: application/json
-
-{
-  "id": 1,
-  "email": "new-email@example.com"
-}
-```
-
-#### 删除用户
-```
-DELETE /api/users/delete
-Authorization: Bearer your-access-token
-Content-Type: application/json
-
-{
-  "ids": [1, 2, 3]
-}
-```
-
-### 系统管理接口
-
-#### 菜单管理
-```
-# 获取用户菜单数据
-GET /api/sysMenu/getRouters
-
-# 获取完整菜单列表
-GET /api/sysMenu/getMenuList
-
-# 为菜单分配API权限
-POST /api/sysMenu/setApis
-```
-
-#### 角色管理
-```
-# 获取所有角色数据
-GET /api/sysRole/getRoles
-
-# 为角色分配菜单权限
-POST /api/sysRole/addRoleMenu
-
-# 获取角色权限
-GET /api/sysRole/getUserPermission/:roleId
-```
-
-#### 部门管理
-```
-# 获取部门列表
-GET /api/sysDepartment/getDivision
-
-# 新增部门
-POST /api/sysDepartment/add
-```
-
-#### 字典管理
-```
-# 获取所有字典数据
-GET /api/sysDict/getAllDicts
-
-# 根据编码获取字典
-GET /api/sysDict/getByCode/:code
-
-# 获取字典项列表
-GET /api/sysDictItem/getByDictCode/:dictCode
-```
-
-#### API管理
-```
-# API列表
-GET /api/sysApi/list
-
-# 新增API
-POST /api/sysApi/add
+Database:
+  Type: "mysql"          # 数据库类型
+  Host: "127.0.0.1"      # 数据库主机
+  Port: 3306             # 数据库端口
+  Username: "root"       # 数据库用户名
+  Password: "password"   # 数据库密码
+  Database: "gin_fast"   # 数据库名
+  Charset: "utf8mb4"     # 字符集
+  ParseTime: true        # 解析时间
+  Loc: "Local"           # 时区
 ```
 
 ## 开发指南
@@ -352,6 +214,7 @@ POST /api/sysApi/add
 1. 在 `app/controllers/` 目录下创建新的控制器文件
 2. 继承 `Common` 结构体并实现控制器方法
 3. 在 `app/routes/routes.go` 中添加路由
+4. 为控制器方法添加 Swagger 注释
 
 示例：
 ```go
@@ -360,6 +223,16 @@ type ProductController struct {
     Common
 }
 
+// GetProducts 获取产品列表
+// @Summary 获取产品列表
+// @Description 获取所有产品列表
+// @Tags 产品管理
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{} "成功返回产品列表"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /products [get]
+// @Security ApiKeyAuth
 func (pc *ProductController) GetProducts(c *gin.Context) {
     // 使用 Common 结构体的方法进行响应处理
     pc.Success(c, "获取产品列表成功", products)
@@ -385,148 +258,107 @@ func InitRoutes(engine *gin.Engine) {
 1. 在 `app/models/` 目录下创建新的模型文件
 2. 继承 `BaseModel` 并定义模型结构体
 3. 使用 GORM 标签定义数据库字段
+4. 为模型添加 Swagger 注释
 
 示例：
 ```go
 // app/models/product.go
+// Product 产品模型
+// @Description 产品信息
 type Product struct {
     BaseModel
-    Name  string  `gorm:"column:name;not null;size:100" json:"name"`
-    Price float64 `gorm:"column:price;not null" json:"price"`
-}
-
-func (Product) TableName() string {
-    return "products"
-}
-
-func (p *Product) IsEmpty() bool {
-    return p.ID <= 0
-}
-
-func (p *Product) Create() error {
-    return app.DB().Create(p).Error
-}
-
-func (p *Product) Find(id uint) error {
-    return app.DB().Where("id = ?", id).First(p).Error
+    Name        string  `gorm:"column:name;size:255;not null;comment:产品名称" json:"name" example:"iPhone 13"`
+    Price       float64 `gorm:"column:price;type:decimal(10,2);comment:价格" json:"price" example:"6999.00"`
+    Description string  `gorm:"column:description;size:500;comment:描述" json:"description" example:"最新款iPhone手机"`
+    Status      int8    `gorm:"column:status;default:1;comment:状态 0下架 1上架" json:"status" example:"1"`
+    CreatedBy   uint    `gorm:"column:created_by;default:0;comment:创建人" json:"createdBy" example:"1"`
 }
 ```
 
-### 添加中间件
+### Swagger 注释规范
 
-1. 在 `app/middleware/` 目录下创建新的中间件文件
-2. 实现中间件函数
-3. 在路由中应用中间件
+为确保API文档的完整性和一致性，请遵循以下Swagger注释规范：
 
-示例：
+1. 每个控制器结构体添加概要说明：
 ```go
-// app/middleware/logger.go
-func LoggerMiddleware() gin.HandlerFunc {
-    return func(c *gin.Context) {
-        start := time.Now()
-        
-        c.Next()
-        
-        latency := time.Since(start)
-        app.ZapLog.Info("请求日志",
-            zap.String("method", c.Request.Method),
-            zap.String("path", c.Request.URL.Path),
-            zap.Duration("latency", latency),
-        )
-    }
-}
-
-// app/routes/routes.go
-func InitRoutes(engine *gin.Engine) {
-    engine.Use(middleware.LoggerMiddleware())
-    // 其他路由...
+// UserController 用户控制器
+// @Summary 用户管理API
+// @Description 用户管理相关接口
+// @Tags 用户管理
+// @Accept json
+// @Produce json
+// @Router /users [get]
+type UserController struct {
+    Common
 }
 ```
 
-### 添加新的服务
-
-1. 在 `app/service/` 目录下创建新的服务文件
-2. 实现业务逻辑方法
-3. 在控制器中调用服务方法
-
-示例：
+2. 每个控制器方法添加详细注释：
 ```go
-// app/service/productservice.go
-type ProductService struct{}
-
-func (ps *ProductService) GetProducts(page, pageSize int) ([]models.Product, int64, error) {
-    var products []models.Product
-    var total int64
-    
-    db := app.DB().Model(&models.Product{})
-    db.Count(&total)
-    
-    offset := (page - 1) * pageSize
-    err := db.Offset(offset).Limit(pageSize).Find(&products).Error
-    
-    return products, total, err
+// List 用户列表
+// @Summary 用户列表
+// @Description 获取用户列表，支持分页和过滤
+// @Tags 用户管理
+// @Accept json
+// @Produce json
+// @Param pageNum query int false "页码" default(1)
+// @Param pageSize query int false "每页数量" default(10)
+// @Success 200 {object} map[string]interface{} "成功返回用户列表"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /users/list [get]
+// @Security ApiKeyAuth
+func (uc *UserController) List(c *gin.Context) {
+    // 方法实现
 }
 ```
 
-## 部署
-
-### 使用 Docker 部署
-
-1. 创建 Dockerfile
-```dockerfile
-FROM golang:1.20-alpine AS builder
-
-WORKDIR /app
-COPY . .
-RUN go mod tidy
-RUN CGO_ENABLED=0 GOOS=linux go build -o gin-fast .
-
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates
-WORKDIR /root/
-COPY --from=builder /app/gin-fast .
-COPY --from=builder /app/config ./config
-
-CMD ["./gin-fast"]
+3. 为数据模型添加注释：
+```go
+// User 用户模型
+// @Description 用户信息
+type User struct {
+    // 字段定义
+}
 ```
 
-2. 构建镜像
-```bash
-docker build -t gin-fast .
+4. 为请求参数和响应结构体添加注释：
+```go
+// LoginRequest 登录请求结构
+// @Description 登录请求参数
+type LoginRequest struct {
+    Username string `validate:"required" message:"用户名不能为空"`
+    Password string `validate:"required" message:"密码不能为空"`
+}
 ```
 
-3. 运行容器
-```bash
-docker run -p 8080:8080 gin-fast
+### 安全认证
+
+本项目使用 JWT 进行身份认证，API 请求需要在请求头中添加 Authorization 字段：
+
+```
+Authorization: Bearer <access_token>
 ```
 
-### 直接部署
+## 部署说明
 
-1. 编译应用
+### 编译项目
 ```bash
 go build -o gin-fast .
 ```
 
-2. 运行应用
+### 运行项目
 ```bash
 ./gin-fast
 ```
 
-## 贡献指南
+### Docker 部署
 
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 创建 Pull Request
+1. 构建 Docker 镜像
+```bash
+docker build -t gin-fast .
+```
 
-## 许可证
-
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
-
-## 联系方式
-
-如有问题或建议，请通过以下方式联系：
-
-- 提交 Issue
-- 发送邮件至：your-email@example.com
+2. 运行容器
+```bash
+docker run -p 8080:8080 gin-fast
+```

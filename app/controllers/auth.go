@@ -22,6 +22,16 @@ type AuthController struct {
 }
 
 // Login 用户登录
+// @Summary 用户登录
+// @Description 用户登录获取访问令牌
+// @Tags 认证
+// @Accept json
+// @Produce json
+// @Param loginReq body models.LoginRequest true "登录请求参数"
+// @Success 200 {object} map[string]interface{} "成功返回访问令牌"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 401 {object} map[string]interface{} "用户名或密码错误"
+// @Router /login [post]
 func (ac *AuthController) Login(c *gin.Context) {
 	var req models.LoginRequest
 	if err := req.Validate(c); err != nil {
@@ -134,7 +144,17 @@ func (ac *AuthController) Login(c *gin.Context) {
 	})
 }
 
-// RefreshToken 刷新access token
+// RefreshToken 刷新访问令牌
+// @Summary 刷新访问令牌
+// @Description 使用刷新令牌获取新的访问令牌
+// @Tags 认证
+// @Accept json
+// @Produce json
+// @Param refreshReq body models.RefreshRequest true "刷新令牌请求参数"
+// @Success 200 {object} map[string]interface{} "成功返回新的访问令牌"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 401 {object} map[string]interface{} "刷新令牌无效或过期"
+// @Router /refreshToken [post]
 func (ac *AuthController) RefreshToken(c *gin.Context) {
 	// 首先尝试从header中获取refreshToken
 	refreshToken := c.GetHeader("RefreshToken")
@@ -194,6 +214,14 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 }
 
 // Logout 用户登出
+// @Summary 用户登出
+// @Description 用户登出，撤销access token和refresh token
+// @Tags 认证
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{} "成功登出"
+// @Failure 401 {object} map[string]interface{} "用户未登录"
+// @Router /users/logout [post]
 func (ac *AuthController) Logout(c *gin.Context) {
 	// 从上下文中获取用户信息
 	claims := common.GetClaims(c)
@@ -219,7 +247,13 @@ func (ac *AuthController) Logout(c *gin.Context) {
 	})
 }
 
-// 生成验证码ID
+// CaptchaId 获取验证码ID
+// @Summary 获取验证码ID
+// @Description 获取验证码ID用于生成验证码图片
+// @Tags 认证
+// @Produce json
+// @Success 200 {object} map[string]interface{} "成功返回验证码ID"
+// @Router /captcha/id [get]
 func (ac *AuthController) GetCaptchaId(c *gin.Context) {
 	length := app.ConfigYml.GetInt("captcha.length")
 	var captchaId string
@@ -229,7 +263,17 @@ func (ac *AuthController) GetCaptchaId(c *gin.Context) {
 	})
 }
 
-// 获取验证码图片
+// CaptchaImage 获取验证码图片
+// @Summary 获取验证码图片
+// @Description 根据验证码ID获取验证码图片
+// @Tags 认证
+// @Produce json
+// @Param captchaId query string true "验证码ID"
+// @Param width query int false "图片宽度" default(130)
+// @Param height query int false "图片高度" default(30)
+// @Success 200 {object} map[string]interface{} "成功返回验证码图片"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Router /captcha/image [get]
 func (ac *AuthController) GetCaptchaImg(c *gin.Context) {
 	var req models.CaptchaImgRequest
 	if err := req.Validate(c); err != nil {

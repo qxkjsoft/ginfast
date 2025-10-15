@@ -9,13 +9,32 @@ import (
 	"gorm.io/gorm"
 )
 
+// SysDepartmentController 系统部门控制器
+// @Summary 系统部门管理API
+// @Description 系统部门管理相关接口
+// @Tags 部门管理
+// @Accept json
+// @Produce json
+// @Router /sysDepartment [get]
 type SysDepartmentController struct {
 	Common
 }
 
+// GetDivision 获取部门列表（树形结构）
+// @Summary 获取部门列表
+// @Description 获取所有部门列表（树形结构）
+// @Tags 部门管理
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{} "成功返回部门列表"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysDepartment/getDivision [get]
+// @Security ApiKeyAuth
 func (sc *SysDepartmentController) GetDivision(c *gin.Context) {
 	sysDepartmentList := models.NewSysDepartmentList()
-	err := sysDepartmentList.Find()
+	err := sysDepartmentList.Find(func(db *gorm.DB) *gorm.DB {
+		return db.Where("disable = ?", 0)
+	})
 	if err != nil {
 		sc.FailAndAbort(c, "获取部门列表失败", err)
 	}
@@ -28,6 +47,17 @@ func (sc *SysDepartmentController) GetDivision(c *gin.Context) {
 }
 
 // Add 新增部门
+// @Summary 新增部门
+// @Description 创建新部门
+// @Tags 部门管理
+// @Accept json
+// @Produce json
+// @Param dept body models.SysDepartmentAddRequest true "部门信息"
+// @Success 200 {object} map[string]interface{} "部门创建成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysDepartment/add [post]
+// @Security ApiKeyAuth
 func (sc *SysDepartmentController) Add(c *gin.Context) {
 	var req models.SysDepartmentAddRequest
 	if err := req.Validate(c); err != nil {
@@ -81,6 +111,17 @@ func (sc *SysDepartmentController) Add(c *gin.Context) {
 }
 
 // Update 更新部门
+// @Summary 更新部门
+// @Description 更新部门信息
+// @Tags 部门管理
+// @Accept json
+// @Produce json
+// @Param dept body models.SysDepartmentUpdateRequest true "部门信息"
+// @Success 200 {object} map[string]interface{} "部门更新成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysDepartment/edit [put]
+// @Security ApiKeyAuth
 func (sc *SysDepartmentController) Update(c *gin.Context) {
 	var req models.SysDepartmentUpdateRequest
 	if err := req.Validate(c); err != nil {
@@ -147,6 +188,17 @@ func (sc *SysDepartmentController) Update(c *gin.Context) {
 }
 
 // Delete 删除部门
+// @Summary 删除部门
+// @Description 删除部门信息
+// @Tags 部门管理
+// @Accept json
+// @Produce json
+// @Param dept body models.SysDepartmentDeleteRequest true "部门删除请求参数"
+// @Success 200 {object} map[string]interface{} "部门删除成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysDepartment/delete [delete]
+// @Security ApiKeyAuth
 func (sc *SysDepartmentController) Delete(c *gin.Context) {
 	var req models.SysDepartmentDeleteRequest
 	if err := req.Validate(c); err != nil {
@@ -197,6 +249,17 @@ func (sc *SysDepartmentController) Delete(c *gin.Context) {
 }
 
 // GetByID 根据ID获取部门信息
+// @Summary 根据ID获取部门信息
+// @Description 根据部门ID获取部门详细信息
+// @Tags 部门管理
+// @Accept json
+// @Produce json
+// @Param id path int true "部门ID"
+// @Success 200 {object} map[string]interface{} "成功返回部门信息"
+// @Failure 400 {object} map[string]interface{} "部门ID格式错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysDepartment/{id} [get]
+// @Security ApiKeyAuth
 func (sc *SysDepartmentController) GetByID(c *gin.Context) {
 	var req models.SysDepartmentGetRequest
 	if err := req.Validate(c); err != nil {

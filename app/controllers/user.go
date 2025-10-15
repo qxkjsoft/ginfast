@@ -15,11 +15,28 @@ import (
 	"gorm.io/gorm"
 )
 
+// UserController 用户控制器
+// @Summary 用户管理API
+// @Description 用户管理相关接口
+// @Tags 用户管理
+// @Accept json
+// @Produce json
+// @Router /users [get]
 type UserController struct {
 	Common
 }
 
-// 获取当前登录用户信息
+// GetProfile 获取当前登录用户信息
+// @Summary 获取当前登录用户信息
+// @Description 获取当前登录用户的信息，包括角色和权限
+// @Tags 用户管理
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{} "成功返回用户信息"
+// @Failure 401 {object} map[string]interface{} "用户未登录"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /users/profile [get]
+// @Security ApiKeyAuth
 func (uc *UserController) GetProfile(c *gin.Context) {
 	// 从上下文中获取用户ID
 	claims := common.GetClaims(c)
@@ -41,7 +58,21 @@ func (uc *UserController) GetProfile(c *gin.Context) {
 	})
 }
 
-// 用户列表
+// List 用户列表
+// @Summary 用户列表
+// @Description 获取用户列表，支持分页和过滤
+// @Tags 用户管理
+// @Accept json
+// @Produce json
+// @Param pageNum query int false "页码" default(1)
+// @Param pageSize query int false "每页数量" default(10)
+// @Param name query string false "用户名或昵称"
+// @Param phone query string false "手机号"
+// @Param status query string false "状态"
+// @Success 200 {object} map[string]interface{} "成功返回用户列表"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /users/list [get]
+// @Security ApiKeyAuth
 func (uc *UserController) List(c *gin.Context) {
 	var req models.UserListRequest
 	if err := req.Validate(c); err != nil {
@@ -67,6 +98,17 @@ func (uc *UserController) List(c *gin.Context) {
 }
 
 // GetUserByID 根据ID获取用户
+// @Summary 根据ID获取用户
+// @Description 根据用户ID获取用户详细信息
+// @Tags 用户管理
+// @Accept json
+// @Produce json
+// @Param id path int true "用户ID"
+// @Success 200 {object} map[string]interface{} "成功返回用户信息"
+// @Failure 400 {object} map[string]interface{} "用户ID格式错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /users/{id} [get]
+// @Security ApiKeyAuth
 func (uc *UserController) GetUserByID(c *gin.Context) {
 	// 获取路径参数
 	idStr := c.Param("id")
@@ -84,7 +126,18 @@ func (uc *UserController) GetUserByID(c *gin.Context) {
 	uc.Success(c, user)
 }
 
-// 新增用户
+// Add 新增用户
+// @Summary 新增用户
+// @Description 创建新用户
+// @Tags 用户管理
+// @Accept json
+// @Produce json
+// @Param user body models.AddRequest true "用户信息"
+// @Success 200 {object} map[string]interface{} "用户创建成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /users/add [post]
+// @Security ApiKeyAuth
 func (uc *UserController) Add(c *gin.Context) {
 	var req models.AddRequest
 	if err := req.Validate(c); err != nil {
@@ -177,6 +230,17 @@ func (uc *UserController) Add(c *gin.Context) {
 }
 
 // UpdateProfile 更新用户资料
+// @Summary 更新用户资料
+// @Description 更新用户信息
+// @Tags 用户管理
+// @Accept json
+// @Produce json
+// @Param user body models.UpdateRequest true "用户信息"
+// @Success 200 {object} map[string]interface{} "用户更新成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /users/edit [put]
+// @Security ApiKeyAuth
 func (uc *UserController) Update(c *gin.Context) {
 	var req models.UpdateRequest
 	if err := req.Validate(c); err != nil {
@@ -253,6 +317,17 @@ func (uc *UserController) Update(c *gin.Context) {
 }
 
 // Delete 删除用户
+// @Summary 删除用户
+// @Description 删除用户信息
+// @Tags 用户管理
+// @Accept json
+// @Produce json
+// @Param user body models.DeleteRequest true "用户删除请求参数"
+// @Success 200 {object} map[string]interface{} "用户删除成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /users/delete [delete]
+// @Security ApiKeyAuth
 func (uc *UserController) Delete(c *gin.Context) {
 	var req models.DeleteRequest
 	if err := req.Validate(c); err != nil {
@@ -295,6 +370,17 @@ func (uc *UserController) Delete(c *gin.Context) {
 }
 
 // UpdateAccount 更新用户账户信息（密码、手机号、邮箱）
+// @Summary 更新用户账户信息
+// @Description 更新用户密码、手机号及邮箱信息
+// @Tags 用户管理
+// @Accept json
+// @Produce json
+// @Param user body models.UpdateAccountRequest true "用户账户信息"
+// @Success 200 {object} map[string]interface{} "用户账户信息更新成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /users/updateAccount [put]
+// @Security ApiKeyAuth
 func (uc *UserController) UpdateAccount(c *gin.Context) {
 	var req models.UpdateAccountRequest
 	if err := req.Validate(c); err != nil {
@@ -360,6 +446,17 @@ func (uc *UserController) UpdateAccount(c *gin.Context) {
 }
 
 // UploadAvatar 上传用户头像
+// @Summary 上传用户头像
+// @Description 上传用户头像文件
+// @Tags 用户管理
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "用户头像文件"
+// @Success 200 {object} map[string]interface{} "用户头像上传成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /users/uploadAvatar [post]
+// @Security ApiKeyAuth
 func (uc *UserController) UploadAvatar(c *gin.Context) {
 	// 从上下文中获取用户ID
 	claims := common.GetClaims(c)

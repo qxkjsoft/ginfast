@@ -19,6 +19,30 @@
         "query",
         "connect_db"
       ]
+    },
+    "ginfast": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "D:\\go_pro\\pure_admin_demo\\gin-fast"
+      ]
+    },
+    "ginfast-front": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "D:\\go_pro\\pure_admin_demo\\gin-fast-front\\SnowAdmin"
+      ]
+    },
+    "hotgo-docs-server": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "D:\\go_pro\\hotgo\\docs\\guide-zh-CN"
+      ]
     }
   }
 }

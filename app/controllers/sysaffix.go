@@ -14,11 +14,28 @@ import (
 )
 
 // SysAffixController 文件附件控制器
+// @Summary 文件附件管理API
+// @Description 文件附件管理相关接口
+// @Tags 文件附件管理
+// @Accept json
+// @Produce json
+// @Router /sysAffix [get]
 type SysAffixController struct {
 	Common
 }
 
 // Upload 上传文件
+// @Summary 上传文件
+// @Description 上传文件并保存记录
+// @Tags 文件附件管理
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "上传的文件"
+// @Success 200 {object} map[string]interface{} "文件上传成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysAffix/upload [post]
+// @Security ApiKeyAuth
 func (ac *SysAffixController) Upload(c *gin.Context) {
 	var req models.UploadRequest
 	if err := req.Validate(c); err != nil {
@@ -58,6 +75,17 @@ func (ac *SysAffixController) Upload(c *gin.Context) {
 }
 
 // Delete 删除文件
+// @Summary 删除文件
+// @Description 删除文件记录和物理文件
+// @Tags 文件附件管理
+// @Accept json
+// @Produce json
+// @Param affix body models.AffixDeleteRequest true "文件删除请求参数"
+// @Success 200 {object} map[string]interface{} "文件删除成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysAffix/delete [delete]
+// @Security ApiKeyAuth
 func (ac *SysAffixController) Delete(c *gin.Context) {
 	var req models.AffixDeleteRequest
 	if err := req.Validate(c); err != nil {
@@ -86,6 +114,17 @@ func (ac *SysAffixController) Delete(c *gin.Context) {
 }
 
 // UpdateName 修改文件名
+// @Summary 修改文件名
+// @Description 修改文件名称
+// @Tags 文件附件管理
+// @Accept json
+// @Produce json
+// @Param affix body models.UpdateNameRequest true "文件名修改请求参数"
+// @Success 200 {object} map[string]interface{} "文件名修改成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysAffix/updateName [put]
+// @Security ApiKeyAuth
 func (ac *SysAffixController) UpdateName(c *gin.Context) {
 	var req models.UpdateNameRequest
 	if err := req.Validate(c); err != nil {
@@ -115,6 +154,19 @@ func (ac *SysAffixController) UpdateName(c *gin.Context) {
 }
 
 // List 文件列表（分页查询）
+// @Summary 文件列表
+// @Description 获取文件列表，支持分页和过滤
+// @Tags 文件附件管理
+// @Accept json
+// @Produce json
+// @Param pageNum query int false "页码" default(1)
+// @Param pageSize query int false "每页数量" default(10)
+// @Param name query string false "文件名"
+// @Param ftype query int false "文件类型"
+// @Success 200 {object} map[string]interface{} "成功返回文件列表"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysAffix/list [get]
+// @Security ApiKeyAuth
 func (ac *SysAffixController) List(c *gin.Context) {
 	var req models.ListRequest
 	if err := req.Validate(c); err != nil {
@@ -149,6 +201,17 @@ func (ac *SysAffixController) List(c *gin.Context) {
 }
 
 // GetByID 根据ID获取文件信息
+// @Summary 根据ID获取文件信息
+// @Description 根据文件ID获取文件详细信息
+// @Tags 文件附件管理
+// @Accept json
+// @Produce json
+// @Param id path int true "文件ID"
+// @Success 200 {object} map[string]interface{} "成功返回文件信息"
+// @Failure 400 {object} map[string]interface{} "文件ID格式错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysAffix/{id} [get]
+// @Security ApiKeyAuth
 func (ac *SysAffixController) GetByID(c *gin.Context) {
 	// 获取路径参数
 	idStr := c.Param("id")
@@ -174,7 +237,18 @@ func (ac *SysAffixController) GetByID(c *gin.Context) {
 	})
 }
 
-// 获取文件URL
+// Download 获取文件URL
+// @Summary 获取文件URL
+// @Description 根据文件ID获取文件下载URL
+// @Tags 文件附件管理
+// @Accept json
+// @Produce json
+// @Param id path int true "文件ID"
+// @Success 200 {object} map[string]interface{} "成功返回文件URL"
+// @Failure 400 {object} map[string]interface{} "文件ID格式错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysAffix/download/{id} [get]
+// @Security ApiKeyAuth
 func (ac *SysAffixController) Download(c *gin.Context) {
 	// 获取路径参数
 	idStr := c.Param("id")

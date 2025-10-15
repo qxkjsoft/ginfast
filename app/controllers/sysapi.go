@@ -11,11 +11,32 @@ import (
 	"gorm.io/gorm"
 )
 
+// SysApiController 系统API控制器
+// @Summary 系统API管理API
+// @Description 系统API管理相关接口
+// @Tags API管理
+// @Accept json
+// @Produce json
+// @Router /sysApi [get]
 type SysApiController struct {
 	Common
 }
 
 // List API列表（支持分页和过滤）
+// @Summary API列表
+// @Description 获取API列表，支持分页和过滤
+// @Tags API管理
+// @Accept json
+// @Produce json
+// @Param pageNum query int false "页码" default(1)
+// @Param pageSize query int false "每页数量" default(10)
+// @Param title query string false "API名称"
+// @Param path query string false "API路径"
+// @Param method query string false "请求方法"
+// @Success 200 {object} map[string]interface{} "成功返回API列表"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysApi/list [get]
+// @Security ApiKeyAuth
 func (sc *SysApiController) List(c *gin.Context) {
 	var req models.SysApiListRequest
 	if err := req.Validate(c); err != nil {
@@ -45,6 +66,17 @@ func (sc *SysApiController) List(c *gin.Context) {
 }
 
 // GetByID 根据ID获取API信息
+// @Summary 根据ID获取API信息
+// @Description 根据API ID获取API详细信息
+// @Tags API管理
+// @Accept json
+// @Produce json
+// @Param id path int true "API ID"
+// @Success 200 {object} map[string]interface{} "成功返回API信息"
+// @Failure 400 {object} map[string]interface{} "API ID格式错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysApi/{id} [get]
+// @Security ApiKeyAuth
 func (sc *SysApiController) GetByID(c *gin.Context) {
 	// 获取路径参数
 	idStr := c.Param("id")
@@ -71,6 +103,17 @@ func (sc *SysApiController) GetByID(c *gin.Context) {
 }
 
 // Add 新增API
+// @Summary 新增API
+// @Description 创建新API
+// @Tags API管理
+// @Accept json
+// @Produce json
+// @Param api body models.SysApiAddRequest true "API信息"
+// @Success 200 {object} map[string]interface{} "API创建成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysApi/add [post]
+// @Security ApiKeyAuth
 func (sc *SysApiController) Add(c *gin.Context) {
 	var req models.SysApiAddRequest
 	if err := req.Validate(c); err != nil {
@@ -107,6 +150,17 @@ func (sc *SysApiController) Add(c *gin.Context) {
 }
 
 // Update 更新API
+// @Summary 更新API
+// @Description 更新API信息
+// @Tags API管理
+// @Accept json
+// @Produce json
+// @Param api body models.SysApiUpdateRequest true "API信息"
+// @Success 200 {object} map[string]interface{} "API更新成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysApi/edit [put]
+// @Security ApiKeyAuth
 func (sc *SysApiController) Update(c *gin.Context) {
 	var req models.SysApiUpdateRequest
 	if err := req.Validate(c); err != nil {
@@ -155,6 +209,17 @@ func (sc *SysApiController) Update(c *gin.Context) {
 }
 
 // Delete 删除API
+// @Summary 删除API
+// @Description 删除API
+// @Tags API管理
+// @Accept json
+// @Produce json
+// @Param api body models.SysApiDeleteRequest true "API信息"
+// @Success 200 {object} map[string]interface{} "API删除成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysApi/delete [delete]
+// @Security ApiKeyAuth
 func (sc *SysApiController) Delete(c *gin.Context) {
 	var req models.SysApiDeleteRequest
 	if err := req.Validate(c); err != nil {

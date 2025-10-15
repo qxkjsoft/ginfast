@@ -12,11 +12,28 @@ import (
 	"gorm.io/gorm"
 )
 
+// SysMenuController 系统菜单控制器
+// @Summary 系统菜单管理API
+// @Description 系统菜单管理相关接口
+// @Tags 菜单管理
+// @Accept json
+// @Produce json
+// @Router /sysMenu [get]
 type SysMenuController struct {
 	Common
 }
 
 // GetRouters 获取当前用户有权限的菜单数据不含按钮
+// @Summary 获取当前用户有权限的菜单数据
+// @Description 获取当前用户有权限的菜单数据，不包含按钮
+// @Tags 菜单管理
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{} "成功返回菜单列表"
+// @Failure 401 {object} map[string]interface{} "用户未登录"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysMenu/getRouters [get]
+// @Security ApiKeyAuth
 func (sm *SysMenuController) GetRouters(c *gin.Context) {
 	// 从上下文中获取用户ID
 	claims := common.GetClaims(c)
@@ -85,7 +102,16 @@ func (sm *SysMenuController) GetRouters(c *gin.Context) {
 	sm.Success(c, menuList)
 }
 
-// 获取完整的菜单列表
+// GetMenuList 获取完整的菜单列表
+// @Summary 获取完整的菜单列表
+// @Description 获取系统中所有菜单列表
+// @Tags 菜单管理
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{} "成功返回菜单列表"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysMenu/getMenuList [get]
+// @Security ApiKeyAuth
 func (sm *SysMenuController) GetMenuList(c *gin.Context) {
 	menuList := models.NewSysMenuList()
 	err := menuList.Find(func(db *gorm.DB) *gorm.DB {
@@ -103,6 +129,17 @@ func (sm *SysMenuController) GetMenuList(c *gin.Context) {
 }
 
 // Add 新增菜单
+// @Summary 新增菜单
+// @Description 创建新菜单
+// @Tags 菜单管理
+// @Accept json
+// @Produce json
+// @Param menu body models.SysMenuAddRequest true "菜单信息"
+// @Success 200 {object} map[string]interface{} "菜单创建成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysMenu/add [post]
+// @Security ApiKeyAuth
 func (sm *SysMenuController) Add(c *gin.Context) {
 	var req models.SysMenuAddRequest
 	if err := req.Validate(c); err != nil {
@@ -213,6 +250,17 @@ func (sm *SysMenuController) Add(c *gin.Context) {
 }
 
 // Update 更新菜单
+// @Summary 更新菜单
+// @Description 更新菜单信息
+// @Tags 菜单管理
+// @Accept json
+// @Produce json
+// @Param menu body models.SysMenuUpdateRequest true "菜单信息"
+// @Success 200 {object} map[string]interface{} "菜单更新成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysMenu/edit [put]
+// @Security ApiKeyAuth
 func (sm *SysMenuController) Update(c *gin.Context) {
 	var req models.SysMenuUpdateRequest
 	if err := req.Validate(c); err != nil {
@@ -336,6 +384,17 @@ func (sm *SysMenuController) Update(c *gin.Context) {
 }
 
 // Delete 删除菜单
+// @Summary 删除菜单
+// @Description 删除菜单信息
+// @Tags 菜单管理
+// @Accept json
+// @Produce json
+// @Param menu body models.SysMenuDeleteRequest true "菜单删除请求参数"
+// @Success 200 {object} map[string]interface{} "菜单删除成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysMenu/delete [delete]
+// @Security ApiKeyAuth
 func (sm *SysMenuController) Delete(c *gin.Context) {
 	var req models.SysMenuDeleteRequest
 	if err := req.Validate(c); err != nil {
@@ -399,6 +458,17 @@ func (sm *SysMenuController) Delete(c *gin.Context) {
 }
 
 // GetByID 根据ID获取菜单信息
+// @Summary 根据ID获取菜单信息
+// @Description 根据菜单ID获取菜单详细信息
+// @Tags 菜单管理
+// @Accept json
+// @Produce json
+// @Param id path int true "菜单ID"
+// @Success 200 {object} map[string]interface{} "成功返回菜单信息"
+// @Failure 400 {object} map[string]interface{} "菜单ID格式错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysMenu/{id} [get]
+// @Security ApiKeyAuth
 func (sm *SysMenuController) GetByID(c *gin.Context) {
 	// 获取路径参数
 	idStr := c.Param("id")
@@ -423,6 +493,17 @@ func (sm *SysMenuController) GetByID(c *gin.Context) {
 }
 
 // GetMenuApiIds 根据menuId查询api_id集合
+// @Summary 根据菜单ID获取API ID集合
+// @Description 根据菜单ID获取该菜单关联的API ID集合
+// @Tags 菜单管理
+// @Accept json
+// @Produce json
+// @Param id path int true "菜单ID"
+// @Success 200 {object} map[string]interface{} "成功返回API ID集合"
+// @Failure 400 {object} map[string]interface{} "菜单ID格式错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysMenu/apis/{id} [get]
+// @Security ApiKeyAuth
 func (sm *SysMenuController) GetMenuApiIds(c *gin.Context) {
 	// 获取路径参数
 	idStr := c.Param("id")
@@ -454,6 +535,17 @@ func (sm *SysMenuController) GetMenuApiIds(c *gin.Context) {
 }
 
 // SetMenuApis 设置菜单关联的API
+// @Summary 为菜单分配API权限
+// @Description 为指定菜单分配API权限
+// @Tags 菜单管理
+// @Accept json
+// @Produce json
+// @Param menuApi body models.SysMenuApiAssignRequest true "菜单API分配请求参数"
+// @Success 200 {object} map[string]interface{} "菜单API关联设置成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysMenu/setApis [post]
+// @Security ApiKeyAuth
 func (sm *SysMenuController) SetMenuApis(c *gin.Context) {
 	var req models.SysMenuApiAssignRequest
 	if err := req.Validate(c); err != nil {

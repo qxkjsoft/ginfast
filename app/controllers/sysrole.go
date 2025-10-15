@@ -12,11 +12,29 @@ import (
 	"gorm.io/gorm"
 )
 
+// SysRoleController 系统角色控制器
+// @Summary 系统角色管理API
+// @Description 系统角色管理相关接口
+// @Tags 角色管理
+// @Accept json
+// @Produce json
+// @Router /sysRole [get]
 type SysRoleController struct {
 	Common
 }
 
-// 根据用户ID获取角色菜单权限
+// GetUserPermission 根据用户ID获取角色菜单权限
+// @Summary 根据角色ID获取菜单权限
+// @Description 根据角色ID获取该角色拥有的菜单权限
+// @Tags 角色管理
+// @Accept json
+// @Produce json
+// @Param roleId path int true "角色ID"
+// @Success 200 {object} map[string]interface{} "成功返回角色菜单权限"
+// @Failure 400 {object} map[string]interface{} "角色ID格式错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysRole/getUserPermission/{roleId} [get]
+// @Security ApiKeyAuth
 func (sc *SysRoleController) GetUserPermission(c *gin.Context) {
 	roleId, err := strconv.ParseUint(c.Param("roleId"), 10, 64)
 	if err != nil {
@@ -37,6 +55,15 @@ func (sc *SysRoleController) GetUserPermission(c *gin.Context) {
 }
 
 // GetRoles 获取角色列表（树形结构）
+// @Summary 获取角色列表
+// @Description 获取所有角色列表（树形结构）
+// @Tags 角色管理
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{} "成功返回角色列表"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysRole/getRoles [get]
+// @Security ApiKeyAuth
 func (sc *SysRoleController) GetRoles(c *gin.Context) {
 	sysRoleList := models.NewSysRoleList()
 	err := sysRoleList.Find()
@@ -52,6 +79,18 @@ func (sc *SysRoleController) GetRoles(c *gin.Context) {
 }
 
 // List 角色列表（支持分页和过滤）
+// @Summary 角色列表
+// @Description 获取角色列表，支持分页和过滤
+// @Tags 角色管理
+// @Accept json
+// @Produce json
+// @Param pageNum query int false "页码" default(1)
+// @Param pageSize query int false "每页数量" default(10)
+// @Param name query string false "角色名称"
+// @Success 200 {object} map[string]interface{} "成功返回角色列表"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysRole/list [get]
+// @Security ApiKeyAuth
 func (sc *SysRoleController) List(c *gin.Context) {
 	var req models.SysRoleListRequest
 	if err := req.Validate(c); err != nil {
@@ -79,6 +118,17 @@ func (sc *SysRoleController) List(c *gin.Context) {
 }
 
 // GetByID 根据ID获取角色信息
+// @Summary 根据ID获取角色信息
+// @Description 根据角色ID获取角色详细信息
+// @Tags 角色管理
+// @Accept json
+// @Produce json
+// @Param id path int true "角色ID"
+// @Success 200 {object} map[string]interface{} "成功返回角色信息"
+// @Failure 400 {object} map[string]interface{} "角色ID格式错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysRole/{id} [get]
+// @Security ApiKeyAuth
 func (sc *SysRoleController) GetByID(c *gin.Context) {
 	// 获取路径参数
 	idStr := c.Param("id")
@@ -103,6 +153,17 @@ func (sc *SysRoleController) GetByID(c *gin.Context) {
 }
 
 // Add 新增角色
+// @Summary 新增角色
+// @Description 创建新角色
+// @Tags 角色管理
+// @Accept json
+// @Produce json
+// @Param role body models.SysRoleAddRequest true "角色信息"
+// @Success 200 {object} map[string]interface{} "角色创建成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysRole/add [post]
+// @Security ApiKeyAuth
 func (sc *SysRoleController) Add(c *gin.Context) {
 	var req models.SysRoleAddRequest
 	if err := req.Validate(c); err != nil {
@@ -156,6 +217,17 @@ func (sc *SysRoleController) Add(c *gin.Context) {
 }
 
 // Update 更新角色
+// @Summary 更新角色
+// @Description 更新角色信息
+// @Tags 角色管理
+// @Accept json
+// @Produce json
+// @Param role body models.SysRoleUpdateRequest true "角色信息"
+// @Success 200 {object} map[string]interface{} "角色更新成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysRole/edit [put]
+// @Security ApiKeyAuth
 func (sc *SysRoleController) Update(c *gin.Context) {
 	var req models.SysRoleUpdateRequest
 	if err := req.Validate(c); err != nil {
@@ -223,6 +295,17 @@ func (sc *SysRoleController) Update(c *gin.Context) {
 }
 
 // Delete 删除角色
+// @Summary 删除角色
+// @Description 删除指定角色
+// @Tags 角色管理
+// @Accept json
+// @Produce json
+// @Param id path int true "角色ID"
+// @Success 200 {object} map[string]interface{} "角色删除成功"
+// @Failure 400 {object} map[string]interface{} "角色ID格式错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysRole/{id} [delete]
+// @Security ApiKeyAuth
 func (sc *SysRoleController) Delete(c *gin.Context) {
 	var req models.SysRoleDeleteRequest
 	if err := req.Validate(c); err != nil {
@@ -289,6 +372,17 @@ func (sc *SysRoleController) Delete(c *gin.Context) {
 }
 
 // 为角色分配菜单权限
+// @Summary 为角色分配菜单权限
+// @Description 为指定角色分配菜单权限
+// @Tags 角色管理
+// @Accept json
+// @Produce json
+// @Param roleMenu body models.SysRoleMenuAssignRequest true "角色菜单信息"
+// @Success 200 {object} map[string]interface{} "分配角色菜单权限成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysRole/addRoleMenu [post]
+// @Security ApiKeyAuth
 func (sm *SysRoleController) AddRoleMenu(c *gin.Context) {
 	var req models.SysRoleMenuAssignRequest
 	if err := req.Validate(c); err != nil {
@@ -368,6 +462,17 @@ func (sm *SysRoleController) AddRoleMenu(c *gin.Context) {
 }
 
 // UpdateDataScope 更新角色数据权限
+// @Summary 更新角色数据权限
+// @Description 更新角色的数据权限
+// @Tags 角色管理
+// @Accept json
+// @Produce json
+// @Param roleDataScope body models.SysRoleDataScopeUpdateRequest true "角色数据权限信息"
+// @Success 200 {object} map[string]interface{} "角色数据权限更新成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysRole/updateDataScope [put]
+// @Security ApiKeyAuth
 func (sc *SysRoleController) UpdateDataScope(c *gin.Context) {
 	var req models.SysRoleDataScopeUpdateRequest
 	if err := req.Validate(c); err != nil {

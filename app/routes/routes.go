@@ -1,7 +1,11 @@
 package routes
 
 import (
+	"context"
+
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"gin-fast/app/controllers"
 	"gin-fast/app/global/app"
@@ -21,6 +25,7 @@ var configControllers = &controllers.ConfigController{}
 
 // InitRoutes 初始化路由
 func InitRoutes(engine *gin.Engine) {
+
 	// 添加自定义 recovery 中间件来处理 FailAndAbort 的 panic
 	engine.Use(middleware.RequestAbortedRecovery())
 
@@ -28,8 +33,24 @@ func InitRoutes(engine *gin.Engine) {
 	if app.ConfigYml.GetBool("httpserver.allowcrossdomain") {
 		engine.Use(middleware.CorsNext())
 	}
+
 	// 静态文件
 	engine.Static(app.ConfigYml.GetString("httpserver.serverrootpath"), app.ConfigYml.GetString("httpserver.serverroot"))
+
+	if app.ConfigYml.GetBool("server.appdebug") {
+		// 注册Swagger路由
+		engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+		// 查看内存缓存项
+		engine.GET("/viewCache", func(ctx *gin.Context) {
+			items, err := app.Cache.GetAll(context.Background())
+			if err != nil {
+				ctx.JSON(500, gin.H{"error": "获取缓存项失败", "details": err.Error()})
+				return
+			}
+			ctx.JSON(200, items)
+		})
+	}
+
 	// 公开路由
 	public := engine.Group("/api")
 	{
@@ -41,10 +62,6 @@ func InitRoutes(engine *gin.Engine) {
 		public.GET("/captcha/image", authControllers.GetCaptchaImg)
 		// 获取配置信息
 		public.GET("/config/get", configControllers.GetConfig)
-		if app.ConfigYml.GetBool("server.appdebug") {
-			// 查看内存缓存项
-			public.GET("/viewCache", configControllers.GetCacheItems)
-		}
 	}
 
 	// 受保护的路由

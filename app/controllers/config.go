@@ -1,35 +1,32 @@
 package controllers
 
 import (
-	"context"
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
 
 	"github.com/gin-gonic/gin"
 )
 
+// ConfigController 配置控制器
+// @Summary 系统配置管理API
+// @Description 系统配置管理相关接口
+// @Tags 配置管理
+// @Accept json
+// @Produce json
+// @Router /config [get]
 type ConfigController struct {
 	Common
 }
 
-// GetCacheItems 获取所有缓存项
-// @Summary 获取所有缓存项
-// @Description 获取所有缓存项
+// GetConfig 获取配置信息
+// @Summary 获取配置信息
+// @Description 获取系统配置信息
 // @Tags 配置管理
-// @Accept  application/json
-// @Product application/json
-// @Success 200 {object} app.Response "{"code":200,"data":{},"msg":"操作成功"}"
-// @Router /config/cache/items [get]
-func (con ConfigController) GetCacheItems(c *gin.Context) {
-	items, err := app.Cache.GetAll(context.Background())
-	if err != nil {
-		con.FailAndAbort(c, "获取缓存项失败", err)
-		return
-	}
-	con.Success(c, items)
-}
-
-// GetConfig 读取并返回config.yml中的内容（仅限于Server、HttpServer、Captcha中的内容）
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{} "成功返回配置信息"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /config/get [get]
 func (con ConfigController) GetConfig(ctx *gin.Context) {
 	// 提取Server、HttpServer和Captcha配置
 	result := make(map[string]interface{})
@@ -63,7 +60,18 @@ func (con ConfigController) GetConfig(ctx *gin.Context) {
 	con.Common.Success(ctx, result)
 }
 
-// UpdateConfig 修改config.yml中的内容（仅限于Server、HttpServer、Captcha中的内容）
+// UpdateConfig 更新配置信息
+// @Summary 更新配置信息
+// @Description 更新系统配置信息
+// @Tags 配置管理
+// @Accept json
+// @Produce json
+// @Param config body map[string]interface{} true "配置信息"
+// @Success 200 {object} map[string]interface{} "成功更新配置信息"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /config/update [put]
+// @Security ApiKeyAuth
 func (con ConfigController) UpdateConfig(ctx *gin.Context) {
 	var req models.ConfigRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
