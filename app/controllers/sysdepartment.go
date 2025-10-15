@@ -33,7 +33,7 @@ type SysDepartmentController struct {
 func (sc *SysDepartmentController) GetDivision(c *gin.Context) {
 	sysDepartmentList := models.NewSysDepartmentList()
 	err := sysDepartmentList.Find(func(db *gorm.DB) *gorm.DB {
-		return db.Where("disable = ?", 0)
+		return db.Where("status = ?", 1)
 	})
 	if err != nil {
 		sc.FailAndAbort(c, "获取部门列表失败", err)
