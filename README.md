@@ -339,6 +339,170 @@ type LoginRequest struct {
 Authorization: Bearer <access_token>
 ```
 
+## 插件开发规范
+
+本项目支持插件化开发，允许开发者在不影响核心代码的情况下扩展功能。插件遵循与主应用相同的架构模式和规范。
+
+### 插件目录结构
+
+插件统一放在 `plugins/` 目录下，每个插件应具有以下标准结构：
+
+```
+plugins/
+└── {plugin_name}/
+    ├── controllers/     # 插件控制器
+    ├── models/          # 插件数据模型和参数验证
+    ├── routes/          # 插件路由注册
+    └── {plugin_name}init.go  # 插件初始化文件
+```
+
+### 插件开发步骤
+
+1. **创建插件目录结构**
+   在 `plugins/` 目录下创建插件文件夹，例如 `plugins/example/`
+
+2. **编写数据模型**
+   在 `plugins/{plugin_name}/models/` 目录下创建模型文件：
+   - 继承 `models.BaseModel` 基础模型
+   - 实现标准的 CRUD 方法（Create, Update, Delete, GetByID等）
+   - 创建对应的参数验证模型（如 CreateRequest, UpdateRequest等）
+
+   示例：
+   ```go
+   // plugins/example/models/example.go
+   type Example struct {
+       models.BaseModel
+       Name        string `gorm:"type:varchar(255);comment:名称" json:"name"`
+       Description string `gorm:"type:varchar(255);comment:描述" json:"description"`
+       CreatedBy   uint   `gorm:"type:int(11);comment:创建者ID" json:"createdBy"`
+   }
+   
+   // 实现标准方法
+   func (m *Example) GetByID(id uint) error {
+       return app.DB().First(m, id).Error
+   }
+   
+   func (m *Example) Create() error {
+       return app.DB().Create(m).Error
+   }
+   ```
+
+3. **编写控制器**
+   在 `plugins/{plugin_name}/controllers/` 目录下创建控制器文件：
+   - 继承 `controllers.Common` 结构体以复用响应方法
+   - 实现标准的 RESTful API 方法（Create, Update, Delete, GetByID, List等）
+   - 使用参数验证模型进行输入验证
+   - 使用统一的错误处理和响应格式
+
+   示例：
+   ```go
+   // plugins/example/controllers/example.go
+   type ExampleController struct {
+       controllers.Common
+   }
+   
+   func (ec *ExampleController) Create(c *gin.Context) {
+       var req models.CreateRequest
+       if err := req.Validate(c); err != nil {
+           ec.FailAndAbort(c, err.Error(), err)
+       }
+       
+       // 业务逻辑处理
+       example := models.NewExample()
+       example.Name = req.Name
+       // ...
+       
+       if err := example.Create(); err != nil {
+           ec.FailAndAbort(c, "创建示例失败", err)
+       }
+       
+       ec.Success(c, gin.H{"id": example.ID})
+   }
+   ```
+
+4. **注册路由**
+   在 `plugins/{plugin_name}/routes/routes.go` 中注册插件路由：
+   - 使用统一的路由前缀 `/api/plugins/{plugin_name}`
+   - 应用必要的中间件（如 JWT 认证、Casbin 权限验证）
+   - 注册控制器方法到对应路由
+
+   示例：
+   ```go
+   // plugins/example/routes/routes.go
+   func RegisterRoutes(engine *gin.Engine) {
+       example := engine.Group("/api/plugins/example")
+       example.Use(middleware.JWTAuthMiddleware())
+       example.Use(middleware.CasbinMiddleware())
+       {
+           example.POST("/add", exampleControllers.Create)
+           example.PUT("/edit", exampleControllers.Update)
+           // ...
+       }
+   }
+   ```
+
+5. **插件初始化**
+   创建 `plugins/{plugin_name}/{plugin_name}init.go` 文件，在 `init()` 函数中注册插件路由：
+   - 使用 `ginhelper.RegisterPluginRoutes` 注册路由
+   - 记录插件初始化日志
+
+   示例：
+   ```go
+   // plugins/example/exampleinit.go
+   func init() {
+       ginhelper.RegisterPluginRoutes(func(engine *gin.Engine) {
+           routes.RegisterRoutes(engine)
+       })
+       app.ZapLog.Info("示例插件初始化完成")
+   }
+   ```
+
+6. **参数验证**
+   在 `plugins/{plugin_name}/models/` 中创建参数验证模型：
+   - 继承 `models.Validator` 和 `models.BasePaging`（分页查询时）
+   - 实现 `Validate` 方法进行参数验证
+   - 实现 `Handle` 方法处理查询条件
+
+   示例：
+   ```go
+   // plugins/example/models/exampleparam.go
+   type CreateRequest struct {
+       models.Validator
+       Name        string `json:"name" binding:"required"`
+       Description string `json:"description" binding:"required"`
+   }
+   
+   func (r *CreateRequest) Validate(c *gin.Context) error {
+       return r.Validator.Check(c, r)
+   }
+   ```
+
+### 插件规范要求
+
+1. **命名规范**
+   - 插件目录名应使用小写字母和下划线命名
+   - 控制器、模型、路由文件名应与功能对应，使用小写字母和下划线
+   - 结构体和方法名遵循 Go 语言命名规范
+
+2. **接口一致性**
+   - 插件控制器必须继承 `controllers.Common` 结构体
+   - 插件模型应继承 `models.BaseModel` 基础模型
+   - 使用统一的错误处理和响应格式
+
+3. **路由规范**
+   - 插件路由必须以 `/api/plugins/{plugin_name}` 为前缀
+   - 必须应用 JWT 认证中间件确保安全性
+   - 根据需要应用 Casbin 权限验证中间件
+
+4. **日志记录**
+   - 使用 `app.ZapLog` 记录插件相关日志
+   - 在关键操作和初始化时添加日志记录
+
+5. **数据库操作**
+   - 使用 `app.DB()` 获取数据库连接
+   - 遵循 GORM 的操作规范
+   - 注意处理数据库错误
+
 ## 部署说明
 
 ### 编译项目
