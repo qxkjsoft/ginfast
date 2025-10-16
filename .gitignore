@@ -62,3 +62,7 @@ config/config.yml
 
 # 调试生成的文件
 __debug_bin.exe*
+
+.vscode/
+# Roo
+.roo/
