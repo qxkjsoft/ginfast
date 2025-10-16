@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50726
 File Encoding         : 65001
 
-Date: 2025-10-15 17:44:35
+Date: 2025-10-16 09:02:46
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -33,19 +33,6 @@ CREATE TABLE `example` (
 -- ----------------------------
 -- Records of example
 -- ----------------------------
-INSERT INTO `example` VALUES ('1', '11', '22', '2025-10-13 16:29:20', '2025-10-13 16:29:20', null, '0');
-INSERT INTO `example` VALUES ('2', '123', '123', '2025-10-13 16:52:09', '2025-10-13 16:52:09', null, '0');
-INSERT INTO `example` VALUES ('3', 'aa11', 'bb22', '2025-10-13 18:08:16', '2025-10-13 18:08:25', null, '0');
-INSERT INTO `example` VALUES ('4', '11', '22', '2025-10-13 18:09:30', '2025-10-13 18:09:30', null, '0');
-INSERT INTO `example` VALUES ('5', '123', '123', '2025-10-13 18:09:33', '2025-10-13 18:09:33', null, '0');
-INSERT INTO `example` VALUES ('6', '444', '11', '2025-10-13 18:09:36', '2025-10-13 18:09:36', null, '0');
-INSERT INTO `example` VALUES ('7', '44', '222', '2025-10-13 18:09:38', '2025-10-13 18:09:38', null, '0');
-INSERT INTO `example` VALUES ('8', 'asd', 'asdas', '2025-10-13 18:10:09', '2025-10-13 18:10:09', null, '0');
-INSERT INTO `example` VALUES ('9', 'asdas', 'dasd', '2025-10-13 18:10:11', '2025-10-13 18:10:11', null, '0');
-INSERT INTO `example` VALUES ('10', '1231', '231231', '2025-10-13 18:10:13', '2025-10-13 18:10:13', null, '0');
-INSERT INTO `example` VALUES ('11', '123', '233', '2025-10-13 18:10:19', '2025-10-13 18:10:19', null, '0');
-INSERT INTO `example` VALUES ('12', '123', '111', '2025-10-14 11:17:38', '2025-10-14 11:17:38', null, '1');
-INSERT INTO `example` VALUES ('13', 'ggg', 'ggg', '2025-10-14 11:17:49', '2025-10-14 11:17:49', null, '1');
 
 -- ----------------------------
 -- Table structure for sys_affix
@@ -384,7 +371,7 @@ INSERT INTO `sys_menu` VALUES ('1004', '10', '/system/division', 'division', '',
 INSERT INTO `sys_menu` VALUES ('1005', '10', '/system/dictionary', 'dictionary', '', 'system/dictionary/dictionary', 'dictionary', '0', '0', '0', '1', '0', '', '0', '', 'IconBook', '5', '2', '0', '', '2025-08-27 09:09:44', '2025-10-11 16:23:47', null, '1');
 INSERT INTO `sys_menu` VALUES ('1006', '10', '/system/log', 'log', null, 'system/log/log', 'log', '0', '1', '0', '1', '0', '', '0', '', 'icon-menu', '6', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', null, '1');
 INSERT INTO `sys_menu` VALUES ('1007', '10', '/system/userinfo', 'userinfo', '', 'system/userinfo/userinfo', 'userinfo', '0', '1', '0', '1', '0', '', '0', '', 'icon-menu', '7', '2', '0', '', '2025-08-27 09:09:44', '2025-09-17 11:19:11', null, '1');
-INSERT INTO `sys_menu` VALUES ('140213', '10', '/system/api', 'SystemApi', '', 'system/sysapi/sysapi', 'API管理', '0', '0', '0', '1', '0', '', '0', '', 'IconFile', '4', '2', '0', '', '2025-09-03 10:53:57', '2025-10-11 16:20:05', null, '1');
+INSERT INTO `sys_menu` VALUES ('140213', '10', '/system/api', 'SystemApi', '', 'system/sysapi/sysapi', 'api-management', '0', '0', '0', '1', '0', '', '0', '', 'IconFile', '4', '2', '0', '', '2025-09-03 10:53:57', '2025-10-16 08:53:42', null, '1');
 INSERT INTO `sys_menu` VALUES ('140214', '1001', '', '', '', '', '新增', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:account:add', '2025-09-03 16:11:58', '2025-09-03 16:11:58', null, '1');
 INSERT INTO `sys_menu` VALUES ('140215', '1001', '', '', '', '', '编辑', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:account:edit', '2025-09-03 17:11:24', '2025-09-03 17:11:24', null, '1');
 INSERT INTO `sys_menu` VALUES ('140216', '1001', '', '', '', '', '删除', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:account:delete', '2025-09-03 17:12:22', '2025-09-03 17:12:22', null, '1');
@@ -409,16 +396,16 @@ INSERT INTO `sys_menu` VALUES ('140235', '1005', '', '', '', '', '字典项管�
 INSERT INTO `sys_menu` VALUES ('140236', '1005', '', '', '', '', '新增字典项', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:dictitem:add', '2025-09-16 17:32:06', '2025-09-16 17:32:06', null, '1');
 INSERT INTO `sys_menu` VALUES ('140237', '1005', '', '', '', '', '编辑字典项', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:dictitem:edit', '2025-09-16 17:33:16', '2025-09-16 17:33:16', null, '1');
 INSERT INTO `sys_menu` VALUES ('140238', '1005', '', '', '', '', '删除字典项', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:dictitem:delete', '2025-09-16 17:33:41', '2025-09-16 17:33:41', null, '1');
-INSERT INTO `sys_menu` VALUES ('140239', '10', '/system/affix', 'SystemAffix', '', 'system/affix/affix', '文件管理', '0', '0', '0', '1', '0', '', '0', '', 'IconFolder', '1', '2', '0', '', '2025-09-25 15:17:00', '2025-10-11 15:36:16', null, '1');
+INSERT INTO `sys_menu` VALUES ('140239', '10', '/system/affix', 'SystemAffix', '', 'system/affix/affix', 'file-manager', '0', '0', '0', '1', '0', '', '0', '', 'IconFolder', '1', '2', '0', '', '2025-09-25 15:17:00', '2025-10-15 18:14:16', null, '1');
 INSERT INTO `sys_menu` VALUES ('140240', '140239', '', '', '', '', '文件上传', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:affix:upload', '2025-09-25 15:45:29', '2025-09-25 15:46:29', null, '1');
 INSERT INTO `sys_menu` VALUES ('140241', '140239', '', '', '', '', '删除文件', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:affix:delete', '2025-09-25 15:46:52', '2025-09-25 15:46:52', null, '1');
 INSERT INTO `sys_menu` VALUES ('140242', '140239', '', '', '', '', '修改文件名', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:affix:updateName', '2025-09-25 15:47:41', '2025-09-25 15:47:41', null, '1');
 INSERT INTO `sys_menu` VALUES ('140243', '140239', '', '', '', '', '下载文件', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:affix:download', '2025-09-25 15:48:56', '2025-09-25 15:48:56', null, '1');
 INSERT INTO `sys_menu` VALUES ('140244', '1002', '', '', '', '', '数据权限', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:role:dataScope', '2025-09-26 17:07:16', '2025-09-26 17:07:16', null, '1');
-INSERT INTO `sys_menu` VALUES ('140245', '10', '/system/sysconfig', 'SystemSysconfig', '', 'system/sysconfig/sysconfig', '系统配置', '0', '0', '0', '1', '0', '', '0', '', 'IconSettings', '1', '2', '0', '', '2025-10-09 16:15:21', '2025-10-11 15:37:09', null, '1');
+INSERT INTO `sys_menu` VALUES ('140245', '10', '/system/sysconfig', 'SystemSysconfig', '', 'system/sysconfig/sysconfig', 'system-config', '0', '0', '0', '1', '0', '', '0', '', 'IconSettings', '1', '2', '0', '', '2025-10-09 16:15:21', '2025-10-15 18:10:54', null, '1');
 INSERT INTO `sys_menu` VALUES ('140246', '140245', '', '', '', '', '修改系统配置', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:config:update', '2025-10-09 16:24:33', '2025-10-09 16:24:33', null, '1');
-INSERT INTO `sys_menu` VALUES ('140247', '0', '/demo', 'Demo', '', '', '插件示例', '0', '0', '0', '1', '0', '', '0', 'more', '', '999', '1', '0', '', '2025-10-13 14:38:38', '2025-10-14 11:13:31', null, '1');
-INSERT INTO `sys_menu` VALUES ('140248', '140247', '/plugins/example', 'PluginsExample', '', 'plugins/example/views/examplelist', '插件示例', '0', '0', '0', '1', '0', '', '0', '', 'IconMenu', '1', '2', '0', '', '2025-10-13 15:19:20', '2025-10-13 16:09:12', null, '1');
+INSERT INTO `sys_menu` VALUES ('140247', '0', '/demo', 'Demo', '', '', 'plugin-example', '0', '0', '0', '1', '0', '', '0', 'more', '', '999', '1', '0', '', '2025-10-13 14:38:38', '2025-10-16 08:55:06', null, '1');
+INSERT INTO `sys_menu` VALUES ('140248', '140247', '/plugins/example', 'PluginsExample', '', 'plugins/example/views/examplelist', 'plugin-example', '0', '0', '0', '1', '0', '', '0', '', 'IconMenu', '1', '2', '0', '', '2025-10-13 15:19:20', '2025-10-16 08:55:19', null, '1');
 INSERT INTO `sys_menu` VALUES ('140249', '140248', '', '', '', '', '新增', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'plugins:example:add', '2025-10-14 11:02:42', '2025-10-14 11:02:42', null, '1');
 INSERT INTO `sys_menu` VALUES ('140250', '140248', '', '', '', '', '编辑', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'plugins:example:edit', '2025-10-14 11:03:08', '2025-10-14 11:03:08', null, '1');
 INSERT INTO `sys_menu` VALUES ('140251', '140248', '', '', '', '', '删除', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'plugins:example:delete', '2025-10-14 11:03:25', '2025-10-14 11:03:25', null, '1');
