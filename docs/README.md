@@ -31,8 +31,8 @@
 1. 克隆项目
 
 ```bash
-git clone <repository-url>
-cd gin-fast
+git clone https://github.com/qxkjsoft/ginfast-back.git
+cd ginfast-back
 ```
 
 2. 安装后端依赖
@@ -44,7 +44,8 @@ go mod tidy
 3. 安装前端依赖
 
 ```bash
-cd gin-fast-front/SnowAdmin
+git clone https://github.com/qxkjsoft/ginfast-front.git
+cd ginfast-front
 pnpm install
 ```
 
@@ -77,7 +78,7 @@ go run main.go
 7. 启动前端服务
 
 ```bash
-cd gin-fast-front/SnowAdmin
+cd ginfast-front
 pnpm run dev
 ```
 

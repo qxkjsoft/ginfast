@@ -146,8 +146,8 @@ systemctl enable nginx
 
 ```bash
 cd /opt
-git clone <repository-url>
-cd gin-fast
+git clone https://github.com/qxkjsoft/ginfast-back.git
+cd ginfast-back
 ```
 
 #### 2. 修改配置
@@ -394,7 +394,7 @@ systemctl status gin-fast
 
 ```bash
 cd /opt
-git clone <repository-url>
+git clone https://github.com/qxkjsoft/ginfast-front.git
 cd gin-fast-front/GinFast
 ```
 

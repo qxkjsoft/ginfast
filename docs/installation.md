@@ -19,8 +19,8 @@ Gin-Fast 是一个基于 Gin 框架的后台管理系统，前端采用 Vue3 + V
 #### 1. 克隆项目
 
 ```bash
-git clone <repository-url>
-cd gin-fast
+git clone https://github.com/qxkjsoft/ginfast-back.git
+cd ginfast-back
 ```
 
 #### 2. 安装依赖
@@ -205,7 +205,8 @@ go run main.go
 #### 1. 克隆项目
 
 ```bash
-cd gin-fast-front/SnowAdmin
+git clone https://github.com/qxkjsoft/ginfast-front.git
+cd ginfast-front
 ```
 
 #### 2. 安装依赖
@@ -434,7 +435,7 @@ go run main.go
 #### 2. 启动前端服务
 
 ```bash
-cd gin-fast-front/SnowAdmin
+cd ginfast-front
 pnpm run dev
 ```
 

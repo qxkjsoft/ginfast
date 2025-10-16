@@ -116,8 +116,8 @@ gin-fast/
 
 1. 克隆项目
 ```bash
-git clone <repository-url>
-cd gin-fast
+git clone https://github.com/qxkjsoft/ginfast-back.git
+cd ginfast-back
 ```
 
 2. 安装依赖

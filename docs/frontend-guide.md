@@ -18,8 +18,8 @@
 #### 1. 克隆项目
 
 ```bash
-git clone <repository-url>
-cd gin-fast-front
+git clone https://github.com/qxkjsoft/ginfast-front.git
+cd ginfast-front
 ```
 
 #### 2. 安装依赖
