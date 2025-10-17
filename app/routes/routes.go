@@ -22,6 +22,7 @@ var sysDictItemControllers = &controllers.SysDictItemController{}
 var sysApiControllers = &controllers.SysApiController{}
 var sysAffixControllers = &controllers.SysAffixController{}
 var configControllers = &controllers.ConfigController{}
+var sysOperationLogControllers = &controllers.SysOperationLogController{}
 
 // InitRoutes 初始化路由
 func InitRoutes(engine *gin.Engine) {
@@ -50,6 +51,9 @@ func InitRoutes(engine *gin.Engine) {
 			ctx.JSON(200, items)
 		})
 	}
+
+	// 添加操作日志中间件到所有API路由
+	engine.Use(middleware.OperationLogMiddleware())
 
 	// 公开路由
 	public := engine.Group("/api")
@@ -229,6 +233,19 @@ func InitRoutes(engine *gin.Engine) {
 			// 更新配置信息
 			config.PUT("/update", configControllers.UpdateConfig)
 
+		}
+
+		// 操作日志路由组
+		sysOperationLog := protected.Group("/sysOperationLog")
+		{
+			// 操作日志列表
+			sysOperationLog.GET("/list", sysOperationLogControllers.List)
+			// 操作日志统计
+			sysOperationLog.GET("/stats", sysOperationLogControllers.Stats)
+			// 删除操作日志
+			sysOperationLog.DELETE("/delete", sysOperationLogControllers.Delete)
+			// 导出操作日志
+			sysOperationLog.GET("/export", sysOperationLogControllers.Export)
 		}
 	}
 }

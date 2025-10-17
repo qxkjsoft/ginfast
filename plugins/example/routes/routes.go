@@ -15,6 +15,7 @@ func RegisterRoutes(engine *gin.Engine) {
 	// 示例插件路由组
 	example := engine.Group("/api/plugins/example")
 	example.Use(middleware.JWTAuthMiddleware())
+	example.Use(middleware.DemoAccountMiddleware()) // 添加演示账号中间件
 	example.Use(middleware.CasbinMiddleware())
 	{
 		// 创建示例
