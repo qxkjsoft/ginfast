@@ -66,3 +66,4 @@ __debug_bin.exe*
 .vscode/
 # Roo
 .roo/
+/config/config.yml
