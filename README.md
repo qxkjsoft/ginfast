@@ -1,4 +1,4 @@
-# Gin-Fast
+# GinFast
 
 基于 Gin 框架的快速开发脚手架，集成了 JWT 认证、权限控制、数据库操作等常用功能，帮助开发者快速构建 RESTful API 服务。
 

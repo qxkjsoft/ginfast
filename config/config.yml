@@ -131,13 +131,13 @@ safe:
 server:
     appdebug: true
     cachetype: memory
-    notcheckuser: [] 
+    notcheckuser: []
 system:
-    systemcopyright: Copyright © 2022 - present gin-fast 版权所有
+    systemcopyright: Copyright © 2025 -2028  云南奇讯科技有限公司版权所有
     systemicon: /public/uploads/2025-10-11/20251011_3b06f7c4-2abe-48ac-9630-8deb11ceda01.ico
     systemlogo: /public/uploads/2025-10-11/20251011_45438318-e5ac-4fe0-8e64-beb3a81e71b8.svg
     systemname: GinFast
-    systemrecordno: 粤ICP备12345678号
+    systemrecordno: ' 滇ICP备16002997号'
 token:
     cachekeyprefix: 'gin-fast:'
     jwttokenexpire: 3600
@@ -163,9 +163,9 @@ upload:
     local_path: ./resource/public/uploads
     max_size: 10
     qiniu_config:
-        access_key: "KjQc4GDQf3fZjRGDwX3iKh4eKRa19NeIeWLTYNgU"
-        bucket: "gin-fast"
-        domain: "t4476qnif.hn-bkt.clouddn.com"
-        secret_key: "vrvOz3vaTlzIzZpgvdCz44UmOWF_ps0zasllcSxS"
+        access_key: KjQc4GDQf3fZjRGDwX3iKh4eKRa19NeIeWLTYNgU
+        bucket: gin-fast
+        domain: t4476qnif.hn-bkt.clouddn.com
+        secret_key: vrvOz3vaTlzIzZpgvdCz44UmOWF_ps0zasllcSxS
         zone: ZoneHuanan
     upload_type: local

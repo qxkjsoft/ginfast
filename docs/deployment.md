@@ -415,10 +415,20 @@ vim .env.production
 
 ```env
 # 生产环境配置
-VITE_APP_TITLE = ginfast
-VITE_APP_BASE_API = /api
-VITE_APP_BASE_URL = http://your-domain.com
-VITE_APP_MOCK_ENABLE = false
+VITE_USER_NODE_ENV = production
+
+# 路由模式 hash | history
+VITE_ROUTER_MODE = hash
+
+# 打包路径 开发环境地址前缀 (一般 '/' 或 './' 都可以，如果开发环境 '/' 打包预览白屏，请使用 './')
+# 默认情况下，vite 会假设你的应用是被部署在一个域名的根路径上，所以这里 VITE_PUBLIC_PATH 为 '/'
+# 有时候需要使用相对路径'./'，例如你要打包electron的时候，就需要使用相对路径'./'找到对应资源文件
+# 打包路径 (就是网站前缀, 例如 http://ginfast.gitee.io/ 如果应用被部署在一个子路径上,你就需要用这个选项指定这个子路径,如果部署到 http://ginfast.gitee.io/ginfast/ 域名下, VITE_PUBLIC_PATH就需要填写 /ginfast/)
+# 注意此处 VITE_PUBLIC_PATH 为 '/system/'，如果部署到 http://ginfast.gitee.io/ginfast/ 域名下, VITE_PUBLIC_PATH就需要填写 /ginfast/
+VITE_PUBLIC_PATH = '/system/'
+
+# 请求路径 管理系统/开发环境
+VITE_APP_BASE_URL = ''
 ```
 
 #### 4. 构建项目
@@ -445,51 +455,85 @@ cp -r dist/* /var/www/ginfast/
 vim /etc/nginx/conf.d/snow-admin.conf
 ```
 
-配置文件内容：
+配置文件内容示例：
 
 ```nginx
-server {
+server
+{
     listen 80;
     server_name your-domain.com;
+    index index.html index.htm default.htm default.html;
+    root /www/wwwroot/ginfast/public;  #  前端编译文件我存放到了该目录下的system目录中
+    include /www/server/panel/vhost/nginx/extension/ginfast演示站/*.conf;
+    #CERT-APPLY-CHECK--START
+    # 用于SSL证书申请时的文件验证相关配置 -- 请勿删除
+    include /www/server/panel/vhost/nginx/well-known/ginfast演示站.conf;
+    #CERT-APPLY-CHECK--END
 
-    # 前端静态资源
-    location / {
-        root /var/www/ginfast;
-        index index.html;
-        try_files $uri $uri/ /index.html;
-        
-        # 缓存静态资源
-        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-            expires 1y;
-            add_header Cache-Control "public, immutable";
-        }
+    #SSL-START SSL相关配置
+    #error_page 404/404.html;
+    
+    #SSL-END
+
+    #ERROR-PAGE-START  错误页相关配置
+    #error_page 404 /404.html;
+    #error_page 502 /502.html;
+    #ERROR-PAGE-END
+
+
+    #REWRITE-START 伪静态相关配置
+    include /www/server/panel/vhost/rewrite/go_ginfast演示站.conf;
+    #REWRITE-END
+
+    #禁止访问的文件或目录
+    location ~ ^/(\.user.ini|\.htaccess|\.git|\.svn|\.project|LICENSE|README.md|package.json|package-lock.json|\.env) {
+        return 404;
     }
 
-    # 后端 API 代理
-    location /api {
-        proxy_pass http://127.0.0.1:8080;
+    #一键申请SSL证书验证目录相关设置
+    location /.well-known/ {
+        root /www/wwwroot/java_node_ssl;
+    }
+
+    #禁止在证书验证目录放入敏感文件
+    if ( $uri ~ "^/\.well-known/.*\.(php|jsp|py|js|css|lua|ts|go|zip|tar\.gz|rar|7z|sql|bak)$" ) {
+        return 403;
+    }
+
+    # HTTP反向代理相关配置开始 >>>
+    location ~ /purge(/.*) {
+        proxy_cache_purge cache_one $host$request_uri$is_args$args;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:8091;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header REMOTE-HOST $remote_addr;
+        add_header X-Cache $upstream_cache_status;
+        proxy_set_header X-Host $host:$server_port;
+        proxy_set_header X-Scheme $scheme;
+        proxy_connect_timeout 30s;
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 30s;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+    # HTTP反向代理相关配置结束 <<<
+    # 图片路径代理配置开始 >>>
+    location /public/ {
+        proxy_pass http://127.0.0.1:8091; 
+        # 以下是一些常用的代理设置头信息，确保后端能获取正确的客户端信息:cite[9]
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        
-        # 超时设置
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
     }
-
-    # 禁止访问隐藏文件
-    location ~ /\. {
-        deny all;
-    }
-
-    # 错误页面
-    error_page 404 /index.html;
-    error_page 500 502 503 504 /50x.html;
-    location = /50x.html {
-        root /usr/share/nginx/html;
-    }
+    # 图片路径代理配置结束 <<<
+    access_log  /www/wwwlogs/ginfast演示站.log;
+    error_log  /www/wwwlogs/ginfast演示站.error.log;
 }
 ```
 
