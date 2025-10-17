@@ -4,6 +4,10 @@
 
 本项目由[Gfast](https://github.com/tiger1103/gfast)团队（[奇讯科技](https://www.qjit.cn)）开发
 
+项目为前后端分离，前端地址：
+
+github地址：[https://github.com/qxkjsoft/ginfast-front](https://github.com/qxkjsoft/ginfast-front)
+
 ## 演示地址
 
 [http://gin.g-fast.cn/system](http://gin.g-fast.cn/system)
