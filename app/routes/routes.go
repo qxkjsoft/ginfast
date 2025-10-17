@@ -67,6 +67,7 @@ func InitRoutes(engine *gin.Engine) {
 	// 受保护的路由
 	protected := engine.Group("/api")
 	protected.Use(middleware.JWTAuthMiddleware())
+	protected.Use(middleware.DemoAccountMiddleware()) // 添加演示账号中间件
 	protected.Use(middleware.CasbinMiddleware())
 	{
 		// 用户管理路由组

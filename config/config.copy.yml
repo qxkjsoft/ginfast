@@ -2,6 +2,11 @@ server:
   appdebug: true   # 设置程序所处的模式，debug=true 调试模式，日志优先显示在控制台， debug=false 非调试模式，日志将写入日志文件
   cachetype: "redis" #缓存模式 memory OR redis
   notcheckuser: []    # 不检查权限的用户（api、菜单及数据权限均不检查），例如：[1]
+  # 演示账号配置
+  demoaccount:
+    enabled: false    # 是否启用演示账号功能
+    # 演示账号的用户ID列表，可以设置多个账号
+    userids: []       # 演示账号的用户ID列表，例如：[1, 2, 3]
 system: 
   #系统LOGO
   systemlogo: "/public/uploads/2025-10-10/20251010_d5b3fe78-bf41-43fb-ab36-548fc3cfaad1.svg"
