@@ -8,6 +8,12 @@
 
 github地址：[https://github.com/qxkjsoft/ginfast-front](https://github.com/qxkjsoft/ginfast-front)
 
+## 使用文档
+
+[文档](docs/README.md)
+
+[安装使用视频](https://www.bilibili.com/video/BV14gsgzXEGM/)
+
 ## 演示地址
 
 [http://gin.g-fast.cn/system](http://gin.g-fast.cn/system)
