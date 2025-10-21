@@ -8,9 +8,12 @@ import (
 	"gorm.io/gorm"
 )
 
-var CasbinService = &PermissionService{}
-
 type PermissionService struct{}
+
+// NewPermissionService 创建权限服务
+func NewPermissionService() *PermissionService {
+	return &PermissionService{}
+}
 
 // 为角色分配资源权限，原有权限会被清除
 func (ps *PermissionService) AddPoliciesForRole(roleID uint, sysapilist models.SysApiList) (err error) {

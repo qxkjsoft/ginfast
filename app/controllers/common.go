@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"gin-fast/app/global/app"
 	"gin-fast/app/global/consts"
 
@@ -20,6 +21,11 @@ func (c Common) Fail(ctx *gin.Context, msg string, err error, data ...interface{
 func (c Common) FailAndAbort(ctx *gin.Context, msg string, err error, data ...interface{}) {
 	app.ZapLog.Error(msg, zap.Error(err))
 	app.Response.Fail(ctx, msg, data...)
+	if err != nil {
+		ctx.Set("error", err)
+	} else {
+		ctx.Set("error", errors.New(msg))
+	}
 	// 使用 Gin 的 Abort 方法终止请求处理链
 	ctx.Abort()
 	// 使用 panic 终止当前函数执行

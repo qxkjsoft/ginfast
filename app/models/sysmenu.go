@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
 	"gin-fast/app/global/app"
 	"sort"
@@ -163,4 +164,98 @@ func (list SysMenuList) TreeSort() SysMenuList {
 	}
 
 	return list
+}
+
+// GetMenusWithParents 根据多个菜单ID获取包含这些ID及所有父级元素的数据
+func (list SysMenuList) GetMenusWithParents(menuIds ...uint) SysMenuList {
+
+	if len(list) == 0 {
+		return nil
+	}
+	// 创建一个map便于快速查找
+	menuMap := make(map[uint]*SysMenu)
+	for _, menu := range list {
+		menuMap[menu.ID] = menu
+	}
+
+	// 存储结果
+	result := SysMenuList{}
+
+	// 用于避免重复添加
+	added := make(map[uint]bool)
+
+	// 遍历所有指定的菜单ID
+	for _, menuId := range menuIds {
+		// 从指定菜单开始向上追溯
+		currentId := menuId
+		tempPath := SysMenuList{}
+
+		for currentId != 0 {
+			menu, exists := menuMap[currentId]
+			if !exists {
+				break
+			}
+
+			// 如果已经添加过，跳过
+			if added[menu.ID] {
+				break
+			}
+
+			// 添加到临时路径中
+			tempPath = append(tempPath, menu)
+			// 标记为已添加
+			added[menu.ID] = true
+
+			// 移动到父级
+			currentId = menu.ParentID
+		}
+
+		// 反转临时路径并添加到结果中
+		for i := len(tempPath) - 1; i >= 0; i-- {
+			result = append(result, tempPath[i])
+		}
+	}
+
+	// 去重并保持顺序
+	uniqueResult := SysMenuList{}
+	uniqueAdded := make(map[uint]bool)
+	for _, menu := range result {
+		if !uniqueAdded[menu.ID] {
+			uniqueResult = append(uniqueResult, menu)
+			uniqueAdded[menu.ID] = true
+		}
+	}
+
+	return uniqueResult
+}
+
+func (list SysMenuList) Json() (string, error) {
+	if list.IsEmpty() {
+		return "", nil
+	}
+	jsonStr, err := json.Marshal(list)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonStr), nil
+}
+
+// 递归遍历
+func (list SysMenuList) Each(fn func(menu *SysMenu)) {
+	for _, menu := range list {
+		fn(menu)
+		if len(menu.Children) > 0 {
+			menu.Children.Each(fn)
+		}
+	}
+}
+
+// GetAllComponentPaths 获取所有组件文件路径
+func (list SysMenuList) GetAllComponentPaths() (paths []string) {
+	list.Each(func(menu *SysMenu) {
+		if menu.Type == 2 && menu.Component != "" {
+			paths = append(paths, menu.Component)
+		}
+	})
+	return
 }

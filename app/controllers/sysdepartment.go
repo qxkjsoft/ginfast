@@ -20,6 +20,13 @@ type SysDepartmentController struct {
 	Common
 }
 
+// NewSysDepartmentController 创建系统部门控制器
+func NewSysDepartmentController() *SysDepartmentController {
+	return &SysDepartmentController{
+		Common: Common{},
+	}
+}
+
 // GetDivision 获取部门列表（树形结构）
 // @Summary 获取部门列表
 // @Description 获取所有部门列表（树形结构）

@@ -12,23 +12,20 @@ import (
 	"gin-fast/app/middleware"
 )
 
-var userControllers = &controllers.UserController{}
-var authControllers = &controllers.AuthController{}
-var sysMenuControllers = &controllers.SysMenuController{}
-var sysDepartmentControllers = &controllers.SysDepartmentController{}
-var sysRoleControllers = &controllers.SysRoleController{}
-var sysDictControllers = &controllers.SysDictController{}
-var sysDictItemControllers = &controllers.SysDictItemController{}
-var sysApiControllers = &controllers.SysApiController{}
-var sysAffixControllers = &controllers.SysAffixController{}
-var configControllers = &controllers.ConfigController{}
-var sysOperationLogControllers = &controllers.SysOperationLogController{}
+var userControllers = controllers.NewUserController()                       // 用户控制器
+var authControllers = controllers.NewAuthController()                       // 认证控制器
+var sysMenuControllers = controllers.NewSysMenuController()                 // 菜单控制器
+var sysDepartmentControllers = controllers.NewSysDepartmentController()     // 部门控制器
+var sysRoleControllers = controllers.NewSysRoleController()                 // 角色控制器
+var sysDictControllers = controllers.NewSysDictController()                 // 字典控制器
+var sysDictItemControllers = controllers.NewSysDictItemController()         // 字典项控制器
+var sysApiControllers = controllers.NewSysApiController()                   // API控制器
+var sysAffixControllers = controllers.NewSysAffixController()               // 固定菜单控制器
+var configControllers = controllers.NewConfigController()                   // 配置控制器
+var sysOperationLogControllers = controllers.NewSysOperationLogController() // 操作日志控制器
 
 // InitRoutes 初始化路由
 func InitRoutes(engine *gin.Engine) {
-
-	// 添加自定义 recovery 中间件来处理 FailAndAbort 的 panic
-	engine.Use(middleware.RequestAbortedRecovery())
 
 	// 跨域
 	if app.ConfigYml.GetBool("httpserver.allowcrossdomain") {
@@ -53,7 +50,9 @@ func InitRoutes(engine *gin.Engine) {
 	}
 
 	// 添加操作日志中间件到所有API路由
-	engine.Use(middleware.OperationLogMiddleware())
+	if app.ConfigYml.GetBool("server.syslog") {
+		engine.Use(middleware.OperationLogMiddleware())
+	}
 
 	// 公开路由
 	public := engine.Group("/api")
@@ -116,6 +115,10 @@ func InitRoutes(engine *gin.Engine) {
 			sysMenu.GET("/apis/:id", sysMenuControllers.GetMenuApiIds)
 			// 为菜单分配API权限
 			sysMenu.POST("/setApis", sysMenuControllers.SetMenuApis)
+			// 导出菜单数据
+			sysMenu.GET("/export", sysMenuControllers.Export)
+			// 导入菜单数据
+			sysMenu.POST("/import", sysMenuControllers.Import)
 		}
 
 		// 系统部门路由组
@@ -240,8 +243,6 @@ func InitRoutes(engine *gin.Engine) {
 		{
 			// 操作日志列表
 			sysOperationLog.GET("/list", sysOperationLogControllers.List)
-			// 操作日志统计
-			sysOperationLog.GET("/stats", sysOperationLogControllers.Stats)
 			// 删除操作日志
 			sysOperationLog.DELETE("/delete", sysOperationLogControllers.Delete)
 			// 导出操作日志

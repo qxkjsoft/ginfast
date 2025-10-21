@@ -16,6 +16,13 @@ type SysOperationLogController struct {
 	Common
 }
 
+// NewSysOperationLogController 创建操作日志控制器
+func NewSysOperationLogController() *SysOperationLogController {
+	return &SysOperationLogController{
+		Common: Common{},
+	}
+}
+
 // List 操作日志列表
 // @Summary 操作日志列表
 // @Description 获取操作日志列表，支持分页和过滤
@@ -83,34 +90,6 @@ func (c *SysOperationLogController) Delete(ctx *gin.Context) {
 	}
 
 	c.SuccessWithMessage(ctx, "删除成功", nil)
-}
-
-// Stats 操作日志统计
-// @Summary 操作日志统计
-// @Description 获取操作日志统计信息
-// @Tags 操作日志管理
-// @Accept json
-// @Produce json
-// @Param startTime query string true "开始时间"
-// @Param endTime query string true "结束时间"
-// @Param type query string false "统计类型" Enums(daily,hourly,module,operation)
-// @Success 200 {object} map[string]interface{} "成功返回统计信息"
-// @Failure 400 {object} map[string]interface{} "请求参数错误"
-// @Failure 500 {object} map[string]interface{} "服务器内部错误"
-// @Router /sysOperationLog/stats [get]
-// @Security ApiKeyAuth
-func (c *SysOperationLogController) Stats(ctx *gin.Context) {
-	var req models.SysOperationLogStatsRequest
-	if err := req.Validate(ctx); err != nil {
-		c.FailAndAbort(ctx, err.Error(), err)
-	}
-
-	stats, err := c.getOperationStats(req)
-	if err != nil {
-		c.FailAndAbort(ctx, "获取统计信息失败", err)
-	}
-
-	c.Success(ctx, stats)
 }
 
 // Export 导出操作日志
@@ -182,84 +161,4 @@ func (c *SysOperationLogController) Export(ctx *gin.Context) {
 			return
 		}
 	}
-}
-
-// getOperationStats 获取操作统计信息
-func (c *SysOperationLogController) getOperationStats(req models.SysOperationLogStatsRequest) (gin.H, error) {
-	var stats gin.H = make(gin.H)
-
-	// 按操作类型统计
-	var operationStats []struct {
-		Operation string `json:"operation"`
-		Count     int64  `json:"count"`
-	}
-	if err := app.DB().Model(&models.SysOperationLog{}).
-		Select("operation, COUNT(*) as count").
-		Where("created_at BETWEEN ? AND ?", req.StartTime, req.EndTime).
-		Group("operation").
-		Find(&operationStats).Error; err != nil {
-		return nil, err
-	}
-	stats["operationStats"] = operationStats
-
-	// 按模块统计
-	var moduleStats []struct {
-		Module string `json:"module"`
-		Count  int64  `json:"count"`
-	}
-	if err := app.DB().Model(&models.SysOperationLog{}).
-		Select("module, COUNT(*) as count").
-		Where("created_at BETWEEN ? AND ?", req.StartTime, req.EndTime).
-		Group("module").
-		Find(&moduleStats).Error; err != nil {
-		return nil, err
-	}
-	stats["moduleStats"] = moduleStats
-
-	// 按用户统计
-	var userStats []struct {
-		Username string `json:"username"`
-		Count    int64  `json:"count"`
-	}
-	if err := app.DB().Model(&models.SysOperationLog{}).
-		Select("username, COUNT(*) as count").
-		Where("created_at BETWEEN ? AND ?", req.StartTime, req.EndTime).
-		Group("username").
-		Order("count DESC").
-		Limit(10).
-		Find(&userStats).Error; err != nil {
-		return nil, err
-	}
-	stats["userStats"] = userStats
-
-	// 错误统计
-	var errorCount int64
-	if err := app.DB().Model(&models.SysOperationLog{}).
-		Where("created_at BETWEEN ? AND ?", req.StartTime, req.EndTime).
-		Where("status_code >= 400").
-		Count(&errorCount).Error; err != nil {
-		return nil, err
-	}
-	stats["errorCount"] = errorCount
-
-	// 总操作数
-	var totalCount int64
-	if err := app.DB().Model(&models.SysOperationLog{}).
-		Where("created_at BETWEEN ? AND ?", req.StartTime, req.EndTime).
-		Count(&totalCount).Error; err != nil {
-		return nil, err
-	}
-	stats["totalCount"] = totalCount
-
-	// 平均耗时
-	var avgDuration float64
-	if err := app.DB().Model(&models.SysOperationLog{}).
-		Select("AVG(duration) as avg_duration").
-		Where("created_at BETWEEN ? AND ?", req.StartTime, req.EndTime).
-		Scan(&avgDuration).Error; err != nil {
-		return nil, err
-	}
-	stats["avgDuration"] = avgDuration
-
-	return stats, nil
 }

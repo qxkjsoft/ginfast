@@ -20,6 +20,15 @@ import (
 // @Router /sysApi [get]
 type SysApiController struct {
 	Common
+	CasbinService *service.PermissionService
+}
+
+// NewSysApiController 创建系统API控制器
+func NewSysApiController() *SysApiController {
+	return &SysApiController{
+		Common:        Common{},
+		CasbinService: service.NewPermissionService(),
+	}
 }
 
 // List API列表（支持分页和过滤）
@@ -201,7 +210,7 @@ func (sc *SysApiController) Update(c *gin.Context) {
 	if err != nil {
 		sc.FailAndAbort(c, "更新API失败", err)
 	}
-	err = service.CasbinService.UpdateRoleApiPermissionsByApiID(req.ID)
+	err = sc.CasbinService.UpdateRoleApiPermissionsByApiID(req.ID)
 	if err != nil {
 		sc.FailAndAbort(c, "更新角色API权限失败", err)
 	}
@@ -238,6 +247,16 @@ func (sc *SysApiController) Delete(c *gin.Context) {
 		sc.FailAndAbort(c, "API不存在", nil)
 	}
 
+	// 检查API是否与菜单有关联
+	var menuCount int64
+	err = app.DB().Model(&models.SysMenuApi{}).Where("api_id = ?", req.ID).Count(&menuCount).Error
+	if err != nil {
+		sc.FailAndAbort(c, "检查API与菜单关联关系失败", err)
+	}
+	if menuCount > 0 {
+		sc.FailAndAbort(c, "该API已被菜单关联，无法删除", nil)
+	}
+
 	// 软删除API
 	err = app.DB().Where("id = ?", req.ID).Delete(api).Error
 	if err != nil {
@@ -245,12 +264,12 @@ func (sc *SysApiController) Delete(c *gin.Context) {
 	}
 
 	// 刷新角色API权限
-	err = service.CasbinService.UpdateRoleApiPermissionsByApiID(req.ID)
+	err = sc.CasbinService.UpdateRoleApiPermissionsByApiID(req.ID)
 	if err != nil {
 		sc.FailAndAbort(c, "更新角色API权限失败", err)
 	}
 
-	// 移除菜单与API的关联
+	// 移除菜单与API的关联（虽然上面已经检查了没有关联，但为了安全起见还是执行一下）
 	err = app.DB().Where("api_id = ?", req.ID).Delete(&models.SysMenuApi{}).Error
 	if err != nil {
 		sc.FailAndAbort(c, "删除菜单API关联失败", err)

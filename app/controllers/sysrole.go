@@ -21,6 +21,15 @@ import (
 // @Router /sysRole [get]
 type SysRoleController struct {
 	Common
+	CasbinService *service.PermissionService
+}
+
+// NewSysRoleController 创建新的系统角色控制器实例
+func NewSysRoleController() *SysRoleController {
+	return &SysRoleController{
+		Common:        Common{},
+		CasbinService: service.NewPermissionService(),
+	}
 }
 
 // GetUserPermission 根据用户ID获取角色菜单权限
@@ -210,7 +219,7 @@ func (sc *SysRoleController) Add(c *gin.Context) {
 		sc.FailAndAbort(c, "新增角色失败", err)
 	}
 	// casbin 添加角色继承关系
-	if err = service.CasbinService.AddRoleInheritance(role.ID, req.ParentID); err != nil {
+	if err = sc.CasbinService.AddRoleInheritance(role.ID, req.ParentID); err != nil {
 		sc.FailAndAbort(c, "添加角色继承关系失败", err)
 	}
 	sc.SuccessWithMessage(c, "角色创建成功", role)
@@ -288,7 +297,7 @@ func (sc *SysRoleController) Update(c *gin.Context) {
 	}
 
 	// 编辑角色继承关系
-	if err := service.CasbinService.EditRoleInheritance(role.ID, req.ParentID); err != nil {
+	if err := sc.CasbinService.EditRoleInheritance(role.ID, req.ParentID); err != nil {
 		sc.FailAndAbort(c, "编辑角色继承关系失败", err)
 	}
 	sc.SuccessWithMessage(c, "角色更新成功", role)
@@ -365,7 +374,7 @@ func (sc *SysRoleController) Delete(c *gin.Context) {
 		sc.FailAndAbort(c, "删除角色失败", err)
 	}
 	// 删除角色继承关系
-	if err := service.CasbinService.DeleteRoleInheritance(role.ID, role.ParentID); err != nil {
+	if err := sc.CasbinService.DeleteRoleInheritance(role.ID, role.ParentID); err != nil {
 		sc.FailAndAbort(c, "删除角色继承关系失败", err)
 	}
 	sc.SuccessWithMessage(c, "角色删除成功", nil)
@@ -455,7 +464,7 @@ func (sm *SysRoleController) AddRoleMenu(c *gin.Context) {
 
 	// 调整casbin权限
 	apis := menuList.GetApis().Unique()
-	if err := service.CasbinService.AddPoliciesForRole(req.RoleID, apis); err != nil {
+	if err := sm.CasbinService.AddPoliciesForRole(req.RoleID, apis); err != nil {
 		sm.FailAndAbort(c, "添加角色权限策略失败", err)
 	}
 	sm.SuccessWithMessage(c, "分配角色菜单权限成功", nil)

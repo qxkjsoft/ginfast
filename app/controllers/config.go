@@ -18,6 +18,13 @@ type ConfigController struct {
 	Common
 }
 
+// NewConfigController 创建配置控制器
+func NewConfigController() *ConfigController {
+	return &ConfigController{
+		Common: Common{},
+	}
+}
+
 // GetConfig 获取配置信息
 // @Summary 获取配置信息
 // @Description 获取系统配置信息

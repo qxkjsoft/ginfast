@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"strings"
 
 	"gin-fast/app/global/app"
@@ -24,6 +25,17 @@ import (
 // @Router /users [get]
 type UserController struct {
 	Common
+	UserService   *service.User
+	CasbinService *service.PermissionService
+}
+
+// NewUserController 创建用户控制器
+func NewUserController() *UserController {
+	return &UserController{
+		Common:        Common{},
+		UserService:   service.NewUserService(),
+		CasbinService: service.NewPermissionService(),
+	}
 }
 
 // GetProfile 获取当前登录用户信息
@@ -41,10 +53,10 @@ func (uc *UserController) GetProfile(c *gin.Context) {
 	// 从上下文中获取用户ID
 	claims := common.GetClaims(c)
 	if claims == nil {
-		uc.FailAndAbort(c, "用户未登录", nil)
+		uc.FailAndAbort(c, "用户未登录", errors.New("用户未登录"))
 	}
 
-	user, err := service.UserServices.GetUserProfile(claims.UserID)
+	user, err := uc.UserService.GetUserProfile(claims.UserID)
 	if err != nil {
 		uc.FailAndAbort(c, "获取用户信息失败", err)
 	}
@@ -118,7 +130,7 @@ func (uc *UserController) GetUserByID(c *gin.Context) {
 	}
 
 	// 获取用户信息
-	user, err := service.UserServices.GetUserProfile(uint(id))
+	user, err := uc.UserService.GetUserProfile(uint(id))
 	if err != nil {
 		uc.FailAndAbort(c, "获取用户信息失败", err)
 	}
@@ -222,7 +234,7 @@ func (uc *UserController) Add(c *gin.Context) {
 		uc.FailAndAbort(c, "Failed to create user", err)
 	}
 
-	if err = service.CasbinService.AddRoleForUser(user.ID, req.Roles); err != nil {
+	if err = uc.CasbinService.AddRoleForUser(user.ID, req.Roles); err != nil {
 		uc.FailAndAbort(c, "Failed to create user", err)
 	}
 
@@ -309,7 +321,7 @@ func (uc *UserController) Update(c *gin.Context) {
 		uc.FailAndAbort(c, "更新用户失败", err)
 	}
 
-	if err = service.CasbinService.EditUserRoles(user.ID, req.Roles); err != nil {
+	if err = uc.CasbinService.EditUserRoles(user.ID, req.Roles); err != nil {
 		uc.FailAndAbort(c, "更新用户失败", err)
 	}
 
@@ -363,7 +375,7 @@ func (uc *UserController) Delete(c *gin.Context) {
 		uc.FailAndAbort(c, "删除用户失败", err)
 	}
 
-	if err = service.CasbinService.DeleteUserRoles(user.ID, nil); err != nil {
+	if err = uc.CasbinService.DeleteUserRoles(user.ID, nil); err != nil {
 		uc.FailAndAbort(c, "删除用户失败", err)
 	}
 	uc.SuccessWithMessage(c, "删除成功", nil)

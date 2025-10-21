@@ -19,6 +19,13 @@ type SysDictItemController struct {
 	Common
 }
 
+// NewSysDictItemController 创建系统字典项控制器
+func NewSysDictItemController() *SysDictItemController {
+	return &SysDictItemController{
+		Common: Common{},
+	}
+}
+
 // List 字典项列表（无分页）
 // @Summary 字典项列表
 // @Description 获取字典项列表（无分页）

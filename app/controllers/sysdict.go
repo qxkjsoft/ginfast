@@ -21,6 +21,13 @@ type SysDictController struct {
 	Common
 }
 
+// NewSysDictController 创建系统字典控制器
+func NewSysDictController() *SysDictController {
+	return &SysDictController{
+		Common: Common{},
+	}
+}
+
 // GetAllDicts 获取所有字典数据（包含关联的字典项）
 // @Summary 获取所有字典数据
 // @Description 获取所有字典数据（包含关联的字典项）

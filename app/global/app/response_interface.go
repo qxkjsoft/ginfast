@@ -33,7 +33,7 @@ type ResponseHandler interface {
 // JsonResponse 定义JSON响应结构
 type JsonResponse struct {
 	Code int         `json:"code"`
-	Msg  string      `json:"msg"`
+	Msg  string      `json:"message"`
 	Data interface{} `json:"data"`
 }
 

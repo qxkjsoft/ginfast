@@ -21,6 +21,13 @@ type AuthController struct {
 	Common
 }
 
+// NewAuthController 创建认证控制器
+func NewAuthController() *AuthController {
+	return &AuthController{
+		Common: Common{},
+	}
+}
+
 // Login 用户登录
 // @Summary 用户登录
 // @Description 用户登录获取访问令牌
@@ -90,7 +97,7 @@ func (ac *AuthController) Login(c *gin.Context) {
 
 			// 返回密码错误，并提示剩余尝试次数
 			remainingAttempts := loginLockThreshold - failCount
-			ac.FailAndAbort(c, "密码错误，剩余尝试次数: "+strconv.Itoa(remainingAttempts), err)
+			ac.FailAndAbort(c, "密码错误，剩余尝试次数: "+strconv.Itoa(remainingAttempts), nil)
 			return
 		}
 

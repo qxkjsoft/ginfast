@@ -7,9 +7,11 @@ import (
 	"gorm.io/gorm"
 )
 
-var UserServices = &User{}
-
 type User struct {
+}
+
+func NewUserService() *User {
+	return &User{}
 }
 
 // 获取用户信息(包含角色、权限)

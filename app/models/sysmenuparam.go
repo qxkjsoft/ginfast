@@ -79,3 +79,13 @@ type SysMenuApiAssignRequest struct {
 func (r *SysMenuApiAssignRequest) Validate(c *gin.Context) error {
 	return r.Check(c, r)
 }
+
+// SysMenuExportRequest 菜单导出请求结构
+type SysMenuExportRequest struct {
+	Validator
+	MenuIDs []uint `form:"menuIds" json:"menuIds" validate:"required" message:"菜单ID列表不能为空"`
+}
+
+func (r *SysMenuExportRequest) Validate(c *gin.Context) error {
+	return r.Check(c, r)
+}

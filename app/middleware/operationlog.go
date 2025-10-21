@@ -36,10 +36,12 @@ func OperationLogMiddleware() gin.HandlerFunc {
 		writer := &responseWriter{body: bytes.NewBuffer(nil), ResponseWriter: c.Writer}
 		c.Writer = writer
 
-		c.Next()
+		defer func() {
+			// 记录操作日志
+			go recordOperationLog(c, startTime, requestBody, writer.body.Bytes())
+		}()
 
-		// 记录操作日志
-		go recordOperationLog(c, startTime, requestBody, writer.body.Bytes())
+		c.Next()
 	}
 }
 
@@ -109,11 +111,6 @@ func recordOperationLog(c *gin.Context, startTime time.Time, requestBody, respon
 		}
 	}
 
-	// 获取部门信息（如果有）
-	var deptID uint
-	var deptName string
-	// 这里可以根据需要从用户信息中获取部门信息
-
 	// 构建操作日志
 	log := &models.SysOperationLog{
 		UserID:       userID,
@@ -128,10 +125,8 @@ func recordOperationLog(c *gin.Context, startTime time.Time, requestBody, respon
 		ResponseData: sanitizeResponseData(responseBody),
 		StatusCode:   c.Writer.Status(),
 		Duration:     duration,
-		ErrorMsg:     getErrorMessage(c),
+		ErrorMsg:     getErrorMessage(c, responseBody),
 		Location:     getLocationByIP(c.ClientIP()),
-		DeptID:       deptID,
-		DeptName:     deptName,
 	}
 
 	// 异步保存日志
@@ -185,11 +180,22 @@ func getOperationType(c *gin.Context) string {
 }
 
 // getErrorMessage 获取错误信息
-func getErrorMessage(c *gin.Context) string {
+func getErrorMessage(c *gin.Context, responseBody []byte) string {
 	if c.Writer.Status() >= 400 {
-		// 可以从上下文中获取错误信息
+		// 首先尝试从上下文中获取错误信息
 		if err, exists := c.Get("error"); exists {
 			return err.(error).Error()
+		}
+		// 如果上下文中没有错误信息，尝试解析响应体
+		if len(responseBody) > 0 {
+			// 尝试解析JSON响应体
+			var response map[string]interface{}
+			if err := json.Unmarshal(responseBody, &response); err == nil {
+				// 根据项目中的响应格式获取错误信息（使用message字段）
+				if msg, ok := response["message"].(string); ok && msg != "" {
+					return msg
+				}
+			}
 		}
 		return "请求处理失败"
 	}

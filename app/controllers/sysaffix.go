@@ -24,6 +24,13 @@ type SysAffixController struct {
 	Common
 }
 
+// NewSysAffixController 创建文件附件控制器
+func NewSysAffixController() *SysAffixController {
+	return &SysAffixController{
+		Common: Common{},
+	}
+}
+
 // Upload 上传文件
 // @Summary 上传文件
 // @Description 上传文件并保存记录
