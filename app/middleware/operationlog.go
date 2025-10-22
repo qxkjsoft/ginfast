@@ -113,20 +113,20 @@ func recordOperationLog(c *gin.Context, startTime time.Time, requestBody, respon
 
 	// 构建操作日志
 	log := &models.SysOperationLog{
-		UserID:       userID,
-		Username:     username,
-		Module:       getOperationModule(c),
-		Operation:    operationType,
-		Method:       c.Request.Method,
-		Path:         c.Request.URL.Path,
-		IP:           c.ClientIP(),
-		UserAgent:    c.Request.UserAgent(),
-		RequestData:  sanitizeRequestData(requestBody),
-		ResponseData: sanitizeResponseData(responseBody),
-		StatusCode:   c.Writer.Status(),
-		Duration:     duration,
-		ErrorMsg:     getErrorMessage(c, responseBody),
-		Location:     getLocationByIP(c.ClientIP()),
+		UserID:      userID,
+		Username:    username,
+		Module:      getOperationModule(c),
+		Operation:   operationType,
+		Method:      c.Request.Method,
+		Path:        c.Request.URL.Path,
+		IP:          c.ClientIP(),
+		UserAgent:   c.Request.UserAgent(),
+		RequestData: sanitizeRequestData(requestBody),
+		//ResponseData: sanitizeResponseData(responseBody),
+		StatusCode: c.Writer.Status(),
+		Duration:   duration,
+		ErrorMsg:   getErrorMessage(c, responseBody),
+		Location:   getLocationByIP(c.ClientIP()),
 	}
 
 	// 异步保存日志
