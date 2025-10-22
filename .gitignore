@@ -67,3 +67,4 @@ __debug_bin.exe*
 # Roo
 .roo/
 /config/config.yml
+/gin-fast-linux
