@@ -4,7 +4,6 @@ import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
 	"gin-fast/app/service"
-	"gin-fast/app/utils/common"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -50,7 +49,7 @@ func (sc *SysRoleController) GetUserPermission(c *gin.Context) {
 		sc.FailAndAbort(c, "Invalid role ID", err)
 	}
 	sysRoleMenuList := models.NewSysRoleMenuList()
-	err = sysRoleMenuList.Find(func(d *gorm.DB) *gorm.DB {
+	err = sysRoleMenuList.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("role_id = ?", roleId)
 	})
 	if err != nil {
@@ -75,7 +74,7 @@ func (sc *SysRoleController) GetUserPermission(c *gin.Context) {
 // @Security ApiKeyAuth
 func (sc *SysRoleController) GetRoles(c *gin.Context) {
 	sysRoleList := models.NewSysRoleList()
-	err := sysRoleList.Find()
+	err := sysRoleList.Find(c)
 	if err != nil {
 		sc.FailAndAbort(c, "获取角色列表失败", err)
 	}
@@ -106,16 +105,17 @@ func (sc *SysRoleController) List(c *gin.Context) {
 		sc.FailAndAbort(c, err.Error(), err)
 	}
 
+	// 查询列表数据
+	sysRoleList := models.NewSysRoleList()
+
 	// 统计总数
 	var count int64
-	err := app.DB().Model(&models.SysRole{}).Scopes(req.Handler()).Count(&count).Error
+	var err error
+	count, err = sysRoleList.GetTotal(c, req.Handler())
 	if err != nil {
 		sc.FailAndAbort(c, "统计角色数量失败", err)
 	}
-
-	// 查询列表数据
-	sysRoleList := models.NewSysRoleList()
-	err = sysRoleList.Find(req.Paginate(), req.Handler())
+	err = sysRoleList.Find(c, req.Paginate(), req.Handler())
 	if err != nil {
 		sc.FailAndAbort(c, "获取角色列表失败", err)
 	}
@@ -148,7 +148,7 @@ func (sc *SysRoleController) GetByID(c *gin.Context) {
 
 	// 查询角色信息
 	role := models.NewSysRole()
-	err = role.Find(func(d *gorm.DB) *gorm.DB {
+	err = role.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", uint(id))
 	})
 	if err != nil {
@@ -181,7 +181,7 @@ func (sc *SysRoleController) Add(c *gin.Context) {
 
 	// 检查角色名称是否已存在
 	existRole := models.NewSysRole()
-	err := existRole.Find(func(d *gorm.DB) *gorm.DB {
+	err := existRole.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("name = ?", req.Name)
 	})
 	if err != nil {
@@ -194,7 +194,7 @@ func (sc *SysRoleController) Add(c *gin.Context) {
 	// 如果指定了父级ID，检查父级角色是否存在
 	if req.ParentID > 0 {
 		parentRole := models.NewSysRole()
-		err := parentRole.Find(func(d *gorm.DB) *gorm.DB {
+		err := parentRole.Find(c, func(d *gorm.DB) *gorm.DB {
 			return d.Where("id = ?", req.ParentID)
 		})
 		if err != nil {
@@ -212,9 +212,8 @@ func (sc *SysRoleController) Add(c *gin.Context) {
 	role.Status = req.Status
 	role.Description = req.Description
 	role.ParentID = req.ParentID
-	role.CreatedBy = common.GetCurrentUserID(c)
 
-	err = app.DB().Create(role).Error
+	err = app.DB().WithContext(c).Create(role).Error
 	if err != nil {
 		sc.FailAndAbort(c, "新增角色失败", err)
 	}
@@ -245,7 +244,7 @@ func (sc *SysRoleController) Update(c *gin.Context) {
 
 	// 检查角色是否存在
 	role := models.NewSysRole()
-	err := role.Find(func(d *gorm.DB) *gorm.DB {
+	err := role.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", req.ID)
 	})
 	if err != nil {
@@ -257,7 +256,7 @@ func (sc *SysRoleController) Update(c *gin.Context) {
 
 	// 检查角色名称是否与其他角色冲突（排除当前角色）
 	existRole := models.NewSysRole()
-	err = existRole.Find(func(d *gorm.DB) *gorm.DB {
+	err = existRole.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("name = ? AND id != ?", req.Name, req.ID)
 	})
 	if err != nil {
@@ -273,7 +272,7 @@ func (sc *SysRoleController) Update(c *gin.Context) {
 			sc.FailAndAbort(c, "不能将自己设置为父级角色", nil)
 		}
 		parentRole := models.NewSysRole()
-		err := parentRole.Find(func(d *gorm.DB) *gorm.DB {
+		err := parentRole.Find(c, func(d *gorm.DB) *gorm.DB {
 			return d.Where("id = ?", req.ParentID)
 		})
 		if err != nil {
@@ -291,7 +290,7 @@ func (sc *SysRoleController) Update(c *gin.Context) {
 	role.Description = req.Description
 	role.ParentID = req.ParentID
 
-	err = app.DB().Save(role).Error
+	err = app.DB().WithContext(c).Save(role).Error
 	if err != nil {
 		sc.FailAndAbort(c, "更新角色失败", err)
 	}
@@ -323,7 +322,7 @@ func (sc *SysRoleController) Delete(c *gin.Context) {
 
 	// 检查角色是否存在
 	role := models.NewSysRole()
-	err := role.Find(func(d *gorm.DB) *gorm.DB {
+	err := role.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", req.ID)
 	})
 	if err != nil {
@@ -335,7 +334,7 @@ func (sc *SysRoleController) Delete(c *gin.Context) {
 
 	// 检查是否有子角色
 	childRoles := models.NewSysRoleList()
-	err = childRoles.Find(func(d *gorm.DB) *gorm.DB {
+	err = childRoles.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("parent_id = ?", req.ID)
 	})
 	if err != nil {
@@ -347,7 +346,7 @@ func (sc *SysRoleController) Delete(c *gin.Context) {
 
 	// 检查是否有用户关联此角色
 	var userRoleCount int64
-	err = app.DB().Model(&models.SysUserRole{}).Where("role_id = ?", req.ID).Count(&userRoleCount).Error
+	err = app.DB().WithContext(c).Model(&models.SysUserRole{}).Where("role_id = ?", req.ID).Count(&userRoleCount).Error
 	if err != nil {
 		sc.FailAndAbort(c, "检查用户角色关联失败", err)
 	}
@@ -356,7 +355,7 @@ func (sc *SysRoleController) Delete(c *gin.Context) {
 	}
 
 	// 使用事务删除角色和相关数据
-	err = app.DB().Transaction(func(tx *gorm.DB) error {
+	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
 		// 删除角色菜单关联
 		if err := tx.Where("role_id = ?", req.ID).Delete(&models.SysRoleMenu{}).Error; err != nil {
 			return err
@@ -400,7 +399,7 @@ func (sm *SysRoleController) AddRoleMenu(c *gin.Context) {
 
 	// 检查角色是否存在
 	role := models.NewSysRole()
-	err := role.Find(func(d *gorm.DB) *gorm.DB {
+	err := role.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", req.RoleID)
 	})
 	if err != nil {
@@ -412,7 +411,7 @@ func (sm *SysRoleController) AddRoleMenu(c *gin.Context) {
 
 	// 检查菜单ID是否存在 - 优化为批量查询
 	menuList := models.NewSysMenuList()
-	err = menuList.Find(func(db *gorm.DB) *gorm.DB {
+	err = menuList.Find(c, func(db *gorm.DB) *gorm.DB {
 		return db.Where("id in ?", req.MenuID).Select("id").Preload("Apis")
 	})
 	if err != nil {
@@ -432,7 +431,7 @@ func (sm *SysRoleController) AddRoleMenu(c *gin.Context) {
 	}
 
 	// 使用事务处理角色菜单权限分配
-	err = app.DB().Transaction(func(tx *gorm.DB) error {
+	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
 		// 先删除该角色的所有菜单权限
 		if err := tx.Where("role_id = ?", req.RoleID).Delete(&models.SysRoleMenu{}).Error; err != nil {
 			app.ZapLog.Error("删除角色菜单权限失败", zap.Error(err), zap.Uint("roleId", req.RoleID))
@@ -490,7 +489,7 @@ func (sc *SysRoleController) UpdateDataScope(c *gin.Context) {
 
 	// 检查角色是否存在
 	role := models.NewSysRole()
-	err := role.Find(func(d *gorm.DB) *gorm.DB {
+	err := role.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", req.ID)
 	})
 	if err != nil {
@@ -504,7 +503,7 @@ func (sc *SysRoleController) UpdateDataScope(c *gin.Context) {
 	role.DataScope = req.DataScope
 	role.CheckedDepts = req.CheckedDepts
 
-	err = app.DB().Save(role).Error
+	err = app.DB().WithContext(c).Save(role).Error
 	if err != nil {
 		sc.FailAndAbort(c, "更新角色数据权限失败", err)
 	}

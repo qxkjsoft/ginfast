@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"gin-fast/app/controllers"
-	"gin-fast/app/utils/common"
 	"gin-fast/plugins/example/models"
 	"strconv"
 
@@ -25,10 +24,9 @@ func (ec *ExampleController) Create(c *gin.Context) {
 	example := models.NewExample()
 	example.Name = req.Name
 	example.Description = req.Description
-	example.CreatedBy = common.GetCurrentUserID(c)
 
 	// 保存到数据库
-	if err := example.Create(); err != nil {
+	if err := example.Create(c); err != nil {
 		ec.FailAndAbort(c, "创建示例失败", err)
 	}
 
@@ -47,14 +45,14 @@ func (ec *ExampleController) Update(c *gin.Context) {
 
 	// 查找示例记录
 	example := models.NewExample()
-	if err := example.GetByID(req.ID); err != nil {
+	if err := example.GetByID(c, req.ID); err != nil {
 		ec.FailAndAbort(c, "示例不存在", err)
 	}
 
 	// 更新示例信息
 	example.Name = req.Name
 	example.Description = req.Description
-	if err := example.Update(); err != nil {
+	if err := example.Update(c); err != nil {
 		ec.FailAndAbort(c, "更新示例失败", err)
 	}
 
@@ -72,12 +70,12 @@ func (ec *ExampleController) Delete(c *gin.Context) {
 
 	// 查找示例记录
 	example := models.NewExample()
-	if err := example.GetByID(req.ID); err != nil {
+	if err := example.GetByID(c, req.ID); err != nil {
 		ec.FailAndAbort(c, "示例不存在", err)
 	}
 
 	// 删除数据库记录
-	if err := example.Delete(); err != nil {
+	if err := example.Delete(c); err != nil {
 		ec.FailAndAbort(c, "删除示例失败", err)
 	}
 
@@ -96,7 +94,7 @@ func (ec *ExampleController) GetByID(c *gin.Context) {
 
 	// 查找示例记录
 	example := models.NewExample()
-	if err := example.GetByID(uint(id)); err != nil {
+	if err := example.GetByID(c, uint(id)); err != nil {
 		ec.FailAndAbort(c, "示例不存在", err)
 	}
 
@@ -122,13 +120,13 @@ func (ec *ExampleController) List(c *gin.Context) {
 
 	// 获取总数
 	exampleList := models.NewExampleList()
-	total, err := exampleList.GetTotal(query)
+	total, err := exampleList.GetTotal(c, query)
 	if err != nil {
 		ec.FailAndAbort(c, "获取示例总数失败", err)
 	}
 
 	// 获取分页数据
-	err = exampleList.Find(req.Paginate(), query)
+	err = exampleList.Find(c, req.Paginate(), query)
 	if err != nil {
 		ec.FailAndAbort(c, "获取示例列表失败", err)
 	}

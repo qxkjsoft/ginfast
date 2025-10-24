@@ -3,6 +3,7 @@ package models
 import (
 	"gin-fast/app/global/app"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -37,38 +38,38 @@ func (list SysDictItemList) IsEmpty() bool {
 	return len(list) == 0
 }
 
-func (list *SysDictItemList) Find(funcs ...func(*gorm.DB) *gorm.DB) (err error) {
-	err = app.DB().Scopes(funcs...).Find(list).Error
+func (list *SysDictItemList) Find(c *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
+	err = app.DB().WithContext(c).Scopes(funcs...).Find(list).Error
 	return
 }
 
-func (s *SysDictItem) Create() (err error) {
-	err = app.DB().Create(s).Error
+func (s *SysDictItem) Create(c *gin.Context) (err error) {
+	err = app.DB().WithContext(c).Create(s).Error
 	return
 }
 
-func (s *SysDictItem) Update() (err error) {
-	err = app.DB().Save(s).Error
+func (s *SysDictItem) Update(c *gin.Context) (err error) {
+	err = app.DB().WithContext(c).Save(s).Error
 	return
 }
 
-func (s *SysDictItem) Delete() (err error) {
-	err = app.DB().Delete(s).Error
+func (s *SysDictItem) Delete(c *gin.Context) (err error) {
+	err = app.DB().WithContext(c).Delete(s).Error
 	return
 }
 
-func (s *SysDictItem) FindByID(id uint) (err error) {
-	err = app.DB().Where("id = ?", id).First(s).Error
+func (s *SysDictItem) FindByID(c *gin.Context, id uint) (err error) {
+	err = app.DB().WithContext(c).Where("id = ?", id).First(s).Error
 	return
 }
 
-func (s *SysDictItem) FindByDictID(dictID uint) (list SysDictItemList, err error) {
-	err = app.DB().Where("dict_id = ?", dictID).Find(&list).Error
+func (s *SysDictItem) FindByDictID(c *gin.Context, dictID uint) (list SysDictItemList, err error) {
+	err = app.DB().WithContext(c).Where("dict_id = ?", dictID).Find(&list).Error
 	return
 }
 
-func (s *SysDictItem) FindByDictCode(dictCode string) (list SysDictItemList, err error) {
-	err = app.DB().Joins("JOIN sys_dict ON sys_dict_item.dict_id = sys_dict.id").
+func (s *SysDictItem) FindByDictCode(c *gin.Context, dictCode string) (list SysDictItemList, err error) {
+	err = app.DB().WithContext(c).Joins("JOIN sys_dict ON sys_dict_item.dict_id = sys_dict.id").
 		Where("sys_dict.code = ?", dictCode).
 		Find(&list).Error
 	return

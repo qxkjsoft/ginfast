@@ -35,13 +35,40 @@ func CreateBeforeHook(gormDB *gorm.DB) {
 					if b, column := structHasSpecialField("UpdatedAt", row); b {
 						destValueOf.Index(i).FieldByName(column).Set(reflect.ValueOf(time.Now().Format(time.DateTime)))
 					}
-
+					// 检查是否有TenantID字段，如果有则自动设置
+					if b, column := structHasSpecialField("TenantID", row); b {
+						// 从上下文中获取租户ID
+						if tenantID := getTenantIDFromContext(gormDB.Statement.Context); tenantID > 0 {
+							destValueOf.Index(i).FieldByName(column).Set(reflect.ValueOf(tenantID))
+						}
+					}
+					// 检查是否有CreatedBy字段，如果有则自动设置
+					if b, column := structHasSpecialField("CreatedBy", row); b {
+						// 从上下文中获取用户ID
+						if userID := getCurrentUserIDFromContext(gormDB.Statement.Context); userID > 0 {
+							destValueOf.Index(i).FieldByName(column).Set(reflect.ValueOf(userID))
+						}
+					}
 				} else if row.Type().Kind() == reflect.Map {
 					if b, column := structHasSpecialField("created_at", row); b {
 						row.SetMapIndex(reflect.ValueOf(column), reflect.ValueOf(time.Now().Format(time.DateTime)))
 					}
 					if b, column := structHasSpecialField("updated_at", row); b {
 						row.SetMapIndex(reflect.ValueOf(column), reflect.ValueOf(time.Now().Format(time.DateTime)))
+					}
+					// 检查是否有TenantID字段，如果有则自动设置
+					if b, column := structHasSpecialField("tenant_id", row); b {
+						// 从上下文中获取租户ID
+						if tenantID := getTenantIDFromContext(gormDB.Statement.Context); tenantID > 0 {
+							row.SetMapIndex(reflect.ValueOf(column), reflect.ValueOf(tenantID))
+						}
+					}
+					// 检查是否有CreatedBy字段，如果有则自动设置
+					if b, column := structHasSpecialField("created_by", row); b {
+						// 从上下文中获取用户ID
+						if userID := getCurrentUserIDFromContext(gormDB.Statement.Context); userID > 0 {
+							row.SetMapIndex(reflect.ValueOf(column), reflect.ValueOf(userID))
+						}
 					}
 				}
 			}
@@ -54,12 +81,40 @@ func CreateBeforeHook(gormDB *gorm.DB) {
 			if b, column := structHasSpecialField("UpdatedAt", gormDB.Statement.Dest); b {
 				gormDB.Statement.SetColumn(column, time.Now().Format(time.DateTime))
 			}
+			// 检查是否有TenantID字段，如果有则自动设置
+			if b, column := structHasSpecialField("TenantID", gormDB.Statement.Dest); b {
+				// 从上下文中获取租户ID
+				if tenantID := getTenantIDFromContext(gormDB.Statement.Context); tenantID > 0 {
+					gormDB.Statement.SetColumn(column, tenantID)
+				}
+			}
+			// 检查是否有CreatedBy字段，如果有则自动设置
+			if b, column := structHasSpecialField("CreatedBy", gormDB.Statement.Dest); b {
+				// 从上下文中获取用户ID
+				if userID := getCurrentUserIDFromContext(gormDB.Statement.Context); userID > 0 {
+					gormDB.Statement.SetColumn(column, userID)
+				}
+			}
 		} else if destValueOf.Type().Kind() == reflect.Map {
 			if b, column := structHasSpecialField("created_at", gormDB.Statement.Dest); b {
 				destValueOf.SetMapIndex(reflect.ValueOf(column), reflect.ValueOf(time.Now().Format(time.DateTime)))
 			}
 			if b, column := structHasSpecialField("updated_at", gormDB.Statement.Dest); b {
 				destValueOf.SetMapIndex(reflect.ValueOf(column), reflect.ValueOf(time.Now().Format(time.DateTime)))
+			}
+			// 检查是否有TenantID字段，如果有则自动设置
+			if b, column := structHasSpecialField("tenant_id", gormDB.Statement.Dest); b {
+				// 从上下文中获取租户ID
+				if tenantID := getTenantIDFromContext(gormDB.Statement.Context); tenantID > 0 {
+					destValueOf.SetMapIndex(reflect.ValueOf(column), reflect.ValueOf(tenantID))
+				}
+			}
+			// 检查是否有CreatedBy字段，如果有则自动设置
+			if b, column := structHasSpecialField("created_by", gormDB.Statement.Dest); b {
+				// 从上下文中获取用户ID
+				if userID := getCurrentUserIDFromContext(gormDB.Statement.Context); userID > 0 {
+					destValueOf.SetMapIndex(reflect.ValueOf(column), reflect.ValueOf(userID))
+				}
 			}
 		}
 	}

@@ -49,12 +49,12 @@ func (c *SysOperationLogController) List(ctx *gin.Context) {
 	}
 
 	logList := models.NewSysOperationLogList()
-	total, err := logList.GetTotal(req.Handle())
+	total, err := logList.GetTotal(ctx, req.Handle())
 	if err != nil {
 		c.FailAndAbort(ctx, "获取日志总数失败", err)
 	}
 
-	err = logList.Find(req.Paginate(), req.Handle(), func(db *gorm.DB) *gorm.DB {
+	err = logList.Find(ctx, req.Paginate(), req.Handle(), func(db *gorm.DB) *gorm.DB {
 		return db.Order("created_at DESC")
 	})
 	if err != nil {
@@ -85,7 +85,7 @@ func (c *SysOperationLogController) Delete(ctx *gin.Context) {
 		c.FailAndAbort(ctx, err.Error(), err)
 	}
 
-	if err := app.DB().Where("id IN ?", req.IDs).Delete(&models.SysOperationLog{}).Error; err != nil {
+	if err := app.DB().WithContext(ctx).Where("id IN ?", req.IDs).Delete(&models.SysOperationLog{}).Error; err != nil {
 		c.FailAndAbort(ctx, "删除操作日志失败", err)
 	}
 
@@ -117,7 +117,7 @@ func (c *SysOperationLogController) Export(ctx *gin.Context) {
 
 	// 获取所有符合条件的日志
 	logList := models.NewSysOperationLogList()
-	err := logList.Find(req.Handle(), func(db *gorm.DB) *gorm.DB {
+	err := logList.Find(ctx, req.Handle(), func(db *gorm.DB) *gorm.DB {
 		return db.Order("created_at DESC").Limit(10000) // 限制导出数量
 	})
 	if err != nil {

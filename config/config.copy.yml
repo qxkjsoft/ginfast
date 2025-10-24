@@ -1,7 +1,7 @@
 server:
   appdebug: true   # 设置程序所处的模式，debug=true 调试模式，日志优先显示在控制台， debug=false 非调试模式，日志将写入日志文件
   cachetype: "redis" #缓存模式 memory OR redis
-  syslog: true  # 是否开启系统日志
+  syslog: false  # 是否开启系统日志
   notcheckuser: []    # 不检查权限的用户（api、菜单及数据权限均不检查），例如：[1]
   # 演示账号配置
   demoaccount:
@@ -68,15 +68,15 @@ casbin:
   tablename: "casbin_rule" 
   modelconfig: | # 竖线 | 表示以下整段文本保持换行格式
     [request_definition]
-    r = sub, obj, act
+    r = sub, obj, act, dom
     [policy_definition]
-    p = sub, obj, act
+    p = sub, obj, act, dom
     [role_definition]
-    g = _, _
+    g = _, _, _
     [policy_effect]
     e = some(where (p.eft == allow))
     [matchers]
-    m = g(r.sub, p.sub) && keyMatch2(r.obj, p.obj) && r.act == p.act
+    m =  g(r.sub, p.sub, r.dom) && keyMatch2(r.obj, p.obj) && regexMatch(r.act, p.act) && (r.dom == p.dom || p.dom == "")
 gormv2: # 只针对 gorm  操作数据库有效
   usedbtype: "mysql"   # 默认使用的数据库类型（mysql、sqlserver、postgresql）
   mysql:

@@ -3,7 +3,6 @@ package controllers
 import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
-	"gin-fast/app/utils/common"
 	"gin-fast/app/utils/datascope"
 	"gin-fast/app/utils/filehelper"
 	"strconv"
@@ -63,10 +62,9 @@ func (ac *SysAffixController) Upload(c *gin.Context) {
 	affix.Size = int(response.Size)
 	affix.Suffix = response.FileType
 	affix.Ftype = filehelper.GetFileTypeBySuffix(response.FileType) // 根据后缀判断文件类型
-	affix.CreatedBy = common.GetCurrentUserID(c)
 
 	// 保存到数据库
-	if err := affix.Create(); err != nil {
+	if err := affix.Create(c); err != nil {
 		ac.FailAndAbort(c, "保存文件记录失败", err)
 	}
 
@@ -101,7 +99,7 @@ func (ac *SysAffixController) Delete(c *gin.Context) {
 
 	// 查找文件记录
 	affix := models.NewSysAffix()
-	if err := affix.GetByID(req.ID); err != nil {
+	if err := affix.GetByID(c, req.ID); err != nil {
 		ac.FailAndAbort(c, "文件不存在", err)
 	}
 
@@ -112,7 +110,7 @@ func (ac *SysAffixController) Delete(c *gin.Context) {
 	}
 
 	// 删除数据库记录
-	if err := affix.Delete(); err != nil {
+	if err := affix.Delete(c); err != nil {
 		ac.FailAndAbort(c, "删除文件记录失败", err)
 	}
 
@@ -140,13 +138,13 @@ func (ac *SysAffixController) UpdateName(c *gin.Context) {
 
 	// 查找文件记录
 	affix := models.NewSysAffix()
-	if err := affix.GetByID(req.ID); err != nil {
+	if err := affix.GetByID(c, req.ID); err != nil {
 		ac.FailAndAbort(c, "文件不存在", err)
 	}
 
 	// 更新文件名
 	affix.Name = req.Name
-	if err := affix.Update(); err != nil {
+	if err := affix.Update(c); err != nil {
 		ac.FailAndAbort(c, "更新文件名失败", err)
 	}
 
@@ -185,13 +183,13 @@ func (ac *SysAffixController) List(c *gin.Context) {
 
 	// 获取总数
 	affixList := models.NewSysAffixList()
-	total, err := affixList.GetTotal(query)
+	total, err := affixList.GetTotal(c, query)
 	if err != nil {
 		ac.FailAndAbort(c, "获取文件总数失败", err)
 	}
 
 	// 获取了分页数据及数据权限
-	err = affixList.Find(req.Paginate(), query, func(d *gorm.DB) *gorm.DB {
+	err = affixList.Find(c, req.Paginate(), query, func(d *gorm.DB) *gorm.DB {
 		return d.Preload("User", func(d *gorm.DB) *gorm.DB {
 			return d.Preload("Department")
 		})
@@ -229,7 +227,7 @@ func (ac *SysAffixController) GetByID(c *gin.Context) {
 
 	// 查找文件记录
 	affix := models.NewSysAffix()
-	if err := affix.GetByID(uint(id)); err != nil {
+	if err := affix.GetByID(c, uint(id)); err != nil {
 		ac.FailAndAbort(c, "文件不存在", err)
 	}
 
@@ -266,7 +264,7 @@ func (ac *SysAffixController) Download(c *gin.Context) {
 
 	// 查找文件记录
 	affix := models.NewSysAffix()
-	if err := affix.GetByID(uint(id)); err != nil {
+	if err := affix.GetByID(c, uint(id)); err != nil {
 		ac.FailAndAbort(c, "文件不存在", err)
 	}
 

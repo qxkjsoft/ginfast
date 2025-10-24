@@ -13,6 +13,7 @@ import (
 
 	"github.com/dchest/captcha"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // LoginRequest 登录请求结构
@@ -45,14 +46,12 @@ func (ac *AuthController) Login(c *gin.Context) {
 		ac.FailAndAbort(c, err.Error(), err)
 	}
 
-	// 获取安全配置
-	loginLockThreshold := app.ConfigYml.GetInt("safe.loginlockthreshold")
-	loginLockExpire := app.ConfigYml.GetInt("safe.loginlockexpire")
-	loginLockDuration := app.ConfigYml.GetInt("safe.loginlockduration")
-
 	// 根据用户名查找用户
 	user := models.NewUser()
-	err := user.GetUserByUsername(req.Username)
+	//err := user.GetUserByUsername(req.Username)
+	err := user.Find(c, func(d *gorm.DB) *gorm.DB {
+		return d.Where("username = ?", req.Username).Preload("Tenant")
+	})
 	if err != nil {
 		ac.FailAndAbort(c, "用户查询错误", err)
 	}
@@ -60,6 +59,47 @@ func (ac *AuthController) Login(c *gin.Context) {
 	if user.IsEmpty() {
 		ac.FailAndAbort(c, "用户不存在", nil)
 	}
+	if user.Status != 1 {
+		ac.FailAndAbort(c, "用户未启用", nil)
+	}
+
+	var tenantID uint
+	var tenantCode string
+	// 检查租户是否存在
+	if req.TenantCode != "" {
+		// 检查租户是否存在
+		tenant := models.NewTenant()
+		err = tenant.Find(c, func(d *gorm.DB) *gorm.DB {
+			return d.Where("code = ?", req.TenantCode)
+		})
+		if err != nil {
+			ac.FailAndAbort(c, "租户查询错误", err)
+		}
+		if tenant.IsEmpty() {
+			ac.FailAndAbort(c, "租户不存在", nil)
+		}
+		if tenant.Status != 1 {
+			ac.FailAndAbort(c, "租户未启用", nil)
+		}
+
+		if user.TenantID != 0 && req.TenantCode != user.Tenant.Code {
+			ac.FailAndAbort(c, "租户编码错误", nil)
+		}
+		tenantID = tenant.ID
+		tenantCode = tenant.Code
+	} else {
+		if user.TenantID > 0 && user.Tenant.Status != 1 {
+			ac.FailAndAbort(c, "租户未启用", nil)
+		}
+
+		tenantID = user.TenantID
+		tenantCode = user.Tenant.Code
+	}
+
+	// 获取安全配置
+	loginLockThreshold := app.ConfigYml.GetInt("safe.loginlockthreshold")
+	loginLockExpire := app.ConfigYml.GetInt("safe.loginlockexpire")
+	loginLockDuration := app.ConfigYml.GetInt("safe.loginlockduration")
 
 	// 如果启用了登录锁定功能
 	if loginLockThreshold > 0 {
@@ -116,8 +156,10 @@ func (ac *AuthController) Login(c *gin.Context) {
 	user.Password = ""
 	// token 不记录缓存
 	token, err := app.TokenService.GenerateToken(&app.ClaimsUser{
-		UserID:   user.ID,
-		Username: user.Username,
+		UserID:     user.ID,
+		Username:   user.Username,
+		TenantID:   tenantID,
+		TenantCode: tenantCode,
 	})
 
 	// // token 将记录缓存
@@ -182,7 +224,7 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 
 	// 从数据库中获取用户信息
 	var user models.User
-	if err = app.DB().First(&user, claims.UserID).Error; err != nil {
+	if err = app.DB().WithContext(c).First(&user, claims.UserID).Error; err != nil {
 		ac.FailAndAbort(c, "用户不存在", err)
 	}
 
@@ -234,6 +276,7 @@ func (ac *AuthController) Logout(c *gin.Context) {
 	claims := common.GetClaims(c)
 	if claims == nil {
 		ac.FailAndAbort(c, "用户未登录", nil)
+		return
 	}
 
 	// access token如果使用缓存模式，需要撤销 access token
@@ -263,10 +306,8 @@ func (ac *AuthController) Logout(c *gin.Context) {
 // @Router /captcha/id [get]
 func (ac *AuthController) GetCaptchaId(c *gin.Context) {
 	length := app.ConfigYml.GetInt("captcha.length")
-	var captchaId string
-	captchaId = captcha.NewLen(length)
 	ac.Success(c, gin.H{
-		"captchaId": captchaId,
+		"captchaId": captcha.NewLen(length),
 	})
 }
 

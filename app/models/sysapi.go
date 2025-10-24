@@ -3,6 +3,7 @@ package models
 import (
 	"gin-fast/app/global/app"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -33,8 +34,8 @@ func (api *SysApi) IsEmpty() bool {
 }
 
 // Find 查找单个API
-func (api *SysApi) Find(funcs ...func(*gorm.DB) *gorm.DB) (err error) {
-	err = app.DB().Scopes(funcs...).First(api).Error
+func (api *SysApi) Find(ctx *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
+	err = app.DB().WithContext(ctx).Scopes(funcs...).First(api).Error
 	if err == gorm.ErrRecordNotFound {
 		err = nil // 将记录未找到的错误转换为nil，通过IsEmpty()方法判断
 	}
@@ -55,8 +56,8 @@ func (list SysApiList) IsEmpty() bool {
 }
 
 // Find 查找API列表
-func (list *SysApiList) Find(funcs ...func(*gorm.DB) *gorm.DB) (err error) {
-	err = app.DB().Scopes(funcs...).Find(list).Error
+func (list *SysApiList) Find(ctx *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
+	err = app.DB().WithContext(ctx).Scopes(funcs...).Find(list).Error
 	return
 }
 
@@ -71,4 +72,13 @@ func (list SysApiList) Unique() SysApiList {
 		uniqueList = append(uniqueList, api)
 	}
 	return uniqueList
+}
+
+func (list SysApiList) GetCount(ctx *gin.Context, query ...func(*gorm.DB) *gorm.DB) (int64, error) {
+	var count int64
+	err := app.DB().Model(&SysApi{}).WithContext(ctx).Scopes(query...).Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }

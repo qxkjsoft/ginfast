@@ -3,7 +3,6 @@ package controllers
 import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
-	"gin-fast/app/utils/common"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -39,7 +38,7 @@ func NewSysDepartmentController() *SysDepartmentController {
 // @Security ApiKeyAuth
 func (sc *SysDepartmentController) GetDivision(c *gin.Context) {
 	sysDepartmentList := models.NewSysDepartmentList()
-	err := sysDepartmentList.Find(func(db *gorm.DB) *gorm.DB {
+	err := sysDepartmentList.Find(c, func(db *gorm.DB) *gorm.DB {
 		return db.Where("status = ?", 1)
 	})
 	if err != nil {
@@ -73,7 +72,7 @@ func (sc *SysDepartmentController) Add(c *gin.Context) {
 
 	// 检查部门名称是否已存在
 	existDept := models.NewSysDepartment()
-	err := existDept.Find(func(d *gorm.DB) *gorm.DB {
+	err := existDept.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("name = ?", req.Name)
 	})
 	if err != nil {
@@ -86,7 +85,7 @@ func (sc *SysDepartmentController) Add(c *gin.Context) {
 	// 如果指定了父级ID，检查父级部门是否存在
 	if req.ParentID != nil && *req.ParentID > 0 {
 		parentDept := models.NewSysDepartment()
-		err := parentDept.Find(func(d *gorm.DB) *gorm.DB {
+		err := parentDept.Find(c, func(d *gorm.DB) *gorm.DB {
 			return d.Where("id = ?", *req.ParentID)
 		})
 		if err != nil {
@@ -107,9 +106,8 @@ func (sc *SysDepartmentController) Add(c *gin.Context) {
 	dept.Email = req.Email
 	dept.Sort = req.Sort
 	dept.Describe = req.Describe
-	dept.CreatedBy = &[]uint{common.GetCurrentUserID(c)}[0]
 
-	err = dept.Create()
+	err = dept.Create(c)
 	if err != nil {
 		sc.FailAndAbort(c, "新增部门失败", err)
 	}
@@ -137,7 +135,7 @@ func (sc *SysDepartmentController) Update(c *gin.Context) {
 
 	// 检查部门是否存在
 	dept := models.NewSysDepartment()
-	err := dept.Find(func(d *gorm.DB) *gorm.DB {
+	err := dept.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", req.ID)
 	})
 	if err != nil {
@@ -149,7 +147,7 @@ func (sc *SysDepartmentController) Update(c *gin.Context) {
 
 	// 检查部门名称是否与其他部门冲突（排除当前部门）
 	existDept := models.NewSysDepartment()
-	err = existDept.Find(func(d *gorm.DB) *gorm.DB {
+	err = existDept.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("name = ? AND id != ?", req.Name, req.ID)
 	})
 	if err != nil {
@@ -165,7 +163,7 @@ func (sc *SysDepartmentController) Update(c *gin.Context) {
 			sc.FailAndAbort(c, "不能将自己设置为父级部门", nil)
 		}
 		parentDept := models.NewSysDepartment()
-		err := parentDept.Find(func(d *gorm.DB) *gorm.DB {
+		err := parentDept.Find(c, func(d *gorm.DB) *gorm.DB {
 			return d.Where("id = ?", *req.ParentID)
 		})
 		if err != nil {
@@ -186,7 +184,7 @@ func (sc *SysDepartmentController) Update(c *gin.Context) {
 	dept.Sort = req.Sort
 	dept.Describe = req.Describe
 
-	err = dept.Update()
+	err = dept.Update(c)
 	if err != nil {
 		sc.FailAndAbort(c, "更新部门失败", err)
 	}
@@ -214,7 +212,7 @@ func (sc *SysDepartmentController) Delete(c *gin.Context) {
 
 	// 检查部门是否存在
 	dept := models.NewSysDepartment()
-	err := dept.Find(func(d *gorm.DB) *gorm.DB {
+	err := dept.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", req.ID)
 	})
 	if err != nil {
@@ -226,7 +224,7 @@ func (sc *SysDepartmentController) Delete(c *gin.Context) {
 
 	// 检查是否有子部门
 	childDepts := models.NewSysDepartmentList()
-	err = childDepts.Find(func(d *gorm.DB) *gorm.DB {
+	err = childDepts.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("parent_id = ?", req.ID)
 	})
 	if err != nil {
@@ -247,7 +245,7 @@ func (sc *SysDepartmentController) Delete(c *gin.Context) {
 	}
 
 	// 软删除部门
-	err = dept.Delete()
+	err = dept.Delete(c)
 	if err != nil {
 		sc.FailAndAbort(c, "删除部门失败", err)
 	}
@@ -274,7 +272,7 @@ func (sc *SysDepartmentController) GetByID(c *gin.Context) {
 	}
 
 	dept := models.NewSysDepartment()
-	err := dept.GetDepartmentByID(req.ID)
+	err := dept.GetDepartmentByID(c, req.ID)
 	if err != nil {
 		sc.FailAndAbort(c, "获取部门信息失败", err)
 	}

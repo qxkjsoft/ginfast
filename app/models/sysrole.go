@@ -5,6 +5,7 @@ import (
 	"gin-fast/app/global/app"
 	"sort"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -21,6 +22,7 @@ type SysRole struct {
 	DataScope    int8        `gorm:"column:data_scope;default:0;comment:数据权限" json:"dataScope"`
 	CheckedDepts string      `gorm:"column:checked_depts;comment:已选择部门" json:"checkedDepts"`
 	Children     SysRoleList `gorm:"-" json:"children"`
+	TenantID     uint        `gorm:"type:int(11);column:tenant_id;comment:租户ID" json:"tenantID"`
 }
 
 // TableName 设置表名
@@ -36,8 +38,8 @@ func (r *SysRole) IsEmpty() bool {
 	return r == nil || r.ID == 0
 }
 
-func (r *SysRole) Find(funcs ...func(*gorm.DB) *gorm.DB) error {
-	return app.DB().Scopes(funcs...).Find(r).Error
+func (r *SysRole) Find(c *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) error {
+	return app.DB().WithContext(c).Scopes(funcs...).Find(r).Error
 }
 
 type SysRoleList []*SysRole
@@ -66,9 +68,18 @@ func (list SysRoleList) GetRoleIDs() []uint {
 	return roleIDs
 }
 
-func (list *SysRoleList) Find(funcs ...func(*gorm.DB) *gorm.DB) (err error) {
-	err = app.DB().Scopes(funcs...).Find(list).Error
+func (list *SysRoleList) Find(c *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
+	err = app.DB().WithContext(c).Scopes(funcs...).Find(list).Error
 	return
+}
+
+func (list SysRoleList) GetTotal(ctx *gin.Context, query ...func(*gorm.DB) *gorm.DB) (int64, error) {
+	var total int64
+	err := app.DB().WithContext(ctx).Model(&SysRole{}).Scopes(query...).Count(&total).Error
+	if err != nil {
+		return 0, err
+	}
+	return total, nil
 }
 
 // BuildTree

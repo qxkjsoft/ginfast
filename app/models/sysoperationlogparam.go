@@ -34,9 +34,10 @@ func (r *SysOperationLogListRequest) Handle() func(db *gorm.DB) *gorm.DB {
 			db = db.Where("operation = ?", r.Operation)
 		}
 		if r.Status != "" {
-			if r.Status == "success" {
+			switch r.Status {
+			case "success":
 				db = db.Where("status_code < 400")
-			} else if r.Status == "error" {
+			case "error":
 				db = db.Where("status_code >= 400")
 			}
 		}

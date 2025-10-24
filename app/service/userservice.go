@@ -4,6 +4,7 @@ import (
 	"errors"
 	"gin-fast/app/models"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -15,10 +16,10 @@ func NewUserService() *User {
 }
 
 // 获取用户信息(包含角色、权限)
-func (u *User) GetUserProfile(userID uint) (profile *models.UserProfile, err error) {
+func (u *User) GetUserProfile(c *gin.Context, userID uint) (profile *models.UserProfile, err error) {
 
 	user := models.NewUser()
-	err = user.Find(func(d *gorm.DB) *gorm.DB {
+	err = user.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Preload("Department").Preload("Roles").Where("id = ?", userID)
 	})
 	if err != nil {
@@ -36,7 +37,7 @@ func (u *User) GetUserProfile(userID uint) (profile *models.UserProfile, err err
 
 		// 查询角色关联的菜单ID
 		roleMenuList := models.NewSysRoleMenuList()
-		err = roleMenuList.Find(func(db *gorm.DB) *gorm.DB {
+		err = roleMenuList.Find(c, func(db *gorm.DB) *gorm.DB {
 			return db.Where("role_id IN ?", roleIDs)
 		})
 		if err != nil {
@@ -49,7 +50,7 @@ func (u *User) GetUserProfile(userID uint) (profile *models.UserProfile, err err
 			})
 			// 查询按钮类型的菜单（type=3）
 			buttonMenus := models.NewSysMenuList()
-			err = buttonMenus.Find(func(db *gorm.DB) *gorm.DB {
+			err = buttonMenus.Find(c, func(db *gorm.DB) *gorm.DB {
 				return db.Select("permission").Where("id IN ? AND type = ? AND permission !=''", menuIDs, 3)
 			})
 			if err != nil {

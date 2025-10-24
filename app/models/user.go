@@ -3,6 +3,7 @@ package models
 import (
 	"gin-fast/app/global/app"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -21,7 +22,9 @@ type User struct {
 	Avatar      string        `gorm:"column:avatar;size:255;comment:头像" json:"avatar"`
 	CreatedBy   uint          `gorm:"column:created_by;default:0;comment:创建人" json:"createdBy"`
 	Roles       SysRoleList   `gorm:"many2many:sys_user_role;foreignKey:id;joinForeignKey:user_id;references:id;joinReferences:role_id" json:"roles"`
-	Department  SysDepartment `gorm:"foreignKey:id;references:dept_id" json:"department"`
+	Department  SysDepartment `gorm:"foreignKey:dept_id;references:id" json:"department"`
+	TenantID    uint          `gorm:"type:int(11);column:tenant_id;comment:租户ID" json:"tenantID"`
+	Tenant      Tenant        `gorm:"foreignKey:tenant_id;references:id" json:"tenant"`
 }
 
 // TableName 设置User表名
@@ -37,43 +40,43 @@ func (u *User) IsEmpty() bool {
 	return u == nil || u.ID == 0
 }
 
-func (u *User) Find(funcs ...func(*gorm.DB) *gorm.DB) error {
-	return app.DB().Scopes(funcs...).Find(u).Error
+func (u *User) Find(ctx *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) error {
+	return app.DB().WithContext(ctx).Scopes(funcs...).Find(u).Error
 }
 
-func (u *User) GetUserByID(id uint) (err error) {
-	return u.Find(func(db *gorm.DB) *gorm.DB {
+func (u *User) GetUserByID(ctx *gin.Context, id uint) (err error) {
+	return u.Find(ctx, func(db *gorm.DB) *gorm.DB {
 		return db.Where("id = ?", id)
 	})
 }
 
-func (u *User) GetUserByUsername(username string) (err error) {
-	return u.Find(func(db *gorm.DB) *gorm.DB {
+func (u *User) GetUserByUsername(ctx *gin.Context, username string) (err error) {
+	return u.Find(ctx, func(db *gorm.DB) *gorm.DB {
 		return db.Where("username = ?", username)
 	})
 }
 
 // GetUserByPhone 根据手机号获取用户
-func (u *User) GetUserByPhone(phone string) (err error) {
-	return u.Find(func(db *gorm.DB) *gorm.DB {
+func (u *User) GetUserByPhone(ctx *gin.Context, phone string) (err error) {
+	return u.Find(ctx, func(db *gorm.DB) *gorm.DB {
 		return db.Where("phone = ?", phone)
 	})
 }
 
 // GetUserByEmail 根据邮箱获取用户
-func (u *User) GetUserByEmail(email string) (err error) {
-	return u.Find(func(db *gorm.DB) *gorm.DB {
+func (u *User) GetUserByEmail(ctx *gin.Context, email string) (err error) {
+	return u.Find(ctx, func(db *gorm.DB) *gorm.DB {
 		return db.Where("email = ?", email)
 	})
 }
 
-func (u *User) Create(funcs ...func(*gorm.DB) *gorm.DB) (err error) {
-	return app.DB().Scopes(funcs...).Create(u).Error
+func (u *User) Create(ctx *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
+	return app.DB().WithContext(ctx).Scopes(funcs...).Create(u).Error
 }
 
 // DeleteByID 根据ID软删除用户
-func (u *User) DeleteByID(id uint) error {
-	return app.DB().Where("id = ?", id).Delete(u).Error
+func (u *User) DeleteByID(ctx *gin.Context, id uint) error {
+	return app.DB().WithContext(ctx).Where("id = ?", id).Delete(u).Error
 }
 
 type UserList []*User
@@ -82,15 +85,15 @@ func NewUserList() UserList {
 	return UserList{}
 }
 
-func (list *UserList) Find(funcs ...func(*gorm.DB) *gorm.DB) (err error) {
-	err = app.DB().Scopes(funcs...).Find(list).Error
+func (list *UserList) Find(ctx *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
+	err = app.DB().WithContext(ctx).Scopes(funcs...).Find(list).Error
 	return
 
 }
 
-func (list *UserList) GetTotal(query ...func(*gorm.DB) *gorm.DB) (int64, error) {
+func (list *UserList) GetTotal(ctx *gin.Context, query ...func(*gorm.DB) *gorm.DB) (int64, error) {
 	var total int64
-	err := app.DB().Model(&User{}).Scopes(query...).Count(&total).Error
+	err := app.DB().WithContext(ctx).Model(&User{}).Scopes(query...).Count(&total).Error
 	if err != nil {
 		return 0, err
 	}

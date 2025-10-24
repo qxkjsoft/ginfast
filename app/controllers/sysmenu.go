@@ -72,7 +72,7 @@ func (sm *SysMenuController) GetRouters(c *gin.Context) {
 
 	if !needCheckPermission {
 		// 不需要检查权限，直接返回所有菜单数据（不含按钮）
-		err = menuList.Find(func(db *gorm.DB) *gorm.DB {
+		err = menuList.Find(c, func(db *gorm.DB) *gorm.DB {
 			return db.Where("disable = ?", 0).
 				Where("type = 1 or type = 2") // 只返回目录和菜单，不返回按钮
 		})
@@ -83,7 +83,7 @@ func (sm *SysMenuController) GetRouters(c *gin.Context) {
 	} else {
 		// 需要检查权限，按原有逻辑处理
 		sysUserRoleList := models.NewSysUserRoleList()
-		err := sysUserRoleList.Find(func(d *gorm.DB) *gorm.DB {
+		err := sysUserRoleList.Find(c, func(d *gorm.DB) *gorm.DB {
 			return d.Where("user_id = ?", claims.UserID)
 		})
 		if err != nil {
@@ -98,10 +98,10 @@ func (sm *SysMenuController) GetRouters(c *gin.Context) {
 		roleIds := sysUserRoleList.Map(func(sur *models.SysUserRole) uint {
 			return sur.RoleID
 		})
-		err = menuList.Find(func(db *gorm.DB) *gorm.DB {
+		err = menuList.Find(c, func(db *gorm.DB) *gorm.DB {
 			return db.Where("disable = ?", 0).
 				Where("type = 1 or type = 2").
-				Where("id in (?)", app.DB().Model(&models.SysRoleMenu{}).Where("role_id in (?)", roleIds).Select("menu_id"))
+				Where("id in (?)", app.DB().WithContext(c).Model(&models.SysRoleMenu{}).Where("role_id in (?)", roleIds).Select("menu_id"))
 		})
 		if err != nil {
 			sm.FailAndAbort(c, "获取菜单失败", err)
@@ -128,7 +128,7 @@ func (sm *SysMenuController) GetRouters(c *gin.Context) {
 // @Security ApiKeyAuth
 func (sm *SysMenuController) GetMenuList(c *gin.Context) {
 	menuList := models.NewSysMenuList()
-	err := menuList.Find(func(db *gorm.DB) *gorm.DB {
+	err := menuList.Find(c, func(db *gorm.DB) *gorm.DB {
 		return db.Preload("Apis").Where("disable = ?", 0)
 	})
 	if err != nil {
@@ -165,7 +165,7 @@ func (sm *SysMenuController) Add(c *gin.Context) {
 	if req.Type == 1 || req.Type == 2 {
 		// 检查菜单名称是否已存在
 		existMenu := models.NewSysMenu()
-		err := existMenu.Find(func(d *gorm.DB) *gorm.DB {
+		err := existMenu.Find(c, func(d *gorm.DB) *gorm.DB {
 			return d.Where("name = ?", req.Name)
 		})
 		if err != nil {
@@ -177,7 +177,7 @@ func (sm *SysMenuController) Add(c *gin.Context) {
 
 		// 检查路由路径是否已存在
 		existPath := models.NewSysMenu()
-		err = existPath.Find(func(d *gorm.DB) *gorm.DB {
+		err = existPath.Find(c, func(d *gorm.DB) *gorm.DB {
 			return d.Where("path = ?", req.Path)
 		})
 		if err != nil {
@@ -191,7 +191,7 @@ func (sm *SysMenuController) Add(c *gin.Context) {
 	// 如果是按钮类型，检查Permission是否重复
 	if req.Type == 3 && req.Permission != "" {
 		existPermission := models.NewSysMenu()
-		err := existPermission.Find(func(d *gorm.DB) *gorm.DB {
+		err := existPermission.Find(c, func(d *gorm.DB) *gorm.DB {
 			return d.Where("permission = ? AND type = 3", req.Permission)
 		})
 		if err != nil {
@@ -205,7 +205,7 @@ func (sm *SysMenuController) Add(c *gin.Context) {
 	// 如果指定了父级ID，检查父级菜单是否存在
 	if req.ParentID > 0 {
 		parentMenu := models.NewSysMenu()
-		err := parentMenu.Find(func(d *gorm.DB) *gorm.DB {
+		err := parentMenu.Find(c, func(d *gorm.DB) *gorm.DB {
 			return d.Where("id = ?", req.ParentID)
 		})
 		if err != nil {
@@ -253,9 +253,8 @@ func (sm *SysMenuController) Add(c *gin.Context) {
 	menu.Sort = req.Sort
 	menu.Type = req.Type
 	menu.Permission = req.Permission
-	menu.CreatedBy = common.GetCurrentUserID(c)
 
-	err := app.DB().Create(menu).Error
+	err := app.DB().WithContext(c).Create(menu).Error
 	if err != nil {
 		sm.FailAndAbort(c, "新增菜单失败", err)
 	}
@@ -283,7 +282,7 @@ func (sm *SysMenuController) Update(c *gin.Context) {
 
 	// 检查菜单是否存在
 	menu := models.NewSysMenu()
-	err := menu.Find(func(d *gorm.DB) *gorm.DB {
+	err := menu.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", req.ID)
 	})
 	if err != nil {
@@ -298,7 +297,7 @@ func (sm *SysMenuController) Update(c *gin.Context) {
 	if req.Type == 1 || req.Type == 2 {
 		// 检查菜单名称是否与其他菜单冲突（排除当前菜单）
 		existMenu := models.NewSysMenu()
-		err = existMenu.Find(func(d *gorm.DB) *gorm.DB {
+		err = existMenu.Find(c, func(d *gorm.DB) *gorm.DB {
 			return d.Where("name = ? AND id != ?", req.Name, req.ID)
 		})
 		if err != nil {
@@ -310,7 +309,7 @@ func (sm *SysMenuController) Update(c *gin.Context) {
 
 		// 检查路由路径是否与其他菜单冲突（排除当前菜单）
 		existPath := models.NewSysMenu()
-		err = existPath.Find(func(d *gorm.DB) *gorm.DB {
+		err = existPath.Find(c, func(d *gorm.DB) *gorm.DB {
 			return d.Where("path = ? AND id != ?", req.Path, req.ID)
 		})
 		if err != nil {
@@ -324,7 +323,7 @@ func (sm *SysMenuController) Update(c *gin.Context) {
 	// 如果是按钮类型，检查Permission是否与其他按钮重复（排除当前菜单）
 	if req.Type == 3 && req.Permission != "" {
 		existPermission := models.NewSysMenu()
-		err = existPermission.Find(func(d *gorm.DB) *gorm.DB {
+		err = existPermission.Find(c, func(d *gorm.DB) *gorm.DB {
 			return d.Where("permission = ? AND type = 3 AND id != ?", req.Permission, req.ID)
 		})
 		if err != nil {
@@ -341,7 +340,7 @@ func (sm *SysMenuController) Update(c *gin.Context) {
 			sm.FailAndAbort(c, "不能将自己设置为父级菜单", nil)
 		}
 		parentMenu := models.NewSysMenu()
-		err := parentMenu.Find(func(d *gorm.DB) *gorm.DB {
+		err = parentMenu.Find(c, func(d *gorm.DB) *gorm.DB {
 			return d.Where("id = ?", req.ParentID)
 		})
 		if err != nil {
@@ -389,7 +388,7 @@ func (sm *SysMenuController) Update(c *gin.Context) {
 	menu.Type = req.Type
 	menu.Permission = req.Permission
 
-	err = app.DB().Save(menu).Error
+	err = app.DB().WithContext(c).Save(menu).Error
 	if err != nil {
 		sm.FailAndAbort(c, "更新菜单失败", err)
 	}
@@ -417,7 +416,7 @@ func (sm *SysMenuController) Delete(c *gin.Context) {
 
 	// 检查菜单是否存在
 	menu := models.NewSysMenu()
-	err := menu.Find(func(d *gorm.DB) *gorm.DB {
+	err := menu.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", req.ID)
 	})
 	if err != nil {
@@ -429,7 +428,7 @@ func (sm *SysMenuController) Delete(c *gin.Context) {
 
 	// 检查是否有子菜单
 	childMenus := models.NewSysMenuList()
-	err = childMenus.Find(func(d *gorm.DB) *gorm.DB {
+	err = childMenus.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("parent_id = ?", req.ID)
 	})
 	if err != nil {
@@ -441,7 +440,7 @@ func (sm *SysMenuController) Delete(c *gin.Context) {
 
 	// 检查是否有角色关联此菜单
 	var roleMenuCount int64
-	err = app.DB().Model(&models.SysRoleMenu{}).Where("menu_id = ?", req.ID).Count(&roleMenuCount).Error
+	err = app.DB().WithContext(c).Model(&models.SysRoleMenu{}).Where("menu_id = ?", req.ID).Count(&roleMenuCount).Error
 	if err != nil {
 		sm.FailAndAbort(c, "检查角色菜单关联失败", err)
 	}
@@ -450,7 +449,7 @@ func (sm *SysMenuController) Delete(c *gin.Context) {
 	}
 
 	// 使用事务删除菜单和相关数据
-	err = app.DB().Transaction(func(tx *gorm.DB) error {
+	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
 		// 删除菜单角色关联（保险起见，虽然上面已经检查过）
 		if err := tx.Where("menu_id = ?", req.ID).Delete(&models.SysRoleMenu{}).Error; err != nil {
 			return err
@@ -493,7 +492,7 @@ func (sm *SysMenuController) GetByID(c *gin.Context) {
 
 	// 查询菜单信息
 	menu := models.NewSysMenu()
-	err = menu.Find(func(d *gorm.DB) *gorm.DB {
+	err = menu.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", uint(id))
 	})
 	if err != nil {
@@ -528,7 +527,7 @@ func (sm *SysMenuController) GetMenuApiIds(c *gin.Context) {
 
 	// 检查菜单是否存在
 	menu := models.NewSysMenu()
-	err = menu.Find(func(d *gorm.DB) *gorm.DB {
+	err = menu.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", uint(id))
 	})
 	if err != nil {
@@ -540,7 +539,7 @@ func (sm *SysMenuController) GetMenuApiIds(c *gin.Context) {
 
 	// 查询菜单关联的API ID集合
 	var apiIds []uint
-	err = app.DB().Model(&models.SysMenuApi{}).Where("menu_id = ?", uint(id)).Pluck("api_id", &apiIds).Error
+	err = app.DB().WithContext(c).Model(&models.SysMenuApi{}).Where("menu_id = ?", uint(id)).Pluck("api_id", &apiIds).Error
 	if err != nil {
 		sm.FailAndAbort(c, "查询菜单API关联失败", err)
 	}
@@ -568,7 +567,7 @@ func (sm *SysMenuController) SetMenuApis(c *gin.Context) {
 
 	// 检查菜单是否存在
 	menu := models.NewSysMenu()
-	err := menu.Find(func(d *gorm.DB) *gorm.DB {
+	err := menu.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", req.MenuID)
 	})
 	if err != nil {
@@ -582,7 +581,7 @@ func (sm *SysMenuController) SetMenuApis(c *gin.Context) {
 	if len(req.ApiIDs) > 0 {
 		// 检查API ID是否存在 - 优化为批量查询
 		var existingApiCount int64
-		err = app.DB().Model(&models.SysApi{}).Where("id in ?", req.ApiIDs).Count(&existingApiCount).Error
+		err = app.DB().WithContext(c).Model(&models.SysApi{}).Where("id in ?", req.ApiIDs).Count(&existingApiCount).Error
 		if err != nil {
 			sm.FailAndAbort(c, "查询API失败", err)
 		}
@@ -594,7 +593,7 @@ func (sm *SysMenuController) SetMenuApis(c *gin.Context) {
 	}
 
 	// 使用事务处理菜单API关联分配
-	err = app.DB().Transaction(func(tx *gorm.DB) error {
+	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
 		// 先删除该菜单的所有API关联
 		if err := tx.Where("menu_id = ?", req.MenuID).Delete(&models.SysMenuApi{}).Error; err != nil {
 			app.ZapLog.Error("删除菜单API关联失败", zap.Error(err), zap.Uint("menuId", req.MenuID))
@@ -626,7 +625,7 @@ func (sm *SysMenuController) SetMenuApis(c *gin.Context) {
 	}
 
 	// 调整与菜单关联的角色的API权限
-	if err = sm.CasbinService.UpdateRoleApiPermissionsByMenuID(req.MenuID); err != nil {
+	if err = sm.CasbinService.UpdateRoleApiPermissionsByMenuID(c, req.MenuID); err != nil {
 		sm.FailAndAbort(c, "更新角色API权限失败", err)
 	}
 	// 根据ApiIDs是否为空返回不同的成功消息
@@ -659,7 +658,7 @@ func (sm *SysMenuController) Export(c *gin.Context) {
 
 	// 获取所有需要导出的菜单数据（包括子级菜单）
 	menuList := models.NewSysMenuList()
-	err := menuList.Find(func(d *gorm.DB) *gorm.DB {
+	err := menuList.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Preload("Apis")
 	})
 	if err != nil {
@@ -736,7 +735,7 @@ func (sm *SysMenuController) Import(c *gin.Context) {
 	// 检查组件文件是否存在
 	if len(componentPaths) > 0 {
 		var componentCount int64
-		app.DB().Model(&models.SysMenu{}).Where("component IN ?", componentPaths).Count(&componentCount)
+		app.DB().WithContext(c).Model(&models.SysMenu{}).Where("component IN ?", componentPaths).Count(&componentCount)
 		if componentCount > 0 {
 			sm.FailAndAbort(c, "存在重复的组件路径", nil)
 		}
@@ -749,7 +748,7 @@ func (sm *SysMenuController) Import(c *gin.Context) {
 	}
 
 	// 使用事务处理导入
-	err = app.DB().Transaction(func(tx *gorm.DB) error {
+	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
 		// 创建ID映射，用于处理父子关系
 		idMap := make(map[uint]uint) // oldID -> newID
 

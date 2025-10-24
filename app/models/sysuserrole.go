@@ -3,6 +3,7 @@ package models
 import (
 	"gin-fast/app/global/app"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -27,8 +28,8 @@ func NewSysUserRoleList() SysUserRoleList {
 	return SysUserRoleList{}
 }
 
-func (list *SysUserRoleList) Find(funcs ...func(*gorm.DB) *gorm.DB) error {
-	return app.DB().Scopes(funcs...).Find(list).Error
+func (list *SysUserRoleList) Find(c *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) error {
+	return app.DB().WithContext(c).Scopes(funcs...).Find(list).Error
 }
 
 func (list SysUserRoleList) IsEmpty() bool {

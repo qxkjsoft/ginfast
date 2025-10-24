@@ -11,6 +11,7 @@ import (
 
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
+	"github.com/casbin/casbin/v2/util"
 	gormadapter "github.com/casbin/gorm-adapter/v3"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -19,8 +20,9 @@ import (
 
 // 定义前缀常量
 const (
-	UserPrefix = "user_"
-	RolePrefix = "role_"
+	UserPrefix   = "user_"
+	RolePrefix   = "role_"
+	DomainPrefix = "domain_" // 添加域前缀常量
 )
 
 // CasbinService Casbin服务
@@ -36,6 +38,11 @@ var _ app.CasbinInterf = (*CasbinHelper)(nil)
 // NewCasbinService 创建Casbin服务实例
 func NewCasbinHelper() *CasbinHelper {
 	return &CasbinHelper{}
+}
+
+// Close 关闭CasbinHelper，释放资源
+func (s *CasbinHelper) Close() {
+	s.StopAutoLoadPolicy()
 }
 
 // InitCasbin 初始化Casbin
@@ -57,9 +64,11 @@ func (s *CasbinHelper) InitCasbin(db *gorm.DB, config string) error {
 	}
 
 	// 创建Casbin适配器
-	adapter, err := gormadapter.NewAdapterByDBUseTableName(db, app.ConfigYml.GetString("casbin.tableprefix"), app.ConfigYml.GetString("casbin.tablename"))
+	tablePrefix := app.ConfigYml.GetString("casbin.tableprefix")
+	tableName := app.ConfigYml.GetString("casbin.tablename")
+	adapter, err := gormadapter.NewAdapterByDBUseTableName(db, tablePrefix, tableName)
 	if err != nil {
-		return fmt.Errorf("failed to create Casbin adapter: %v\nTable: casbin_rule", err)
+		return fmt.Errorf("failed to create Casbin adapter: %v\nTable: %s%s", err, tablePrefix, tableName)
 	}
 
 	// 创建Casbin执行器，使用数据库适配器
@@ -67,6 +76,9 @@ func (s *CasbinHelper) InitCasbin(db *gorm.DB, config string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create enforcer: %v", err)
 	}
+
+	// 为角色关系(g)启用域模式匹配
+	s.enforcer.AddNamedDomainMatchingFunc("g", "KeyMatch2", util.KeyMatch2)
 
 	// 加载策略
 	err = s.enforcer.LoadPolicy()
@@ -80,12 +92,32 @@ func (s *CasbinHelper) InitCasbin(db *gorm.DB, config string) error {
 	return nil
 }
 
+func (s *CasbinHelper) PrefixUser(userID uint) string {
+	return fmt.Sprintf("%s%d", UserPrefix, userID)
+}
+
+func (s *CasbinHelper) PrefixRole(roleID uint) string {
+	return fmt.Sprintf("%s%d", RolePrefix, roleID)
+}
+func (s *CasbinHelper) PrefixDomain(domainID uint) string {
+	return fmt.Sprintf("%s%d", DomainPrefix, domainID)
+}
+
+func (s *CasbinHelper) HandlerDomain(domain []string) []string {
+	if len(domain) > 0 {
+		return domain
+	}
+	return []string{"*"}
+}
+
 // Enforce 检查权限
-func (s *CasbinHelper) Enforce(sub, obj, act string) (bool, error) {
+func (s *CasbinHelper) Enforce(sub, obj, act string, domain ...string) (bool, error) {
 	if s.enforcer == nil {
 		return false, fmt.Errorf("casbin enforcer not initialized")
 	}
-	return s.enforcer.Enforce(sub, obj, act)
+	// 统一使用HandlerDomain处理域参数
+	domains := s.HandlerDomain(domain)
+	return s.enforcer.Enforce(sub, obj, act, domains[0])
 }
 
 // GetEnforcer 获取Casbin执行器
@@ -118,16 +150,36 @@ func (s *CasbinHelper) CasbinMiddleware() gin.HandlerFunc {
 		method := c.Request.Method
 
 		// 使用带前缀的用户ID进行权限检查
-		userSubject := fmt.Sprintf("%s%d", UserPrefix, userID)
-		app.ZapLog.Info("Permission check", zap.String("uid", userSubject), zap.String("path", path), zap.String("method", method))
-		ok, err := s.Enforce(userSubject, path, method)
+		userSubject := s.PrefixUser(userID)
+		// 获取租户ID（如果存在）
+		var domain string
+		claims := common.GetClaims(c)
+		if claims != nil && claims.TenantID > 0 {
+			domain = s.PrefixDomain(claims.TenantID)
+		}
+		var ok bool
+		var err error
+
+		// 带租户的权限检查
+		app.ZapLog.Info("Permission check with tenant",
+			zap.String("uid", userSubject),
+			zap.String("domain", domain),
+			zap.String("path", path),
+			zap.String("method", method))
+		ok, err = s.Enforce(userSubject, path, method, domain)
+
 		if err != nil {
+			app.ZapLog.Error("Permission check error", zap.Error(err))
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "权限检查时出现错误"})
 			c.Abort()
 			return
 		}
 
 		if !ok {
+			app.ZapLog.Warn("Permission denied",
+				zap.String("uid", userSubject),
+				zap.String("path", path),
+				zap.String("method", method))
 			c.JSON(http.StatusForbidden, gin.H{"message": "您没有权限访问此资源"})
 			c.Abort()
 			return
@@ -138,7 +190,7 @@ func (s *CasbinHelper) CasbinMiddleware() gin.HandlerFunc {
 }
 
 // AddRolesForUserByID 为用户ID添加多个角色（带前缀）
-func (s *CasbinHelper) AddRolesForUserByID(userID uint, roleIDs []uint) error {
+func (s *CasbinHelper) AddRolesForUserByID(userID uint, roleIDs []uint, domain ...string) error {
 	if s.enforcer == nil {
 		return fmt.Errorf("casbin enforcer not initialized")
 	}
@@ -147,16 +199,15 @@ func (s *CasbinHelper) AddRolesForUserByID(userID uint, roleIDs []uint) error {
 		return nil // 没有角色需要添加
 	}
 
-	userSubject := fmt.Sprintf("%s%d", UserPrefix, userID)
+	userSubject := s.PrefixUser(userID)
 
 	// 构建角色主体列表
 	roleSubjects := make([]string, len(roleIDs))
 	for i, roleID := range roleIDs {
-		roleSubjects[i] = fmt.Sprintf("%s%d", RolePrefix, roleID)
+		roleSubjects[i] = s.PrefixRole(roleID)
 	}
-
-	// 批量添加角色
-	_, err := s.enforcer.AddRolesForUser(userSubject, roleSubjects)
+	var err error
+	_, err = s.enforcer.AddRolesForUser(userSubject, roleSubjects, s.HandlerDomain(domain)...)
 	if err != nil {
 		return fmt.Errorf("failed to add roles for user %d: %v", userID, err)
 	}
@@ -165,24 +216,27 @@ func (s *CasbinHelper) AddRolesForUserByID(userID uint, roleIDs []uint) error {
 }
 
 // DeleteRolesForUserByID 删除用户ID的多个角色（带前缀）
-func (s *CasbinHelper) DeleteRolesForUserByID(userID uint, roleIDs []uint) error {
+func (s *CasbinHelper) DeleteRolesForUserByID(userID uint, roleIDs []uint, domain ...string) error {
 	if s.enforcer == nil {
 		return fmt.Errorf("casbin enforcer not initialized")
 	}
 
-	userSubject := fmt.Sprintf("%s%d", UserPrefix, userID)
+	userSubject := s.PrefixUser(userID)
+	// 如果没有角色ID，根据是否有域（租户）来删除所有角色
 	if len(roleIDs) == 0 {
-		_, err := s.enforcer.DeleteRolesForUser(userSubject)
+		_, err := s.enforcer.DeleteRolesForUser(userSubject, s.HandlerDomain(domain)...)
 		if err != nil {
 			return fmt.Errorf("failed to delete roles for user %d: %v", userID, err)
 		}
 		return nil
 	}
 
-	// 批量删除角色
+	// 批量删除角色 - 使用批量操作提高性能
+	domains := s.HandlerDomain(domain)
 	for _, roleID := range roleIDs {
-		roleSubject := fmt.Sprintf("%s%d", RolePrefix, roleID)
-		_, err := s.enforcer.DeleteRoleForUser(userSubject, roleSubject)
+		roleSubject := s.PrefixRole(roleID)
+		// 带域（租户）的角色删除
+		_, err := s.enforcer.DeleteRoleForUser(userSubject, roleSubject, domains...)
 		if err != nil {
 			return fmt.Errorf("failed to delete role %d for user %d: %v", roleID, userID, err)
 		}
@@ -192,47 +246,58 @@ func (s *CasbinHelper) DeleteRolesForUserByID(userID uint, roleIDs []uint) error
 }
 
 // AddRoleInheritance 添加角色继承关系（子角色继承父角色）
-func (s *CasbinHelper) AddRoleInheritance(childRoleID, parentRoleID uint) error {
+func (s *CasbinHelper) AddRoleInheritance(childRoleID, parentRoleID uint, domain ...string) error {
 	if s.enforcer == nil {
 		return fmt.Errorf("casbin enforcer not initialized")
 	}
-	childRole := fmt.Sprintf("%s%d", RolePrefix, childRoleID)
-	parentRole := fmt.Sprintf("%s%d", RolePrefix, parentRoleID)
-	_, err := s.enforcer.AddRoleForUser(childRole, parentRole)
-	return err
+	childRole := s.PrefixRole(childRoleID)
+	parentRole := s.PrefixRole(parentRoleID)
+
+	_, err := s.enforcer.AddRoleForUser(childRole, parentRole, s.HandlerDomain(domain)...)
+	if err != nil {
+		return fmt.Errorf("failed to add role inheritance from %d to %d: %v", childRoleID, parentRoleID, err)
+	}
+	return nil
 }
 
 // DeleteRoleInheritance 删除角色继承关系
-func (s *CasbinHelper) DeleteRoleInheritance(childRoleID, parentRoleID uint) error {
+func (s *CasbinHelper) DeleteRoleInheritance(childRoleID, parentRoleID uint, domain ...string) error {
 	if s.enforcer == nil {
 		return fmt.Errorf("casbin enforcer not initialized")
 	}
-	childRole := fmt.Sprintf("%s%d", RolePrefix, childRoleID)
-	parentRole := fmt.Sprintf("%s%d", RolePrefix, parentRoleID)
+	childRole := s.PrefixRole(childRoleID)
+	parentRole := s.PrefixRole(parentRoleID)
 
+	// 如果没有父角色ID，根据是否有域（租户）来删除所有角色
 	if parentRoleID == 0 {
-		_, err := s.enforcer.DeleteRolesForUser(childRole)
+		_, err := s.enforcer.DeleteRolesForUser(childRole, s.HandlerDomain(domain)...)
 		if err != nil {
 			return fmt.Errorf("failed to delete roles for user %d: %v", childRoleID, err)
 		}
 		return nil
 	}
-	_, err := s.enforcer.DeleteRoleForUser(childRole, parentRole)
-	return err
+	// 如果有父角色ID，根据是否有域（租户）来删除继承关系
+	_, err := s.enforcer.DeleteRoleForUser(childRole, parentRole, s.HandlerDomain(domain)...)
+	if err != nil {
+		return fmt.Errorf("failed to delete role inheritance from %d to %d: %v", childRoleID, parentRoleID, err)
+	}
+	return nil
 }
 
 // AddPolicyForRole 为角色添加权限策略
-func (s *CasbinHelper) AddPolicyForRole(roleID uint, obj, act string) error {
+func (s *CasbinHelper) AddPolicyForRole(roleID uint, obj, act string, domain ...string) error {
 	if s.enforcer == nil {
 		return fmt.Errorf("casbin enforcer not initialized")
 	}
-	roleSubject := fmt.Sprintf("%s%d", RolePrefix, roleID)
-	_, err := s.enforcer.AddPolicy(roleSubject, obj, act)
+	roleSubject := s.PrefixRole(roleID)
+	// 统一使用HandlerDomain处理域参数
+	domains := s.HandlerDomain(domain)
+	_, err := s.enforcer.AddPolicy(roleSubject, obj, act, domains[0])
 	return err
 }
 
 // AddPoliciesForRole 为角色批量添加权限策略
-func (s *CasbinHelper) AddPoliciesForRole(roleID uint, policies [][]string) error {
+func (s *CasbinHelper) AddPoliciesForRole(roleID uint, policies [][]string, domain ...string) error {
 	if s.enforcer == nil {
 		return fmt.Errorf("casbin enforcer not initialized")
 	}
@@ -241,20 +306,39 @@ func (s *CasbinHelper) AddPoliciesForRole(roleID uint, policies [][]string) erro
 		return nil // 没有策略需要添加
 	}
 
-	roleSubject := fmt.Sprintf("%s%d", RolePrefix, roleID)
+	roleSubject := s.PrefixRole(roleID)
 
 	// 构建完整的策略列表，每个策略的第一个元素是角色主体
-	fullPolicies := make([][]string, len(policies))
-	for i, policy := range policies {
-		// 验证策略格式：每个策略至少包含 obj 和 act
-		if len(policy) < 2 {
-			return fmt.Errorf("invalid policy format: policy must contain at least obj and act, got %v", policy)
+	var fullPolicies [][]string
+	if len(domain) > 0 {
+		// 带域（租户）的策略
+		domainStr := domain[0]
+		fullPolicies = make([][]string, len(policies))
+		for i, policy := range policies {
+			// 验证策略格式
+			if len(policy) < 2 {
+				return fmt.Errorf("invalid policy format: policy must contain at least obj and act, got %v", policy)
+			}
+			// 创建完整策略：[roleSubject, obj, act, domain...]
+			fullPolicy := make([]string, len(policy)+2)
+			fullPolicy[0] = roleSubject
+			copy(fullPolicy[1:], []string{policy[0], policy[1], domainStr})
+			fullPolicies[i] = fullPolicy
 		}
-		// 创建完整策略：[roleSubject, obj, act, ...]
-		fullPolicy := make([]string, len(policy)+1)
-		fullPolicy[0] = roleSubject
-		copy(fullPolicy[1:], policy)
-		fullPolicies[i] = fullPolicy
+	} else {
+		// 不带域的策略
+		fullPolicies = make([][]string, len(policies))
+		for i, policy := range policies {
+			// 验证策略格式：每个策略至少包含 obj 和 act
+			if len(policy) < 2 {
+				return fmt.Errorf("invalid policy format: policy must contain at least obj and act, got %v", policy)
+			}
+			// 创建完整策略：[roleSubject, obj, act, ...]
+			fullPolicy := make([]string, len(policy)+2)
+			fullPolicy[0] = roleSubject
+			copy(fullPolicy[1:], []string{policy[0], policy[1], "*"})
+			fullPolicies[i] = fullPolicy
+		}
 	}
 
 	// 批量添加策略
@@ -267,22 +351,33 @@ func (s *CasbinHelper) AddPoliciesForRole(roleID uint, policies [][]string) erro
 }
 
 // RemovePolicyForRole 删除角色的权限策略
-func (s *CasbinHelper) RemovePolicyForRole(roleID uint, obj, act string) error {
+func (s *CasbinHelper) RemovePolicyForRole(roleID uint, obj, act string, domain ...string) error {
 	if s.enforcer == nil {
 		return fmt.Errorf("casbin enforcer not initialized")
 	}
-	roleSubject := fmt.Sprintf("%s%d", RolePrefix, roleID)
-	_, err := s.enforcer.RemovePolicy(roleSubject, obj, act)
+	roleSubject := s.PrefixRole(roleID)
+	// 统一使用HandlerDomain处理域参数
+	domains := s.HandlerDomain(domain)
+	_, err := s.enforcer.RemovePolicy(roleSubject, obj, act, domains[0])
 	return err
 }
 
 // RemoveAllPoliciesForRole 删除角色的所有权限策略
-func (s *CasbinHelper) RemoveAllPoliciesForRole(roleID uint) error {
+func (s *CasbinHelper) RemoveAllPoliciesForRole(roleID uint, domain ...string) error {
 	if s.enforcer == nil {
 		return fmt.Errorf("casbin enforcer not initialized")
 	}
-	roleSubject := fmt.Sprintf("%s%d", RolePrefix, roleID)
-	_, err := s.enforcer.RemoveFilteredPolicy(0, roleSubject)
+	roleSubject := s.PrefixRole(roleID)
+	if len(domain) > 0 {
+		// 带域（租户）的策略
+		_, err := s.enforcer.RemoveFilteredPolicy(0, roleSubject, "", "", domain[0])
+		if err != nil {
+			return fmt.Errorf("failed to remove all policies for role %d: %v", roleID, err)
+		}
+		return nil
+	}
+	// 不带域的策略
+	_, err := s.enforcer.RemoveFilteredPolicy(0, roleSubject, "", "", "*")
 	if err != nil {
 		return fmt.Errorf("failed to remove all policies for role %d: %v", roleID, err)
 	}
@@ -290,12 +385,12 @@ func (s *CasbinHelper) RemoveAllPoliciesForRole(roleID uint) error {
 }
 
 // GetRolesForUserByID 获取用户ID的所有角色（去除前缀，返回角色ID）
-func (s *CasbinHelper) GetRolesForUserByID(userID uint) ([]uint, error) {
+func (s *CasbinHelper) GetRolesForUserByID(userID uint, domain ...string) ([]uint, error) {
 	if s.enforcer == nil {
 		return nil, fmt.Errorf("casbin enforcer not initialized")
 	}
-	userSubject := fmt.Sprintf("%s%d", UserPrefix, userID)
-	roles, err := s.enforcer.GetRolesForUser(userSubject)
+	userSubject := s.PrefixUser(userID)
+	roles, err := s.enforcer.GetRolesForUser(userSubject, s.HandlerDomain(domain)...)
 	if err != nil {
 		return nil, err
 	}
@@ -313,13 +408,13 @@ func (s *CasbinHelper) GetRolesForUserByID(userID uint) ([]uint, error) {
 	return roleIDs, nil
 }
 
-// GetUsersForRole 获取拥有指定角色的所有用户ID（去除前缀）
-func (s *CasbinHelper) GetUsersForRole(roleID uint) ([]uint, error) {
+// GetUsersForRole 获取拥有指定角色的所有用户ID（去除前缀，返回用户ID）
+func (s *CasbinHelper) GetUsersForRole(roleID uint, domain ...string) ([]uint, error) {
 	if s.enforcer == nil {
 		return nil, fmt.Errorf("casbin enforcer not initialized")
 	}
-	roleSubject := fmt.Sprintf("%s%d", RolePrefix, roleID)
-	users, err := s.enforcer.GetUsersForRole(roleSubject)
+	roleSubject := s.PrefixRole(roleID)
+	users, err := s.enforcer.GetUsersForRole(roleSubject, s.HandlerDomain(domain)...)
 	if err != nil {
 		return nil, err
 	}
@@ -338,22 +433,22 @@ func (s *CasbinHelper) GetUsersForRole(roleID uint) ([]uint, error) {
 }
 
 // HasRoleForUser 检查用户是否拥有指定角色
-func (s *CasbinHelper) HasRoleForUser(userID uint, roleID uint) (bool, error) {
+func (s *CasbinHelper) HasRoleForUser(userID uint, roleID uint, domain ...string) (bool, error) {
 	if s.enforcer == nil {
 		return false, fmt.Errorf("casbin enforcer not initialized")
 	}
-	userSubject := fmt.Sprintf("%s%d", UserPrefix, userID)
-	roleSubject := fmt.Sprintf("%s%d", RolePrefix, roleID)
-	return s.enforcer.HasRoleForUser(userSubject, roleSubject)
+	userSubject := s.PrefixUser(userID)
+	roleSubject := s.PrefixRole(roleID)
+	return s.enforcer.HasRoleForUser(userSubject, roleSubject, s.HandlerDomain(domain)...)
 }
 
 // GetPermissionsForUser 获取用户的所有权限
-func (s *CasbinHelper) GetPermissionsForUser(userID uint) ([][]string, error) {
+func (s *CasbinHelper) GetPermissionsForUser(userID uint, domain ...string) ([][]string, error) {
 	if s.enforcer == nil {
 		return nil, fmt.Errorf("casbin enforcer not initialized")
 	}
-	userSubject := fmt.Sprintf("%s%d", UserPrefix, userID)
-	return s.enforcer.GetPermissionsForUser(userSubject)
+	userSubject := s.PrefixUser(userID)
+	return s.enforcer.GetPermissionsForUser(userSubject, s.HandlerDomain(domain)...)
 }
 
 // startAutoLoadPolicy 启动定期重载策略的goroutine

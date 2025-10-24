@@ -5,6 +5,7 @@ import (
 	"gin-fast/app/models"
 	"gin-fast/app/utils/common"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -100,10 +101,10 @@ func (ps *PermissionService) DeleteUserRoles(userID uint, roles []uint) (err err
 }
 
 // 根据菜单ID调整与该菜单关联的角色的API权限
-func (ps *PermissionService) UpdateRoleApiPermissionsByMenuID(menuID uint) (err error) {
+func (ps *PermissionService) UpdateRoleApiPermissionsByMenuID(c *gin.Context, menuID uint) (err error) {
 	// 1. 查找与指定菜单ID关联的所有角色
 	var roleMenus models.SysRoleMenuList
-	if err = roleMenus.Find(func(db *gorm.DB) *gorm.DB {
+	if err = roleMenus.Find(c, func(db *gorm.DB) *gorm.DB {
 		return db.Where("menu_id = ?", menuID)
 	}); err != nil {
 		return
@@ -123,7 +124,7 @@ func (ps *PermissionService) UpdateRoleApiPermissionsByMenuID(menuID uint) (err 
 	for _, roleID := range roleIDs {
 		// 查找该角色关联的所有菜单
 		var roleMenusForRole models.SysRoleMenuList
-		if err = roleMenusForRole.Find(func(db *gorm.DB) *gorm.DB {
+		if err = roleMenusForRole.Find(c, func(db *gorm.DB) *gorm.DB {
 			return db.Where("role_id = ?", roleID)
 		}); err != nil {
 			return
@@ -143,7 +144,7 @@ func (ps *PermissionService) UpdateRoleApiPermissionsByMenuID(menuID uint) (err 
 
 		// 查找这些菜单关联的所有API
 		var menus models.SysMenuList
-		if err = menus.Find(func(db *gorm.DB) *gorm.DB {
+		if err = menus.Find(c, func(db *gorm.DB) *gorm.DB {
 			return db.Preload("Apis").Where("id IN ?", menuIDs)
 		}); err != nil {
 			return
@@ -167,10 +168,10 @@ func (ps *PermissionService) UpdateRoleApiPermissionsByMenuID(menuID uint) (err 
 }
 
 // 根据API ID调整与该API关联的角色的权限
-func (ps *PermissionService) UpdateRoleApiPermissionsByApiID(apiID uint) (err error) {
+func (ps *PermissionService) UpdateRoleApiPermissionsByApiID(c *gin.Context, apiID uint) (err error) {
 	// 1. 通过api_id查找关联的menu_id
 	var menuIds []uint
-	err = app.DB().Model(&models.SysMenuApi{}).Where("api_id = ?", apiID).Pluck("menu_id", &menuIds).Error
+	err = app.DB().WithContext(c).Model(&models.SysMenuApi{}).Where("api_id = ?", apiID).Pluck("menu_id", &menuIds).Error
 	if err != nil {
 		return
 	}
@@ -182,7 +183,7 @@ func (ps *PermissionService) UpdateRoleApiPermissionsByApiID(apiID uint) (err er
 
 	// 2. 通过menu_id查找关联的role_id
 	var roleMenus models.SysRoleMenuList
-	if err = roleMenus.Find(func(db *gorm.DB) *gorm.DB {
+	if err = roleMenus.Find(c, func(db *gorm.DB) *gorm.DB {
 		return db.Where("menu_id IN ?", menuIds)
 	}); err != nil {
 		return
@@ -203,7 +204,7 @@ func (ps *PermissionService) UpdateRoleApiPermissionsByApiID(apiID uint) (err er
 	for roleID := range roleIDSet {
 		// 查找该角色关联的所有菜单
 		var roleMenusForRole models.SysRoleMenuList
-		if err = roleMenusForRole.Find(func(db *gorm.DB) *gorm.DB {
+		if err = roleMenusForRole.Find(c, func(db *gorm.DB) *gorm.DB {
 			return db.Where("role_id = ?", roleID)
 		}); err != nil {
 			return
@@ -223,7 +224,7 @@ func (ps *PermissionService) UpdateRoleApiPermissionsByApiID(apiID uint) (err er
 
 		// 查找这些菜单关联的所有API
 		var menus models.SysMenuList
-		if err = menus.Find(func(db *gorm.DB) *gorm.DB {
+		if err = menus.Find(c, func(db *gorm.DB) *gorm.DB {
 			return db.Preload("Apis").Where("id IN ?", menuIDs)
 		}); err != nil {
 			return

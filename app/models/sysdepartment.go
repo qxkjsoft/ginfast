@@ -5,6 +5,7 @@ import (
 	"gin-fast/app/global/app"
 	"sort"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -19,8 +20,9 @@ type SysDepartment struct {
 	Email     string            `gorm:"column:email;size:255;comment:邮箱" json:"email"`
 	Sort      *int              `gorm:"column:sort;comment:排序" json:"sort"`
 	Describe  string            `gorm:"column:describe;size:255;comment:描述" json:"describe"`
-	CreatedBy *uint             `gorm:"column:created_by;comment:创建人" json:"createdBy"`
+	CreatedBy uint              `gorm:"column:created_by;comment:创建人" json:"createdBy"`
 	Children  SysDepartmentList `gorm:"-" json:"children"`
+	TenantID  uint              `gorm:"type:int(11);column:tenant_id;comment:租户ID" json:"tenantID"`
 }
 
 // TableName 设置SysDepartment表名
@@ -36,27 +38,27 @@ func (d *SysDepartment) IsEmpty() bool {
 	return d == nil || d.ID == 0
 }
 
-func (d *SysDepartment) Find(funcs ...func(*gorm.DB) *gorm.DB) error {
-	return app.DB().Scopes(funcs...).Find(d).Error
+func (d *SysDepartment) Find(ctx *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) error {
+	return app.DB().WithContext(ctx).Scopes(funcs...).Find(d).Error
 }
 
-func (d *SysDepartment) GetDepartmentByID(id uint) (err error) {
-	return d.Find(func(db *gorm.DB) *gorm.DB {
+func (d *SysDepartment) GetDepartmentByID(ctx *gin.Context, id uint) (err error) {
+	return d.Find(ctx, func(db *gorm.DB) *gorm.DB {
 		return db.Where("id = ?", id)
 	})
 }
 
-func (d *SysDepartment) Create(funcs ...func(*gorm.DB) *gorm.DB) (err error) {
-	return app.DB().Scopes(funcs...).Create(d).Error
+func (d *SysDepartment) Create(ctx *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
+	return app.DB().WithContext(ctx).Scopes(funcs...).Create(d).Error
 }
 
-func (d *SysDepartment) Update() (err error) {
-	err = app.DB().Save(d).Error
+func (d *SysDepartment) Update(ctx *gin.Context) (err error) {
+	err = app.DB().WithContext(ctx).Save(d).Error
 	return
 }
 
-func (d *SysDepartment) Delete() (err error) {
-	err = app.DB().Delete(d).Error
+func (d *SysDepartment) Delete(ctx *gin.Context) (err error) {
+	err = app.DB().WithContext(ctx).Delete(d).Error
 	return
 }
 
@@ -66,8 +68,8 @@ func NewSysDepartmentList() SysDepartmentList {
 	return SysDepartmentList{}
 }
 
-func (list *SysDepartmentList) Find(funcs ...func(*gorm.DB) *gorm.DB) (err error) {
-	err = app.DB().Scopes(funcs...).Find(list).Error
+func (list *SysDepartmentList) Find(ctx *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
+	err = app.DB().WithContext(ctx).Scopes(funcs...).Find(list).Error
 	return
 }
 

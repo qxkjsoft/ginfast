@@ -3,7 +3,6 @@ package controllers
 import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
-	"gin-fast/app/utils/common"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -41,7 +40,7 @@ func NewSysDictController() *SysDictController {
 func (sdc *SysDictController) GetAllDicts(c *gin.Context) {
 	// 获取所有字典数据
 	dictList := models.NewSysDictList()
-	err := dictList.Find(func(d *gorm.DB) *gorm.DB {
+	err := dictList.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Preload("SysDictItems")
 	})
 	if err != nil {
@@ -74,14 +73,14 @@ func (sdc *SysDictController) GetDictByCode(c *gin.Context) {
 
 	// 根据编码获取字典
 	dict := models.NewSysDict()
-	err := dict.FindByCode(code)
+	err := dict.FindByCode(c, code)
 	if err != nil {
 		sdc.FailAndAbort(c, "字典不存在", err)
 	}
 
 	// 获取该字典下的所有字典项
 	dictItemModel := models.NewSysDictItem()
-	dictItems, err := dictItemModel.FindByDictCode(code)
+	dictItems, err := dictItemModel.FindByDictCode(c, code)
 	if err != nil {
 		sdc.FailAndAbort(c, "获取字典项失败", err)
 	}
@@ -124,14 +123,14 @@ func (sdc *SysDictController) List(c *gin.Context) {
 
 	// 统计总数
 	var count int64
-	err := app.DB().Model(&models.SysDict{}).Scopes(req.Handler()).Count(&count).Error
+	err := app.DB().WithContext(c).Model(&models.SysDict{}).Scopes(req.Handler()).Count(&count).Error
 	if err != nil {
 		sdc.FailAndAbort(c, "统计字典数量失败", err)
 	}
 
 	// 查询列表数据
 	dictList := models.NewSysDictList()
-	err = dictList.Find(req.Paginate(), req.Handler(), func(d *gorm.DB) *gorm.DB {
+	err = dictList.Find(c, req.Paginate(), req.Handler(), func(d *gorm.DB) *gorm.DB {
 		return d.Preload("SysDictItems")
 	})
 	if err != nil {
@@ -166,7 +165,7 @@ func (sdc *SysDictController) GetByID(c *gin.Context) {
 
 	// 查询字典信息
 	dict := models.NewSysDict()
-	err = dict.FindByID(uint(id))
+	err = dict.FindByID(c, uint(id))
 	if err != nil {
 		sdc.FailAndAbort(c, "查询字典失败", err)
 	}
@@ -194,7 +193,7 @@ func (sdc *SysDictController) Add(c *gin.Context) {
 
 	// 检查字典编码是否已存在
 	existDict := models.NewSysDict()
-	err := existDict.FindByCode(req.Code)
+	err := existDict.FindByCode(c, req.Code)
 	if err != nil {
 		sdc.FailAndAbort(c, "查询字典失败", err)
 	}
@@ -208,10 +207,8 @@ func (sdc *SysDictController) Add(c *gin.Context) {
 	dict.Code = &req.Code
 	dict.Status = &req.Status
 	dict.Description = &req.Description
-	createdBy := common.GetCurrentUserID(c)
-	dict.CreatedBy = &createdBy
 
-	err = dict.Create()
+	err = dict.Create(c)
 	if err != nil {
 		sdc.FailAndAbort(c, "新增字典失败", err)
 	}
@@ -239,14 +236,14 @@ func (sdc *SysDictController) Update(c *gin.Context) {
 
 	// 检查字典是否存在
 	dict := models.NewSysDict()
-	err := dict.FindByID(req.ID)
+	err := dict.FindByID(c, req.ID)
 	if err != nil {
 		sdc.FailAndAbort(c, "字典不存在", err)
 	}
 
 	// 检查字典编码是否已被其他字典使用
 	existDict := models.NewSysDict()
-	err = app.DB().Where("code = ? AND id != ?", req.Code, req.ID).First(existDict).Error
+	err = app.DB().WithContext(c).Where("code = ? AND id != ?", req.Code, req.ID).First(existDict).Error
 	if err == nil {
 		sdc.FailAndAbort(c, "字典编码已被其他字典使用", nil)
 	}
@@ -257,7 +254,7 @@ func (sdc *SysDictController) Update(c *gin.Context) {
 	dict.Status = &req.Status
 	dict.Description = &req.Description
 
-	err = dict.Update()
+	err = dict.Update(c)
 	if err != nil {
 		sdc.FailAndAbort(c, "更新字典失败", err)
 	}
@@ -285,20 +282,20 @@ func (sdc *SysDictController) Delete(c *gin.Context) {
 
 	// 检查字典是否存在
 	dict := models.NewSysDict()
-	err := dict.FindByID(req.ID)
+	err := dict.FindByID(c, req.ID)
 	if err != nil {
 		sdc.FailAndAbort(c, "字典不存在", err)
 	}
 
 	// 检查该字典下是否有字典项
 	dictItemModel := models.NewSysDictItem()
-	dictItems, err := dictItemModel.FindByDictCode(*dict.Code)
+	dictItems, err := dictItemModel.FindByDictCode(c, *dict.Code)
 	if err == nil && len(dictItems) > 0 {
 		sdc.FailAndAbort(c, "该字典下还有字典项，无法删除", nil)
 	}
 
 	// 执行删除
-	err = dict.Delete()
+	err = dict.Delete(c)
 	if err != nil {
 		sdc.FailAndAbort(c, "删除字典失败", err)
 	}

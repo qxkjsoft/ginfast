@@ -20,9 +20,10 @@ var sysRoleControllers = controllers.NewSysRoleController()                 // �
 var sysDictControllers = controllers.NewSysDictController()                 // 字典控制器
 var sysDictItemControllers = controllers.NewSysDictItemController()         // 字典项控制器
 var sysApiControllers = controllers.NewSysApiController()                   // API控制器
-var sysAffixControllers = controllers.NewSysAffixController()               // 固定菜单控制器
+var sysAffixControllers = controllers.NewSysAffixController()               // 文件管理
 var configControllers = controllers.NewConfigController()                   // 配置控制器
 var sysOperationLogControllers = controllers.NewSysOperationLogController() // 操作日志控制器
+var sysTenantControllers = controllers.NewTenantController()                // 租户控制器
 
 // InitRoutes 初始化路由
 func InitRoutes(engine *gin.Engine) {
@@ -247,6 +248,21 @@ func InitRoutes(engine *gin.Engine) {
 			sysOperationLog.DELETE("/delete", sysOperationLogControllers.Delete)
 			// 导出操作日志
 			sysOperationLog.GET("/export", sysOperationLogControllers.Export)
+		}
+
+		// 租户管理路由组
+		sysTenant := protected.Group("/sysTenant")
+		{
+			// 租户列表
+			sysTenant.GET("/list", sysTenantControllers.List)
+			// 根据ID获取租户信息
+			sysTenant.GET("/:id", sysTenantControllers.GetByID)
+			// 新增租户
+			sysTenant.POST("/add", sysTenantControllers.Add)
+			// 更新租户
+			sysTenant.PUT("/edit", sysTenantControllers.Update)
+			// 删除租户
+			sysTenant.DELETE("/:id", sysTenantControllers.Delete)
 		}
 	}
 }

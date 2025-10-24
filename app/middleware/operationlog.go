@@ -87,6 +87,7 @@ func recordOperationLog(c *gin.Context, startTime time.Time, requestBody, respon
 	// 获取用户信息
 	var userID uint
 	var username string
+	var tenantID uint
 	operationType := getOperationType(c)
 
 	// 尝试从JWT token获取用户信息
@@ -94,6 +95,7 @@ func recordOperationLog(c *gin.Context, startTime time.Time, requestBody, respon
 	if claims != nil {
 		userID = claims.UserID
 		username = claims.Username
+		tenantID = claims.TenantID
 	} else {
 		// 如果是登录操作，尝试从请求体中获取用户名
 		if c.Request.URL.Path == "/api/login" && c.Request.Method == "POST" {
@@ -127,6 +129,7 @@ func recordOperationLog(c *gin.Context, startTime time.Time, requestBody, respon
 		Duration:   duration,
 		ErrorMsg:   getErrorMessage(c, responseBody),
 		Location:   getLocationByIP(c.ClientIP()),
+		TenantID:   tenantID,
 	}
 
 	// 异步保存日志

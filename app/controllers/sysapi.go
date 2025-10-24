@@ -4,7 +4,6 @@ import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
 	"gin-fast/app/service"
-	"gin-fast/app/utils/common"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -52,16 +51,15 @@ func (sc *SysApiController) List(c *gin.Context) {
 		sc.FailAndAbort(c, err.Error(), err)
 	}
 
-	// 统计总数
-	var count int64
-	err := app.DB().Model(&models.SysApi{}).Scopes(req.Handler()).Count(&count).Error
+	// 查询列表数据
+	sysApiList := models.NewSysApiList()
+	// 获取总数
+	count, err := sysApiList.GetCount(c, req.Handler())
 	if err != nil {
 		sc.FailAndAbort(c, "统计API数量失败", err)
 	}
 
-	// 查询列表数据
-	sysApiList := models.NewSysApiList()
-	err = sysApiList.Find(req.Paginate(), req.Handler(), func(d *gorm.DB) *gorm.DB {
+	err = sysApiList.Find(c, req.Paginate(), req.Handler(), func(d *gorm.DB) *gorm.DB {
 		return d.Preload("SysMenuList")
 	})
 	if err != nil {
@@ -96,7 +94,7 @@ func (sc *SysApiController) GetByID(c *gin.Context) {
 
 	// 查询API信息
 	api := models.NewSysApi()
-	err = api.Find(func(d *gorm.DB) *gorm.DB {
+	err = api.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", uint(id))
 	})
 	if err != nil {
@@ -131,7 +129,7 @@ func (sc *SysApiController) Add(c *gin.Context) {
 
 	// 检查API路径和方法是否已存在
 	existApi := models.NewSysApi()
-	err := existApi.Find(func(d *gorm.DB) *gorm.DB {
+	err := existApi.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("path = ? AND method = ?", req.Path, req.Method)
 	})
 	if err != nil {
@@ -148,9 +146,7 @@ func (sc *SysApiController) Add(c *gin.Context) {
 	api.Method = req.Method
 	api.ApiGroup = req.ApiGroup
 
-	api.CreatedBy = common.GetCurrentUserID(c)
-
-	err = app.DB().Create(api).Error
+	err = app.DB().WithContext(c).Create(api).Error
 	if err != nil {
 		sc.FailAndAbort(c, "新增API失败", err)
 	}
@@ -178,7 +174,7 @@ func (sc *SysApiController) Update(c *gin.Context) {
 
 	// 检查API是否存在
 	api := models.NewSysApi()
-	err := api.Find(func(d *gorm.DB) *gorm.DB {
+	err := api.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", req.ID)
 	})
 	if err != nil {
@@ -190,7 +186,7 @@ func (sc *SysApiController) Update(c *gin.Context) {
 
 	// 检查API路径和方法是否与其他API冲突（排除当前API）
 	existApi := models.NewSysApi()
-	err = existApi.Find(func(d *gorm.DB) *gorm.DB {
+	err = existApi.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("path = ? AND method = ? AND id != ?", req.Path, req.Method, req.ID)
 	})
 	if err != nil {
@@ -206,11 +202,11 @@ func (sc *SysApiController) Update(c *gin.Context) {
 	api.Method = req.Method
 	api.ApiGroup = req.ApiGroup
 
-	err = app.DB().Save(api).Error
+	err = app.DB().WithContext(c).Save(api).Error
 	if err != nil {
 		sc.FailAndAbort(c, "更新API失败", err)
 	}
-	err = sc.CasbinService.UpdateRoleApiPermissionsByApiID(req.ID)
+	err = sc.CasbinService.UpdateRoleApiPermissionsByApiID(c, req.ID)
 	if err != nil {
 		sc.FailAndAbort(c, "更新角色API权限失败", err)
 	}
@@ -237,7 +233,7 @@ func (sc *SysApiController) Delete(c *gin.Context) {
 
 	// 检查API是否存在
 	api := models.NewSysApi()
-	err := api.Find(func(d *gorm.DB) *gorm.DB {
+	err := api.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", req.ID)
 	})
 	if err != nil {
@@ -249,7 +245,7 @@ func (sc *SysApiController) Delete(c *gin.Context) {
 
 	// 检查API是否与菜单有关联
 	var menuCount int64
-	err = app.DB().Model(&models.SysMenuApi{}).Where("api_id = ?", req.ID).Count(&menuCount).Error
+	err = app.DB().WithContext(c).Model(&models.SysMenuApi{}).Where("api_id = ?", req.ID).Count(&menuCount).Error
 	if err != nil {
 		sc.FailAndAbort(c, "检查API与菜单关联关系失败", err)
 	}
@@ -258,19 +254,19 @@ func (sc *SysApiController) Delete(c *gin.Context) {
 	}
 
 	// 软删除API
-	err = app.DB().Where("id = ?", req.ID).Delete(api).Error
+	err = app.DB().WithContext(c).Where("id = ?", req.ID).Delete(api).Error
 	if err != nil {
 		sc.FailAndAbort(c, "删除API失败", err)
 	}
 
 	// 刷新角色API权限
-	err = sc.CasbinService.UpdateRoleApiPermissionsByApiID(req.ID)
+	err = sc.CasbinService.UpdateRoleApiPermissionsByApiID(c, req.ID)
 	if err != nil {
 		sc.FailAndAbort(c, "更新角色API权限失败", err)
 	}
 
 	// 移除菜单与API的关联（虽然上面已经检查了没有关联，但为了安全起见还是执行一下）
-	err = app.DB().Where("api_id = ?", req.ID).Delete(&models.SysMenuApi{}).Error
+	err = app.DB().WithContext(c).Where("api_id = ?", req.ID).Delete(&models.SysMenuApi{}).Error
 	if err != nil {
 		sc.FailAndAbort(c, "删除菜单API关联失败", err)
 	}

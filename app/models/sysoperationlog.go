@@ -3,6 +3,7 @@ package models
 import (
 	"gin-fast/app/global/app"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -23,6 +24,7 @@ type SysOperationLog struct {
 	Duration     int64  `gorm:"column:duration;comment:操作耗时(毫秒)" json:"duration"`
 	ErrorMsg     string `gorm:"column:error_msg;type:text;comment:错误信息" json:"errorMsg"`
 	Location     string `gorm:"column:location;size:100;comment:操作地点" json:"location"`
+	TenantID     uint   `gorm:"type:int(11);column:tenant_id;comment:租户ID" json:"tenantID"`
 }
 
 // TableName 设置表名
@@ -52,12 +54,12 @@ func NewSysOperationLogList() SysOperationLogList {
 	return SysOperationLogList{}
 }
 
-func (list *SysOperationLogList) Find(funcs ...func(*gorm.DB) *gorm.DB) error {
-	return app.DB().Scopes(funcs...).Find(list).Error
+func (list *SysOperationLogList) Find(c *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) error {
+	return app.DB().WithContext(c).Scopes(funcs...).Find(list).Error
 }
 
-func (list *SysOperationLogList) GetTotal(query ...func(*gorm.DB) *gorm.DB) (int64, error) {
+func (list *SysOperationLogList) GetTotal(c *gin.Context, query ...func(*gorm.DB) *gorm.DB) (int64, error) {
 	var total int64
-	err := app.DB().Model(&SysOperationLog{}).Scopes(query...).Count(&total).Error
+	err := app.DB().WithContext(c).Model(&SysOperationLog{}).Scopes(query...).Count(&total).Error
 	return total, err
 }

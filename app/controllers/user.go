@@ -54,9 +54,10 @@ func (uc *UserController) GetProfile(c *gin.Context) {
 	claims := common.GetClaims(c)
 	if claims == nil {
 		uc.FailAndAbort(c, "用户未登录", errors.New("用户未登录"))
+		return
 	}
 
-	user, err := uc.UserService.GetUserProfile(claims.UserID)
+	user, err := uc.UserService.GetUserProfile(c, claims.UserID)
 	if err != nil {
 		uc.FailAndAbort(c, "获取用户信息失败", err)
 	}
@@ -67,6 +68,8 @@ func (uc *UserController) GetProfile(c *gin.Context) {
 		"nickname":    user.NickName,
 		"roles":       user.Roles.GetRoleIDs(),
 		"permissions": user.Permissions,
+		"tenantID":    claims.TenantID,
+		"tenantCode":  claims.TenantCode,
 	})
 }
 
@@ -92,11 +95,11 @@ func (uc *UserController) List(c *gin.Context) {
 	}
 
 	userList := models.NewUserList()
-	total, err := userList.GetTotal(req.Handle())
+	total, err := userList.GetTotal(c, req.Handle())
 	if err != nil {
 		uc.FailAndAbort(c, err.Error(), err)
 	}
-	err = userList.Find(req.Paginate(), req.Handle(), func(d *gorm.DB) *gorm.DB {
+	err = userList.Find(c, req.Paginate(), req.Handle(), func(d *gorm.DB) *gorm.DB {
 		return d.Omit("password").Preload("Roles").Preload("Department")
 	})
 	if err != nil {
@@ -130,7 +133,7 @@ func (uc *UserController) GetUserByID(c *gin.Context) {
 	}
 
 	// 获取用户信息
-	user, err := uc.UserService.GetUserProfile(uint(id))
+	user, err := uc.UserService.GetUserProfile(c, uint(id))
 	if err != nil {
 		uc.FailAndAbort(c, "获取用户信息失败", err)
 	}
@@ -157,7 +160,7 @@ func (uc *UserController) Add(c *gin.Context) {
 	}
 	// 检查用户名是否已存在
 	user := models.NewUser()
-	err := user.GetUserByUsername(req.UserName)
+	err := user.GetUserByUsername(c, req.UserName)
 	if err != nil {
 		uc.FailAndAbort(c, err.Error(), err)
 	}
@@ -168,7 +171,7 @@ func (uc *UserController) Add(c *gin.Context) {
 	// 检查手机号是否已被其他用户使用
 	if req.Phone != "" {
 		existUser := models.NewUser()
-		err = existUser.GetUserByPhone(req.Phone)
+		err = existUser.GetUserByPhone(c, req.Phone)
 		if err != nil {
 			uc.FailAndAbort(c, err.Error(), err)
 		}
@@ -180,7 +183,7 @@ func (uc *UserController) Add(c *gin.Context) {
 	// 检查邮箱是否已被其他用户使用
 	if req.Email != "" {
 		existUser := models.NewUser()
-		err = existUser.GetUserByEmail(req.Email)
+		err = existUser.GetUserByEmail(c, req.Email)
 		if err != nil {
 			uc.FailAndAbort(c, err.Error(), err)
 		}
@@ -196,7 +199,7 @@ func (uc *UserController) Add(c *gin.Context) {
 	}
 
 	// 使用事务创建用户和角色关联
-	err = app.DB().Transaction(func(tx *gorm.DB) error {
+	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
 		// 创建用户
 		user.Username = req.UserName
 		user.NickName = req.NickName
@@ -207,7 +210,6 @@ func (uc *UserController) Add(c *gin.Context) {
 		user.DeptID = req.DeptId
 		user.Status = req.Status
 		user.Description = req.Description
-		user.CreatedBy = common.GetCurrentUserID(c)
 
 		if err := tx.Create(user).Error; err != nil {
 			return err
@@ -261,7 +263,7 @@ func (uc *UserController) Update(c *gin.Context) {
 
 	// 检查用户是否存在
 	user := models.NewUser()
-	err := user.GetUserByID(req.Id)
+	err := user.GetUserByID(c, req.Id)
 	if err != nil {
 		uc.FailAndAbort(c, err.Error(), err)
 	}
@@ -271,7 +273,7 @@ func (uc *UserController) Update(c *gin.Context) {
 
 	// 检查用户名是否与其他用户冲突（排除当前用户）
 	existUser := models.NewUser()
-	err = existUser.GetUserByUsername(req.UserName)
+	err = existUser.GetUserByUsername(c, req.UserName)
 	if err != nil {
 		uc.FailAndAbort(c, err.Error(), err)
 	}
@@ -348,7 +350,7 @@ func (uc *UserController) Delete(c *gin.Context) {
 
 	// 检查用户是否存在
 	user := models.NewUser()
-	err := user.GetUserByID(req.Id)
+	err := user.GetUserByID(c, req.Id)
 	if err != nil {
 		uc.FailAndAbort(c, err.Error(), err)
 	}
@@ -401,7 +403,7 @@ func (uc *UserController) UpdateAccount(c *gin.Context) {
 
 	// 检查用户是否存在
 	user := models.NewUser()
-	err := user.GetUserByID(req.ID)
+	err := user.GetUserByID(c, req.ID)
 	if err != nil {
 		uc.FailAndAbort(c, err.Error(), err)
 	}
@@ -412,7 +414,7 @@ func (uc *UserController) UpdateAccount(c *gin.Context) {
 	// 检查手机号是否已被其他用户使用
 	if req.Phone != "" {
 		existUser := models.NewUser()
-		err = existUser.GetUserByPhone(req.Phone)
+		err = existUser.GetUserByPhone(c, req.Phone)
 		if err != nil {
 			uc.FailAndAbort(c, err.Error(), err)
 		}
@@ -424,7 +426,7 @@ func (uc *UserController) UpdateAccount(c *gin.Context) {
 	// 检查邮箱是否已被其他用户使用
 	if req.Email != "" {
 		existUser := models.NewUser()
-		err = existUser.GetUserByEmail(req.Email)
+		err = existUser.GetUserByEmail(c, req.Email)
 		if err != nil {
 			uc.FailAndAbort(c, err.Error(), err)
 		}
@@ -474,6 +476,7 @@ func (uc *UserController) UploadAvatar(c *gin.Context) {
 	claims := common.GetClaims(c)
 	if claims == nil {
 		uc.FailAndAbort(c, "用户未登录", nil)
+		return
 	}
 
 	// 处理文件上传
@@ -497,7 +500,7 @@ func (uc *UserController) UploadAvatar(c *gin.Context) {
 
 	// 获取用户信息
 	user := models.NewUser()
-	err = user.GetUserByID(claims.UserID)
+	err = user.GetUserByID(c, claims.UserID)
 	if err != nil {
 		uc.FailAndAbort(c, "获取用户信息失败", err)
 	}
