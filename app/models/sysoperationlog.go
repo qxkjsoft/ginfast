@@ -1,9 +1,9 @@
 package models
 
 import (
+	"context"
 	"gin-fast/app/global/app"
 
-	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -54,11 +54,11 @@ func NewSysOperationLogList() SysOperationLogList {
 	return SysOperationLogList{}
 }
 
-func (list *SysOperationLogList) Find(c *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) error {
+func (list *SysOperationLogList) Find(c context.Context, funcs ...func(*gorm.DB) *gorm.DB) error {
 	return app.DB().WithContext(c).Scopes(funcs...).Find(list).Error
 }
 
-func (list *SysOperationLogList) GetTotal(c *gin.Context, query ...func(*gorm.DB) *gorm.DB) (int64, error) {
+func (list *SysOperationLogList) GetTotal(c context.Context, query ...func(*gorm.DB) *gorm.DB) (int64, error) {
 	var total int64
 	err := app.DB().WithContext(c).Model(&SysOperationLog{}).Scopes(query...).Count(&total).Error
 	return total, err

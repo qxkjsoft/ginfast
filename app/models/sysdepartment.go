@@ -1,11 +1,11 @@
 package models
 
 import (
+	"context"
 	"fmt"
 	"gin-fast/app/global/app"
 	"sort"
 
-	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -38,26 +38,26 @@ func (d *SysDepartment) IsEmpty() bool {
 	return d == nil || d.ID == 0
 }
 
-func (d *SysDepartment) Find(ctx *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) error {
+func (d *SysDepartment) Find(ctx context.Context, funcs ...func(*gorm.DB) *gorm.DB) error {
 	return app.DB().WithContext(ctx).Scopes(funcs...).Find(d).Error
 }
 
-func (d *SysDepartment) GetDepartmentByID(ctx *gin.Context, id uint) (err error) {
+func (d *SysDepartment) GetDepartmentByID(ctx context.Context, id uint) (err error) {
 	return d.Find(ctx, func(db *gorm.DB) *gorm.DB {
 		return db.Where("id = ?", id)
 	})
 }
 
-func (d *SysDepartment) Create(ctx *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
+func (d *SysDepartment) Create(ctx context.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
 	return app.DB().WithContext(ctx).Scopes(funcs...).Create(d).Error
 }
 
-func (d *SysDepartment) Update(ctx *gin.Context) (err error) {
+func (d *SysDepartment) Update(ctx context.Context) (err error) {
 	err = app.DB().WithContext(ctx).Save(d).Error
 	return
 }
 
-func (d *SysDepartment) Delete(ctx *gin.Context) (err error) {
+func (d *SysDepartment) Delete(ctx context.Context) (err error) {
 	err = app.DB().WithContext(ctx).Delete(d).Error
 	return
 }
@@ -68,7 +68,7 @@ func NewSysDepartmentList() SysDepartmentList {
 	return SysDepartmentList{}
 }
 
-func (list *SysDepartmentList) Find(ctx *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
+func (list *SysDepartmentList) Find(ctx context.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
 	err = app.DB().WithContext(ctx).Scopes(funcs...).Find(list).Error
 	return
 }

@@ -1,9 +1,9 @@
 package models
 
 import (
+	"context"
 	"gin-fast/app/global/app"
 
-	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -41,22 +41,22 @@ func (SysAffix) TableName() string {
 }
 
 // GetByID 根据ID获取文件附件
-func (m *SysAffix) GetByID(c *gin.Context, id uint) error {
+func (m *SysAffix) GetByID(c context.Context, id uint) error {
 	return app.DB().WithContext(c).First(m, id).Error
 }
 
 // Create 创建文件附件记录
-func (m *SysAffix) Create(c *gin.Context) error {
+func (m *SysAffix) Create(c context.Context) error {
 	return app.DB().WithContext(c).Create(m).Error
 }
 
 // Update 更新文件附件记录
-func (m *SysAffix) Update(c *gin.Context) error {
+func (m *SysAffix) Update(c context.Context) error {
 	return app.DB().WithContext(c).Save(m).Error
 }
 
 // Delete 软删除文件附件记录
-func (m *SysAffix) Delete(c *gin.Context) error {
+func (m *SysAffix) Delete(c context.Context) error {
 	return app.DB().WithContext(c).Delete(m).Error
 }
 
@@ -66,12 +66,12 @@ func (m *SysAffix) IsEmpty() bool {
 }
 
 // Find 查询文件附件列表
-func (l *SysAffixList) Find(c *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) error {
+func (l *SysAffixList) Find(c context.Context, funcs ...func(*gorm.DB) *gorm.DB) error {
 	return app.DB().WithContext(c).Model(&SysAffix{}).Scopes(funcs...).Find(l).Error
 }
 
 // GetTotal 获取文件附件总数
-func (l *SysAffixList) GetTotal(c *gin.Context, query ...func(*gorm.DB) *gorm.DB) (int64, error) {
+func (l *SysAffixList) GetTotal(c context.Context, query ...func(*gorm.DB) *gorm.DB) (int64, error) {
 	var count int64
 	err := app.DB().WithContext(c).Model(&SysAffix{}).Scopes(query...).Count(&count).Error
 	return count, err

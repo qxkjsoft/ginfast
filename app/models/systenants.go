@@ -1,9 +1,9 @@
 package models
 
 import (
+	"context"
 	"gin-fast/app/global/app"
 
-	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -34,7 +34,7 @@ func (t *Tenant) IsEmpty() bool {
 }
 
 // Find 查找单个租户
-func (t *Tenant) Find(c *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
+func (t *Tenant) Find(c context.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
 	err = app.DB().WithContext(c).Scopes(funcs...).First(t).Error
 	if err == gorm.ErrRecordNotFound {
 		err = nil // 将记录未找到的错误转换为nil，通过IsEmpty()方法判断
@@ -43,17 +43,17 @@ func (t *Tenant) Find(c *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) (err err
 }
 
 // Create 创建租户
-func (t *Tenant) Create(c *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
+func (t *Tenant) Create(c context.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
 	return app.DB().WithContext(c).Scopes(funcs...).Create(t).Error
 }
 
 // Update 更新租户
-func (t *Tenant) Update(c *gin.Context) (err error) {
+func (t *Tenant) Update(c context.Context) (err error) {
 	return app.DB().WithContext(c).Save(t).Error
 }
 
 // Delete 删除租户
-func (t *Tenant) Delete(c *gin.Context) (err error) {
+func (t *Tenant) Delete(c context.Context) (err error) {
 	return app.DB().WithContext(c).Delete(t).Error
 }
 
@@ -71,12 +71,12 @@ func (list TenantList) IsEmpty() bool {
 }
 
 // Find 查找租户列表
-func (list *TenantList) Find(c *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
+func (list *TenantList) Find(c context.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
 	err = app.DB().WithContext(c).Scopes(funcs...).Find(list).Error
 	return
 }
 
-func (list *TenantList) GetTotal(c *gin.Context, query ...func(*gorm.DB) *gorm.DB) (int64, error) {
+func (list *TenantList) GetTotal(c context.Context, query ...func(*gorm.DB) *gorm.DB) (int64, error) {
 	var total int64
 	err := app.DB().WithContext(c).Model(&Tenant{}).Scopes(query...).Count(&total).Error
 	if err != nil {

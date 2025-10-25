@@ -1,9 +1,9 @@
 package models
 
 import (
+	"context"
 	"gin-fast/app/global/app"
 
-	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -38,7 +38,7 @@ func (list SysDictList) IsEmpty() bool {
 	return len(list) == 0
 }
 
-func (list *SysDictList) Find(c *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
+func (list *SysDictList) Find(c context.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
 	err = app.DB().WithContext(c).Scopes(funcs...).Find(list).Error
 	return
 }
@@ -47,27 +47,27 @@ func (s *SysDict) IsEmpty() bool {
 	return s == nil || s.ID == 0
 }
 
-func (s *SysDict) Create(c *gin.Context) (err error) {
+func (s *SysDict) Create(c context.Context) (err error) {
 	err = app.DB().WithContext(c).Create(s).Error
 	return
 }
 
-func (s *SysDict) Update(c *gin.Context) (err error) {
+func (s *SysDict) Update(c context.Context) (err error) {
 	err = app.DB().WithContext(c).Save(s).Error
 	return
 }
 
-func (s *SysDict) Delete(c *gin.Context) (err error) {
+func (s *SysDict) Delete(c context.Context) (err error) {
 	err = app.DB().WithContext(c).Delete(s).Error
 	return
 }
 
-func (s *SysDict) FindByID(c *gin.Context, id uint) (err error) {
+func (s *SysDict) FindByID(c context.Context, id uint) (err error) {
 	err = app.DB().WithContext(c).Where("id = ?", id).First(s).Error
 	return
 }
 
-func (s *SysDict) FindByCode(c *gin.Context, code string) (err error) {
+func (s *SysDict) FindByCode(c context.Context, code string) (err error) {
 	err = app.DB().WithContext(c).Where("code = ?", code).First(s).Error
 	return
 }

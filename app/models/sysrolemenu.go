@@ -1,9 +1,9 @@
 package models
 
 import (
+	"context"
 	"gin-fast/app/global/app"
 
-	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -23,7 +23,7 @@ func NewSysRoleMenu() *SysRoleMenu {
 }
 
 // Find
-func (m *SysRoleMenu) Find(c *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) error {
+func (m *SysRoleMenu) Find(c context.Context, funcs ...func(*gorm.DB) *gorm.DB) error {
 	return app.DB().WithContext(c).Scopes(funcs...).Find(m).Error
 }
 
@@ -39,7 +39,7 @@ func (list SysRoleMenuList) IsEmpty() bool {
 }
 
 // Find
-func (list *SysRoleMenuList) Find(c *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
+func (list *SysRoleMenuList) Find(c context.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
 	err = app.DB().WithContext(c).Scopes(funcs...).Find(list).Error
 	return
 }

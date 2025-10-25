@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"gin-fast/app/models"
 
-	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -65,11 +64,7 @@ func (s *SysMenuService) CreateMenuApis(tx *gorm.DB, menuList models.SysMenuList
 			for _, api := range menu.Apis {
 				// 检查API是否已存在（根据path和method）
 				existingAPI := models.NewSysApi()
-				ctx, ok := tx.Statement.Context.(*gin.Context)
-				if !ok {
-					return fmt.Errorf("上下文不是*gin.Context类型")
-				}
-				err := existingAPI.Find(ctx, func(d *gorm.DB) *gorm.DB {
+				err := existingAPI.Find(tx.Statement.Context, func(d *gorm.DB) *gorm.DB {
 					return d.Where("path = ? AND method = ?", api.Path, api.Method)
 				})
 

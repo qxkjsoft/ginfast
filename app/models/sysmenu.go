@@ -1,12 +1,12 @@
 package models
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"gin-fast/app/global/app"
 	"sort"
 
-	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -52,7 +52,7 @@ func (menu *SysMenu) IsEmpty() bool {
 }
 
 // Find 查找单个菜单
-func (menu *SysMenu) Find(c *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
+func (menu *SysMenu) Find(c context.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
 	err = app.DB().Scopes(funcs...).WithContext(c).First(menu).Error
 	if err == gorm.ErrRecordNotFound {
 		err = nil // 将记录未找到的错误转换为nil，通过IsEmpty()方法判断
@@ -78,7 +78,7 @@ func (list SysMenuList) GetApis() (res SysApiList) {
 	return
 }
 
-func (list *SysMenuList) Find(c *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
+func (list *SysMenuList) Find(c context.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
 	err = app.DB().Scopes(funcs...).WithContext(c).Find(list).Error
 	return
 }

@@ -1,11 +1,11 @@
 package models
 
 import (
+	"context"
 	"fmt"
 	"gin-fast/app/global/app"
 	"sort"
 
-	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -38,7 +38,7 @@ func (r *SysRole) IsEmpty() bool {
 	return r == nil || r.ID == 0
 }
 
-func (r *SysRole) Find(c *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) error {
+func (r *SysRole) Find(c context.Context, funcs ...func(*gorm.DB) *gorm.DB) error {
 	return app.DB().WithContext(c).Scopes(funcs...).Find(r).Error
 }
 
@@ -68,12 +68,12 @@ func (list SysRoleList) GetRoleIDs() []uint {
 	return roleIDs
 }
 
-func (list *SysRoleList) Find(c *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
+func (list *SysRoleList) Find(c context.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
 	err = app.DB().WithContext(c).Scopes(funcs...).Find(list).Error
 	return
 }
 
-func (list SysRoleList) GetTotal(ctx *gin.Context, query ...func(*gorm.DB) *gorm.DB) (int64, error) {
+func (list SysRoleList) GetTotal(ctx context.Context, query ...func(*gorm.DB) *gorm.DB) (int64, error) {
 	var total int64
 	err := app.DB().WithContext(ctx).Model(&SysRole{}).Scopes(query...).Count(&total).Error
 	if err != nil {

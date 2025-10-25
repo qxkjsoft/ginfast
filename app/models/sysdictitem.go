@@ -1,9 +1,9 @@
 package models
 
 import (
+	"context"
 	"gin-fast/app/global/app"
 
-	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -38,37 +38,37 @@ func (list SysDictItemList) IsEmpty() bool {
 	return len(list) == 0
 }
 
-func (list *SysDictItemList) Find(c *gin.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
+func (list *SysDictItemList) Find(c context.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
 	err = app.DB().WithContext(c).Scopes(funcs...).Find(list).Error
 	return
 }
 
-func (s *SysDictItem) Create(c *gin.Context) (err error) {
+func (s *SysDictItem) Create(c context.Context) (err error) {
 	err = app.DB().WithContext(c).Create(s).Error
 	return
 }
 
-func (s *SysDictItem) Update(c *gin.Context) (err error) {
+func (s *SysDictItem) Update(c context.Context) (err error) {
 	err = app.DB().WithContext(c).Save(s).Error
 	return
 }
 
-func (s *SysDictItem) Delete(c *gin.Context) (err error) {
+func (s *SysDictItem) Delete(c context.Context) (err error) {
 	err = app.DB().WithContext(c).Delete(s).Error
 	return
 }
 
-func (s *SysDictItem) FindByID(c *gin.Context, id uint) (err error) {
+func (s *SysDictItem) FindByID(c context.Context, id uint) (err error) {
 	err = app.DB().WithContext(c).Where("id = ?", id).First(s).Error
 	return
 }
 
-func (s *SysDictItem) FindByDictID(c *gin.Context, dictID uint) (list SysDictItemList, err error) {
+func (s *SysDictItem) FindByDictID(c context.Context, dictID uint) (list SysDictItemList, err error) {
 	err = app.DB().WithContext(c).Where("dict_id = ?", dictID).Find(&list).Error
 	return
 }
 
-func (s *SysDictItem) FindByDictCode(c *gin.Context, dictCode string) (list SysDictItemList, err error) {
+func (s *SysDictItem) FindByDictCode(c context.Context, dictCode string) (list SysDictItemList, err error) {
 	err = app.DB().WithContext(c).Joins("JOIN sys_dict ON sys_dict_item.dict_id = sys_dict.id").
 		Where("sys_dict.code = ?", dictCode).
 		Find(&list).Error
