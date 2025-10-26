@@ -1,6 +1,7 @@
 package common
 
 import (
+	"context"
 	"errors"
 	"gin-fast/app/global/app"
 	"gin-fast/app/global/consts"
@@ -14,11 +15,11 @@ import (
 func GetAccessToken(c *gin.Context) (string, error) {
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
-		return "", errors.New("Authorization header is required")
+		return "", errors.New("authorization header is required")
 	}
 	headerParts := strings.Split(authHeader, " ")
 	if len(headerParts) != 2 || headerParts[0] != "Bearer" {
-		return "", errors.New("Authorization header format must be Bearer {token}")
+		return "", errors.New("authorization header format must be Bearer {token}")
 	}
 	return headerParts[1], nil
 }
@@ -51,4 +52,40 @@ func ConvertPathToWildcard(path string) string {
 	// 使用正则表达式匹配 :param 格式的参数
 	re := regexp.MustCompile(`:[^/]+`)
 	return re.ReplaceAllString(path, "*")
+}
+
+// 获取当前租户ID
+func GetCurrentTenantID(c *gin.Context) uint {
+	if c == nil {
+		return 0
+	}
+	claims := GetClaims(c)
+	if claims == nil {
+		return 0
+	}
+	return claims.TenantID
+}
+
+// 获取当前租户Code
+func GetCurrentTenantCode(c *gin.Context) string {
+	if c == nil {
+		return ""
+	}
+	claims := GetClaims(c)
+	if claims == nil {
+		return ""
+	}
+	return claims.TenantCode
+}
+
+// 尝试将context.Context转换成*gin.Context
+func TryConvertToGinContext(c context.Context) *gin.Context {
+	if c == nil {
+		return nil
+	}
+	ginCtx, ok := c.(*gin.Context)
+	if !ok {
+		return nil
+	}
+	return ginCtx
 }

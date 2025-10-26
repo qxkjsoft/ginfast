@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
+	"gin-fast/app/utils/tenanthelper"
 	"strconv"
 	"time"
 
@@ -49,14 +50,14 @@ func (c *SysOperationLogController) List(ctx *gin.Context) {
 	}
 
 	logList := models.NewSysOperationLogList()
-	total, err := logList.GetTotal(ctx, req.Handle())
+	total, err := logList.GetTotal(ctx, req.Handle(), tenanthelper.TenantScope(ctx))
 	if err != nil {
 		c.FailAndAbort(ctx, "获取日志总数失败", err)
 	}
 
 	err = logList.Find(ctx, req.Paginate(), req.Handle(), func(db *gorm.DB) *gorm.DB {
 		return db.Order("created_at DESC")
-	})
+	}, tenanthelper.TenantScope(ctx))
 	if err != nil {
 		c.FailAndAbort(ctx, "获取日志列表失败", err)
 	}

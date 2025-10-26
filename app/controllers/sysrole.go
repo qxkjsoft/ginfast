@@ -4,6 +4,7 @@ import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
 	"gin-fast/app/service"
+	"gin-fast/app/utils/tenanthelper"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -74,7 +75,7 @@ func (sc *SysRoleController) GetUserPermission(c *gin.Context) {
 // @Security ApiKeyAuth
 func (sc *SysRoleController) GetRoles(c *gin.Context) {
 	sysRoleList := models.NewSysRoleList()
-	err := sysRoleList.Find(c)
+	err := sysRoleList.Find(c, tenanthelper.TenantScope(c))
 	if err != nil {
 		sc.FailAndAbort(c, "获取角色列表失败", err)
 	}
@@ -111,11 +112,11 @@ func (sc *SysRoleController) List(c *gin.Context) {
 	// 统计总数
 	var count int64
 	var err error
-	count, err = sysRoleList.GetTotal(c, req.Handler())
+	count, err = sysRoleList.GetTotal(c, req.Handler(), tenanthelper.TenantScope(c))
 	if err != nil {
 		sc.FailAndAbort(c, "统计角色数量失败", err)
 	}
-	err = sysRoleList.Find(c, req.Paginate(), req.Handler())
+	err = sysRoleList.Find(c, req.Paginate(), req.Handler(), tenanthelper.TenantScope(c))
 	if err != nil {
 		sc.FailAndAbort(c, "获取角色列表失败", err)
 	}
@@ -218,7 +219,7 @@ func (sc *SysRoleController) Add(c *gin.Context) {
 		sc.FailAndAbort(c, "新增角色失败", err)
 	}
 	// casbin 添加角色继承关系
-	if err = sc.CasbinService.AddRoleInheritance(role.ID, req.ParentID); err != nil {
+	if err = sc.CasbinService.AddRoleInheritance(c, role.ID, req.ParentID); err != nil {
 		sc.FailAndAbort(c, "添加角色继承关系失败", err)
 	}
 	sc.SuccessWithMessage(c, "角色创建成功", role)
@@ -296,7 +297,7 @@ func (sc *SysRoleController) Update(c *gin.Context) {
 	}
 
 	// 编辑角色继承关系
-	if err := sc.CasbinService.EditRoleInheritance(role.ID, req.ParentID); err != nil {
+	if err := sc.CasbinService.EditRoleInheritance(c, role.ID, req.ParentID); err != nil {
 		sc.FailAndAbort(c, "编辑角色继承关系失败", err)
 	}
 	sc.SuccessWithMessage(c, "角色更新成功", role)
@@ -373,7 +374,7 @@ func (sc *SysRoleController) Delete(c *gin.Context) {
 		sc.FailAndAbort(c, "删除角色失败", err)
 	}
 	// 删除角色继承关系
-	if err := sc.CasbinService.DeleteRoleInheritance(role.ID, role.ParentID); err != nil {
+	if err := sc.CasbinService.DeleteRoleInheritance(c, role.ID, role.ParentID); err != nil {
 		sc.FailAndAbort(c, "删除角色继承关系失败", err)
 	}
 	sc.SuccessWithMessage(c, "角色删除成功", nil)
@@ -463,7 +464,7 @@ func (sm *SysRoleController) AddRoleMenu(c *gin.Context) {
 
 	// 调整casbin权限
 	apis := menuList.GetApis().Unique()
-	if err := sm.CasbinService.AddPoliciesForRole(req.RoleID, apis); err != nil {
+	if err := sm.CasbinService.AddPoliciesForRole(c, req.RoleID, apis); err != nil {
 		sm.FailAndAbort(c, "添加角色权限策略失败", err)
 	}
 	sm.SuccessWithMessage(c, "分配角色菜单权限成功", nil)

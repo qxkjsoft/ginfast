@@ -9,6 +9,7 @@ import (
 	"gin-fast/app/service"
 	"gin-fast/app/utils/common"
 	"gin-fast/app/utils/passwordhelper"
+	"gin-fast/app/utils/tenanthelper"
 
 	"strconv"
 
@@ -95,11 +96,11 @@ func (uc *UserController) List(c *gin.Context) {
 	}
 
 	userList := models.NewUserList()
-	total, err := userList.GetTotal(c, req.Handle())
+	total, err := userList.GetTotal(c, req.Handle(), tenanthelper.TenantScope(c))
 	if err != nil {
 		uc.FailAndAbort(c, err.Error(), err)
 	}
-	err = userList.Find(c, req.Paginate(), req.Handle(), func(d *gorm.DB) *gorm.DB {
+	err = userList.Find(c, tenanthelper.TenantScope(c), req.Paginate(), req.Handle(), func(d *gorm.DB) *gorm.DB {
 		return d.Omit("password").Preload("Roles").Preload("Department")
 	})
 	if err != nil {
@@ -236,7 +237,7 @@ func (uc *UserController) Add(c *gin.Context) {
 		uc.FailAndAbort(c, "Failed to create user", err)
 	}
 
-	if err = uc.CasbinService.AddRoleForUser(user.ID, req.Roles); err != nil {
+	if err = uc.CasbinService.AddRoleForUser(c, user.ID, req.Roles); err != nil {
 		uc.FailAndAbort(c, "Failed to create user", err)
 	}
 
@@ -323,7 +324,7 @@ func (uc *UserController) Update(c *gin.Context) {
 		uc.FailAndAbort(c, "更新用户失败", err)
 	}
 
-	if err = uc.CasbinService.EditUserRoles(user.ID, req.Roles); err != nil {
+	if err = uc.CasbinService.EditUserRoles(c, user.ID, req.Roles); err != nil {
 		uc.FailAndAbort(c, "更新用户失败", err)
 	}
 
@@ -377,7 +378,7 @@ func (uc *UserController) Delete(c *gin.Context) {
 		uc.FailAndAbort(c, "删除用户失败", err)
 	}
 
-	if err = uc.CasbinService.DeleteUserRoles(user.ID, nil); err != nil {
+	if err = uc.CasbinService.DeleteUserRoles(c, user.ID, nil); err != nil {
 		uc.FailAndAbort(c, "删除用户失败", err)
 	}
 	uc.SuccessWithMessage(c, "删除成功", nil)

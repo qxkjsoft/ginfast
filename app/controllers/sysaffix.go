@@ -5,6 +5,7 @@ import (
 	"gin-fast/app/models"
 	"gin-fast/app/utils/datascope"
 	"gin-fast/app/utils/filehelper"
+	"gin-fast/app/utils/tenanthelper"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -183,7 +184,7 @@ func (ac *SysAffixController) List(c *gin.Context) {
 
 	// 获取总数
 	affixList := models.NewSysAffixList()
-	total, err := affixList.GetTotal(c, query)
+	total, err := affixList.GetTotal(c, query, datascope.GetDataScope(c), tenanthelper.TenantScope(c))
 	if err != nil {
 		ac.FailAndAbort(c, "获取文件总数失败", err)
 	}
@@ -193,7 +194,7 @@ func (ac *SysAffixController) List(c *gin.Context) {
 		return d.Preload("User", func(d *gorm.DB) *gorm.DB {
 			return d.Preload("Department")
 		})
-	}, datascope.GetDataScope(c))
+	}, datascope.GetDataScope(c), tenanthelper.TenantScope(c))
 	if err != nil {
 		ac.FailAndAbort(c, "获取文件列表失败", err)
 	}

@@ -1,11 +1,11 @@
 package service
 
 import (
+	"context"
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
 	"gin-fast/app/utils/common"
 
-	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -16,10 +16,19 @@ func NewPermissionService() *PermissionService {
 	return &PermissionService{}
 }
 
+func (ps *PermissionService) GetDomain(c context.Context) []string {
+	tenantID := common.GetCurrentTenantID(common.TryConvertToGinContext(c))
+	if tenantID == 0 {
+		return nil
+	}
+	return []string{app.CasbinV2.PrefixDomain(tenantID)}
+}
+
 // 为角色分配资源权限，原有权限会被清除
-func (ps *PermissionService) AddPoliciesForRole(roleID uint, sysapilist models.SysApiList) (err error) {
+func (ps *PermissionService) AddPoliciesForRole(c context.Context, roleID uint, sysapilist models.SysApiList) (err error) {
+
 	// 删除该角色的所有权限
-	app.CasbinV2.RemoveAllPoliciesForRole(roleID)
+	app.CasbinV2.RemoveAllPoliciesForRole(roleID, ps.GetDomain(c)...)
 	// 如果有API权限，则添加到casbin
 	if !sysapilist.IsEmpty() {
 		// 构建权限策略列表
@@ -36,7 +45,7 @@ func (ps *PermissionService) AddPoliciesForRole(roleID uint, sysapilist models.S
 		}
 
 		// 批量添加权限策略
-		if err = app.CasbinV2.AddPoliciesForRole(roleID, policies); err != nil {
+		if err = app.CasbinV2.AddPoliciesForRole(roleID, policies, ps.GetDomain(c)...); err != nil {
 			return
 		}
 	}
@@ -44,22 +53,22 @@ func (ps *PermissionService) AddPoliciesForRole(roleID uint, sysapilist models.S
 }
 
 // 添加角色继承关系
-func (ps *PermissionService) AddRoleInheritance(roleID uint, parentRoleID uint) (err error) {
+func (ps *PermissionService) AddRoleInheritance(c context.Context, roleID uint, parentRoleID uint) (err error) {
 	// 添加角色继承关系
-	err = app.CasbinV2.AddRoleInheritance(roleID, parentRoleID)
+	err = app.CasbinV2.AddRoleInheritance(roleID, parentRoleID, ps.GetDomain(c)...)
 	return
 }
 
 // 编辑角色继承关系
-func (ps *PermissionService) EditRoleInheritance(roleID uint, parentRoleID uint) (err error) {
+func (ps *PermissionService) EditRoleInheritance(c context.Context, roleID uint, parentRoleID uint) (err error) {
 	// 删除角色的所有继承关系
-	err = app.CasbinV2.DeleteRoleInheritance(roleID, 0)
+	err = app.CasbinV2.DeleteRoleInheritance(roleID, 0, ps.GetDomain(c)...)
 	if err != nil {
 		return
 	}
 	if parentRoleID > 0 {
 		// 添加角色继承关系
-		err = app.CasbinV2.AddRoleInheritance(roleID, parentRoleID)
+		err = app.CasbinV2.AddRoleInheritance(roleID, parentRoleID, ps.GetDomain(c)...)
 		if err != nil {
 			return
 		}
@@ -68,40 +77,40 @@ func (ps *PermissionService) EditRoleInheritance(roleID uint, parentRoleID uint)
 }
 
 // 删除角色继承关系
-func (ps *PermissionService) DeleteRoleInheritance(roleID uint, parentRoleID uint) (err error) {
+func (ps *PermissionService) DeleteRoleInheritance(c context.Context, roleID uint, parentRoleID uint) (err error) {
 	// 删除角色的继承关系
-	err = app.CasbinV2.DeleteRoleInheritance(roleID, parentRoleID)
+	err = app.CasbinV2.DeleteRoleInheritance(roleID, parentRoleID, ps.GetDomain(c)...)
 	return
 }
 
 // 为用户分配角色
-func (ps *PermissionService) AddRoleForUser(userID uint, roles []uint) (err error) {
+func (ps *PermissionService) AddRoleForUser(c context.Context, userID uint, roles []uint) (err error) {
 	// 添加用户角色关系
-	err = app.CasbinV2.AddRolesForUserByID(userID, roles)
+	err = app.CasbinV2.AddRolesForUserByID(userID, roles, ps.GetDomain(c)...)
 	return
 }
 
 // 编辑用户的角色
-func (ps *PermissionService) EditUserRoles(userID uint, roles []uint) (err error) {
+func (ps *PermissionService) EditUserRoles(c context.Context, userID uint, roles []uint) (err error) {
 	// 删除用户的所有角色
-	err = app.CasbinV2.DeleteRolesForUserByID(userID, nil)
+	err = app.CasbinV2.DeleteRolesForUserByID(userID, nil, ps.GetDomain(c)...)
 	if err != nil {
 		return
 	}
 	// 添加用户角色关系
-	err = app.CasbinV2.AddRolesForUserByID(userID, roles)
+	err = app.CasbinV2.AddRolesForUserByID(userID, roles, ps.GetDomain(c)...)
 	return
 }
 
 // 删除用户的角色关系
-func (ps *PermissionService) DeleteUserRoles(userID uint, roles []uint) (err error) {
+func (ps *PermissionService) DeleteUserRoles(c context.Context, userID uint, roles []uint) (err error) {
 	// 删除用户角色关系
-	err = app.CasbinV2.DeleteRolesForUserByID(userID, roles)
+	err = app.CasbinV2.DeleteRolesForUserByID(userID, roles, ps.GetDomain(c)...)
 	return
 }
 
 // 根据菜单ID调整与该菜单关联的角色的API权限
-func (ps *PermissionService) UpdateRoleApiPermissionsByMenuID(c *gin.Context, menuID uint) (err error) {
+func (ps *PermissionService) UpdateRoleApiPermissionsByMenuID(c context.Context, menuID uint) (err error) {
 	// 1. 查找与指定菜单ID关联的所有角色
 	var roleMenus models.SysRoleMenuList
 	if err = roleMenus.Find(c, func(db *gorm.DB) *gorm.DB {
@@ -132,7 +141,7 @@ func (ps *PermissionService) UpdateRoleApiPermissionsByMenuID(c *gin.Context, me
 
 		// 如果角色没有关联任何菜单，则清除该角色的所有API权限
 		if roleMenusForRole.IsEmpty() {
-			app.CasbinV2.RemoveAllPoliciesForRole(roleID)
+			app.CasbinV2.RemoveAllPoliciesForRole(roleID, ps.GetDomain(c)...)
 			continue
 		}
 
@@ -159,7 +168,7 @@ func (ps *PermissionService) UpdateRoleApiPermissionsByMenuID(c *gin.Context, me
 		allApis = allApis.Unique()
 
 		// 使用已有的 AddPoliciesForRole 方法为角色分配所有关联菜单的API权限
-		if err = ps.AddPoliciesForRole(roleID, allApis); err != nil {
+		if err = ps.AddPoliciesForRole(c, roleID, allApis); err != nil {
 			return
 		}
 	}
@@ -168,7 +177,7 @@ func (ps *PermissionService) UpdateRoleApiPermissionsByMenuID(c *gin.Context, me
 }
 
 // 根据API ID调整与该API关联的角色的权限
-func (ps *PermissionService) UpdateRoleApiPermissionsByApiID(c *gin.Context, apiID uint) (err error) {
+func (ps *PermissionService) UpdateRoleApiPermissionsByApiID(c context.Context, apiID uint) (err error) {
 	// 1. 通过api_id查找关联的menu_id
 	var menuIds []uint
 	err = app.DB().WithContext(c).Model(&models.SysMenuApi{}).Where("api_id = ?", apiID).Pluck("menu_id", &menuIds).Error
@@ -212,7 +221,7 @@ func (ps *PermissionService) UpdateRoleApiPermissionsByApiID(c *gin.Context, api
 
 		// 如果角色没有关联任何菜单，则清除该角色的所有API权限
 		if roleMenusForRole.IsEmpty() {
-			app.CasbinV2.RemoveAllPoliciesForRole(roleID)
+			app.CasbinV2.RemoveAllPoliciesForRole(roleID, ps.GetDomain(c)...)
 			continue
 		}
 
@@ -239,7 +248,7 @@ func (ps *PermissionService) UpdateRoleApiPermissionsByApiID(c *gin.Context, api
 		allApis = allApis.Unique()
 
 		// 使用已有的 AddPoliciesForRole 方法为角色分配所有关联菜单的API权限
-		if err = ps.AddPoliciesForRole(roleID, allApis); err != nil {
+		if err = ps.AddPoliciesForRole(c, roleID, allApis); err != nil {
 			return
 		}
 	}
