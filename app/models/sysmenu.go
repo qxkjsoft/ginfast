@@ -127,6 +127,7 @@ func (list SysMenuList) BuildTree() SysMenuList {
 	return roots
 }
 
+// TreeSort 对菜单列表进行树状排序
 func (list SysMenuList) TreeSort() SysMenuList {
 	if len(list) == 0 {
 		return list

@@ -32,8 +32,15 @@ func (u *User) GetUserProfile(c *gin.Context, userID uint) (profile *models.User
 	// 查询关联角色关联的按钮菜单权限
 	permissions := []string{}
 	if !user.Roles.IsEmpty() {
-		// 获取所有角色ID
+		// 获取用户的所有角色ID
 		roleIDs := user.Roles.GetRoleIDs()
+
+		//获取角色ID列表及其所有祖先角色ID
+		menuService := NewSysMenuService()
+		roleIDs, err = menuService.GetAllAncestorRoleIDs(c, roleIDs)
+		if err != nil {
+			return
+		}
 
 		// 查询角色关联的菜单ID
 		roleMenuList := models.NewSysRoleMenuList()

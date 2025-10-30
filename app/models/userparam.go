@@ -82,12 +82,15 @@ func (r *CaptchaImgRequest) Validate(c *gin.Context) error {
 type UserListRequest struct {
 	BasePaging
 	Validator
-	Ids        []uint   `form:"ids"`
-	DeptIds    []uint   `form:"deptIds"`
-	Name       string   `form:"name"`
-	Phone      string   `form:"phone"`
-	Status     string   `form:"status"`
-	CreateTime []string `form:"createTime"`
+	Ids         []uint   `form:"ids"`
+	DeptIds     []uint   `form:"deptIds"`
+	Name        string   `form:"name"`
+	Phone       string   `form:"phone"`
+	Status      string   `form:"status"`
+	CreateTime  []string `form:"createTime"`
+	NotTenantId *uint    `form:"notTenantId"`
+	NotGlobal   bool     `form:"notGlobal"`
+	TenantId    *uint    `form:"tenantId"`
 }
 
 func (r *UserListRequest) Validate(c *gin.Context) error {
@@ -114,6 +117,22 @@ func (r *UserListRequest) Handle() func(db *gorm.DB) *gorm.DB {
 		if len(r.CreateTime) > 1 {
 			db = db.Where("created_at BETWEEN ? AND ?", r.CreateTime[0], r.CreateTime[1])
 		}
+		if r.NotTenantId != nil {
+			// 添加子查询，排除当前租户ID为*r.NotTenantId的非默认租户用户及*r.NotTenantId 租户下的用户
+			subQuery := db.Session(&gorm.Session{NewDB: true}).Model(&SysUserTenant{}).
+				Select("user_id").
+				Where("tenant_id = ? and is_default = ?", *r.NotTenantId, 0)
+			db = db.Where("id NOT IN (?) and tenant_id <> ?", subQuery, *r.NotTenantId)
+		}
+		if r.TenantId != nil {
+			db = db.Where("tenant_id = ?", *r.TenantId)
+		}
+
+		// 如果NotGlobal为true，排除全局租户用户
+		if r.NotGlobal {
+			db = db.Where("tenant_id <> ?", 0)
+		}
+
 		return db
 	}
 }

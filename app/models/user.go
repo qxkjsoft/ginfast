@@ -99,3 +99,12 @@ func (list *UserList) GetTotal(ctx context.Context, query ...func(*gorm.DB) *gor
 	}
 	return total, nil
 }
+
+func UserCount(ctx context.Context, query ...func(*gorm.DB) *gorm.DB) (int64, error) {
+	var total int64
+	err := app.DB().WithContext(ctx).Model(&User{}).Scopes(query...).Count(&total).Error
+	if err != nil {
+		return 0, err
+	}
+	return total, nil
+}

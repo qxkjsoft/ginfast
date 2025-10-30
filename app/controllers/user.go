@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"strings"
+	"time"
 
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
@@ -226,6 +227,19 @@ func (uc *UserController) Add(c *gin.Context) {
 				}
 			}
 			if err := tx.Create(&userRoles).Error; err != nil {
+				return err
+			}
+		}
+
+		// 写入用户租户关联表
+		if currentTenantID := common.GetCurrentTenantID(c); currentTenantID > 0 {
+			err = tx.Create(&models.SysUserTenant{
+				UserID:    user.ID,
+				TenantID:  currentTenantID,
+				IsDefault: true,
+				CreatedAt: time.Now(),
+			}).Error
+			if err != nil {
 				return err
 			}
 		}

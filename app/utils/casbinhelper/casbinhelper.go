@@ -166,6 +166,7 @@ func (s *CasbinHelper) CasbinMiddleware() gin.HandlerFunc {
 			zap.String("domain", domain),
 			zap.String("path", path),
 			zap.String("method", method))
+		// domain为空时，代表全局权限
 		ok, err = s.Enforce(userSubject, path, method, domain)
 
 		if err != nil {
@@ -250,6 +251,7 @@ func (s *CasbinHelper) AddRoleInheritance(childRoleID, parentRoleID uint, domain
 	if s.enforcer == nil {
 		return fmt.Errorf("casbin enforcer not initialized")
 	}
+
 	childRole := s.PrefixRole(childRoleID)
 	parentRole := s.PrefixRole(parentRoleID)
 

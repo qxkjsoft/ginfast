@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gin-fast/app/models"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -14,6 +15,54 @@ type SysMenuService struct{}
 // NewSysMenuService 创建新的菜单服务实例
 func NewSysMenuService() *SysMenuService {
 	return &SysMenuService{}
+}
+
+// GetAllAncestorRoleIDs 获取角色ID列表及其所有祖先角色ID
+func (s *SysMenuService) GetAllAncestorRoleIDs(c *gin.Context, roleIDs []uint) ([]uint, error) {
+	// 使用map去重
+	allRoleIDs := make(map[uint]bool)
+	for _, id := range roleIDs {
+		allRoleIDs[id] = true
+	}
+
+	// 获取所有角色，用于查找祖先角色
+	allRoles := models.NewSysRoleList()
+	err := allRoles.Find(c, func(db *gorm.DB) *gorm.DB {
+		return db
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// 创建角色ID到角色的映射，方便查找
+	roleMap := make(map[uint]*models.SysRole)
+	for _, role := range allRoles {
+		roleMap[role.ID] = role
+	}
+
+	// 对每个角色查找其所有祖先角色
+	for _, roleID := range roleIDs {
+		// 递归查找祖先角色
+		currentRoleID := roleID
+		for {
+			role, exists := roleMap[currentRoleID]
+			if !exists || role.ParentID == 0 {
+				break // 没有父角色或父角色ID为0，停止查找
+			}
+
+			// 添加祖先角色ID到结果中
+			allRoleIDs[role.ParentID] = true
+			currentRoleID = role.ParentID
+		}
+	}
+
+	// 将map转换为slice
+	result := make([]uint, 0, len(allRoleIDs))
+	for id := range allRoleIDs {
+		result = append(result, id)
+	}
+
+	return result, nil
 }
 
 // ProcessMenuImport 递归处理菜单导入

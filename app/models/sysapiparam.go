@@ -74,7 +74,8 @@ func (r *SysApiListRequest) Handler() func(db *gorm.DB) *gorm.DB {
 		}
 		// 通过子查询获取与指定菜单ID关联的API数据
 		if r.MenuID != nil {
-			db = db.Where("id IN (SELECT api_id FROM sys_menu_api WHERE menu_id = ?)", *r.MenuID)
+			subQuery := db.Table("sys_menu_api").Where("menu_id = ?", *r.MenuID).Select("api_id")
+			db = db.Where("id IN (?)", subQuery)
 		}
 		return db
 	}

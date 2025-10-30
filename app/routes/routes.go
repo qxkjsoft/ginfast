@@ -24,6 +24,7 @@ var sysAffixControllers = controllers.NewSysAffixController()               // �
 var configControllers = controllers.NewConfigController()                   // 配置控制器
 var sysOperationLogControllers = controllers.NewSysOperationLogController() // 操作日志控制器
 var sysTenantControllers = controllers.NewTenantController()                // 租户控制器
+var sysUserTenantControllers = controllers.NewSysUserTenantController()     // 用户租户关联控制器
 
 // InitRoutes 初始化路由
 func InitRoutes(engine *gin.Engine) {
@@ -79,10 +80,11 @@ func InitRoutes(engine *gin.Engine) {
 		{
 			// 获取当前登录用户信息
 			users.GET("/profile", userControllers.GetProfile)
-			// 根据ID获取用户信息
-			users.GET("/:id", userControllers.GetUserByID)
 			// 用户列表
 			users.GET("/list", userControllers.List)
+
+			// 根据ID获取用户信息
+			users.GET("/:id", userControllers.GetUserByID)
 			// 新增用户
 			users.POST("/add", middleware.PasswordValidatorMiddleware(), userControllers.Add)
 			// 更新用户信息
@@ -158,6 +160,7 @@ func InitRoutes(engine *gin.Engine) {
 			sysRole.DELETE("/delete", sysRoleControllers.Delete)
 			// 更新角色数据权限
 			sysRole.PUT("/dataScope", sysRoleControllers.UpdateDataScope)
+
 		}
 
 		// 系统字典路由组
@@ -263,6 +266,27 @@ func InitRoutes(engine *gin.Engine) {
 			sysTenant.PUT("/edit", sysTenantControllers.Update)
 			// 删除租户
 			sysTenant.DELETE("/:id", sysTenantControllers.Delete)
+		}
+
+		// 用户租户关联管理路由组
+		sysUserTenant := protected.Group("/sysUserTenant")
+		{
+			// 用户租户关联列表
+			sysUserTenant.GET("/list", sysUserTenantControllers.List)
+			// 根据用户ID和租户ID获取用户租户关联信息
+			sysUserTenant.GET("/get", sysUserTenantControllers.GetByID)
+			//批量新增用户租户关联
+			sysUserTenant.POST("/batchAdd", sysUserTenantControllers.BatchAdd)
+			//批量删除用户租户关联
+			sysUserTenant.DELETE("/batchDelete", sysUserTenantControllers.BatchDelete)
+			// 用户列表(不限租户)
+			sysUserTenant.GET("/userListAll", sysUserTenantControllers.UserListAll)
+			// 角色列表(不限租户)
+			sysUserTenant.GET("/getRolesAll", sysUserTenantControllers.GetRolesAll)
+			// 根查询角色ID集合(不限租户)
+			sysUserTenant.GET("/getUserRoleIDs", sysUserTenantControllers.GetUserRoleIDs)
+			// 设置用户角色(不限租户)
+			sysUserTenant.POST("/setUserRoles", sysUserTenantControllers.SetUserRoles)
 		}
 	}
 }

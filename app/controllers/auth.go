@@ -48,7 +48,6 @@ func (ac *AuthController) Login(c *gin.Context) {
 
 	// 根据用户名查找用户
 	user := models.NewUser()
-	//err := user.GetUserByUsername(req.Username)
 	err := user.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("username = ?", req.Username).Preload("Tenant")
 	})
@@ -65,34 +64,64 @@ func (ac *AuthController) Login(c *gin.Context) {
 
 	var tenantID uint
 	var tenantCode string
+
 	// 检查租户是否存在
 	if req.TenantCode != "" {
-		// 检查租户是否存在
-		tenant := models.NewTenant()
-		err = tenant.Find(c, func(d *gorm.DB) *gorm.DB {
-			return d.Where("code = ?", req.TenantCode)
-		})
-		if err != nil {
-			ac.FailAndAbort(c, "租户查询错误", err)
-		}
-		if tenant.IsEmpty() {
-			ac.FailAndAbort(c, "租户不存在", nil)
-		}
-		if tenant.Status != 1 {
-			ac.FailAndAbort(c, "租户未启用", nil)
+		if user.TenantID > 0 {
+			// 查询用户关联的所有租户
+			userTenantList := models.NewSysUserTenantList()
+			err = userTenantList.Find(c, func(db *gorm.DB) *gorm.DB {
+				return db.Where("user_id = ?", user.ID).Preload("Tenant")
+			})
+			if err != nil {
+				ac.FailAndAbort(c, "查询用户租户关联信息错误", err)
+			}
+
+			// 构建用户关联的租户映射
+			userTenants := make(map[string]*models.Tenant)
+			for _, ut := range userTenantList {
+				if ut.Tenant != nil && ut.Tenant.Code != "" {
+					userTenants[ut.Tenant.Code] = ut.Tenant
+				}
+			}
+			// 检查请求的租户编码是否在用户关联的租户集合中
+			tenant, exists := userTenants[req.TenantCode]
+			if !exists {
+				ac.FailAndAbort(c, "租户编码不在用户关联的租户列表中", nil)
+			}
+
+			if tenant.Status != 1 {
+				ac.FailAndAbort(c, "租户未启用", nil)
+			}
+
+			tenantID = tenant.ID
+			tenantCode = tenant.Code
+		} else {
+			// 全局租户无需检查关联租户
+			tenant := models.NewTenant()
+			err = tenant.Find(c, func(d *gorm.DB) *gorm.DB {
+				return d.Where("code = ?", req.TenantCode)
+			})
+			if err != nil {
+				ac.FailAndAbort(c, "查询租户错误", err)
+			}
+			if tenant.IsEmpty() {
+				ac.FailAndAbort(c, "租户不存在", nil)
+			}
+			if tenant.Status != 1 {
+				ac.FailAndAbort(c, "租户未启用", nil)
+			}
+			tenantID = tenant.ID
+			tenantCode = tenant.Code
 		}
 
-		if user.TenantID != 0 && req.TenantCode != user.Tenant.Code {
-			ac.FailAndAbort(c, "租户编码错误", nil)
-		}
-		tenantID = tenant.ID
-		tenantCode = tenant.Code
 	} else {
-		if user.TenantID > 0 && user.Tenant.Status != 1 {
+		// 不输入租户编码则使用用户默认租户
+		// 非全局租户需检查启用状态
+		if user.Tenant.ID > 0 && user.Tenant.Status != 1 {
 			ac.FailAndAbort(c, "租户未启用", nil)
 		}
-
-		tenantID = user.TenantID
+		tenantID = user.Tenant.ID
 		tenantCode = user.Tenant.Code
 	}
 

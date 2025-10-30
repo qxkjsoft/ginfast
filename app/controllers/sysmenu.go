@@ -81,10 +81,25 @@ func (sm *SysMenuController) GetRouters(c *gin.Context) {
 			return
 		}
 	} else {
+
+		user := models.NewUser()
+		err := user.Find(c, func(db *gorm.DB) *gorm.DB {
+			return db.Select("id,tenant_id").Where("id = ?", claims.UserID)
+		})
+		if err != nil {
+			sm.FailAndAbort(c, "获取用户失败", err)
+			return
+		}
 		// 需要检查权限，按原有逻辑处理
 		sysUserRoleList := models.NewSysUserRoleList()
-		err := sysUserRoleList.Find(c, func(d *gorm.DB) *gorm.DB {
-			return d.Where("user_id = ?", claims.UserID)
+		err = sysUserRoleList.Find(c, func(d *gorm.DB) *gorm.DB {
+			if user.TenantID == 0 {
+				return d.Where("user_id = ?", claims.UserID)
+			} else {
+				// 非全局租户，根据登录的租户ID筛选角色
+				subQuery := app.DB().WithContext(c).Table("sys_role").Where("tenant_id = ?", claims.TenantID).Select("id")
+				return d.Where("user_id = ? and role_id in (?)", claims.UserID, subQuery)
+			}
 		})
 		if err != nil {
 			sm.FailAndAbort(c, "获取用户角色失败", err)
@@ -98,10 +113,19 @@ func (sm *SysMenuController) GetRouters(c *gin.Context) {
 		roleIds := sysUserRoleList.Map(func(sur *models.SysUserRole) uint {
 			return sur.RoleID
 		})
+
+		// 获取角色及其所有祖先角色ID
+		allRoleIds, err := sm.menuService.GetAllAncestorRoleIDs(c, roleIds)
+		if err != nil {
+			sm.FailAndAbort(c, "获取角色祖先失败", err)
+			return
+		}
+
 		err = menuList.Find(c, func(db *gorm.DB) *gorm.DB {
 			return db.Where("disable = ?", 0).
+				// 只返回目录和菜单，不返回按钮
 				Where("type = 1 or type = 2").
-				Where("id in (?)", app.DB().WithContext(c).Model(&models.SysRoleMenu{}).Where("role_id in (?)", roleIds).Select("menu_id"))
+				Where("id in (?)", app.DB().WithContext(c).Model(&models.SysRoleMenu{}).Where("role_id in (?)", allRoleIds).Select("menu_id"))
 		})
 		if err != nil {
 			sm.FailAndAbort(c, "获取菜单失败", err)

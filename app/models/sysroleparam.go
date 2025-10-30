@@ -104,3 +104,30 @@ type SysRoleDataScopeUpdateRequest struct {
 func (r *SysRoleDataScopeUpdateRequest) Validate(c *gin.Context) error {
 	return r.Check(c, r)
 }
+
+// SysRoleListAllRequest 角色列表查询请求结构(不进行租户过滤，支持tenant_id查询)
+type SysRoleListAllRequest struct {
+	Validator
+	Status   *int8 `form:"status"`   // 状态过滤，使用指针类型允许空值
+	ParentID *uint `form:"parentID"` // 父级ID过滤，使用指针类型允许空值
+	TenantID *uint `form:"tenantID"` // 租户ID过滤，使用指针类型允许空值
+}
+
+func (r *SysRoleListAllRequest) Validate(c *gin.Context) error {
+	return r.Check(c, r)
+}
+
+func (r *SysRoleListAllRequest) Handler() func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if r.Status != nil {
+			db = db.Where("status = ?", r.Status)
+		}
+		if r.ParentID != nil {
+			db = db.Where("parent_id = ?", r.ParentID)
+		}
+		if r.TenantID != nil {
+			db = db.Where("tenant_id = ?", r.TenantID)
+		}
+		return db
+	}
+}
