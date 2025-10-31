@@ -7,6 +7,8 @@ type SystemConfig struct {
 	SystemName      string `json:"systemName" yaml:"SystemName"`
 	SystemCopyright string `json:"systemCopyright" yaml:"SystemCopyright"`
 	SystemRecordNo  string `json:"systemRecordNo" yaml:"SystemRecordNo"`
+	DefaultUsername string `json:"defaultUsername" yaml:"DefaultUsername"`
+	DefaultPassword string `json:"defaultPassword" yaml:"DefaultPassword"`
 }
 
 type SafeConfig struct {

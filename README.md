@@ -6,7 +6,7 @@
 
 项目为前后端分离，前端地址：
 
-github地址：[https://github.com/qxkjsoft/ginfast-front](https://github.com/qxkjsoft/ginfast-front)
+github地址：[https://github.com/qxkjsoft/ginfast-ui](https://github.com/qxkjsoft/ginfast-ui)
 
 ## 使用文档
 
@@ -134,8 +134,8 @@ gin-fast/
 
 1. 克隆项目
 ```bash
-git clone https://github.com/qxkjsoft/ginfast-back.git
-cd ginfast-back
+git clone https://github.com/qxkjsoft/ginfast.git
+cd ginfast
 ```
 
 2. 安装依赖

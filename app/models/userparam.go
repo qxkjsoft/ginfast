@@ -35,6 +35,7 @@ type UpdateRequest struct {
 	NickName    string `form:"nickName" validate:"required" message:"昵称不能为空"`
 	Phone       string `form:"phone"`
 	Email       string `form:"email"`
+	Password    string `form:"password"`
 	Sex         string `form:"sex" validate:"required" message:"性别不能为空"`
 	DeptId      uint   `form:"deptId" validate:"required" message:"部门ID不能为空"`
 	Roles       []uint `form:"roles" validate:"required" message:"角色不能为空"`
@@ -156,12 +157,24 @@ type UserProfile struct {
 // UpdateAccountRequest 更新用户账户信息请求结构
 type UpdateAccountRequest struct {
 	Validator
-	ID       uint   `form:"id" validate:"required" message:"用户ID不能为空"`
+	// ID       uint   `form:"id" validate:"required" message:"用户ID不能为空"`
 	Password string `form:"password"`
 	Phone    string `form:"phone" validate:"required" message:"手机号不能为空"`
 	Email    string `form:"email" validate:"email" message:"邮箱格式不正确"`
 }
 
 func (r *UpdateAccountRequest) Validate(c *gin.Context) error {
+	return r.Check(c, r)
+}
+
+// UpdateBasicInfoRequest 更新用户基本信息请求结构
+type UpdateBasicInfoRequest struct {
+	Validator
+	NickName    string `form:"nickName" validate:"required" message:"昵称不能为空"`
+	Sex         string `form:"sex" validate:"required" message:"性别不能为空"`
+	Description string `form:"description" validate:"required" message:"描述不能为空"`
+}
+
+func (r *UpdateBasicInfoRequest) Validate(c *gin.Context) error {
 	return r.Check(c, r)
 }

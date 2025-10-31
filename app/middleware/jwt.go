@@ -39,6 +39,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		}
 		// 将用户信息存储到上下文中
 		c.Set(consts.BindContextKeyName, claims)
+		// 继续处理请求
 		c.Next()
 	}
 }

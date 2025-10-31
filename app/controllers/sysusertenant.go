@@ -204,7 +204,7 @@ func (sut *SysUserTenantController) BatchDelete(c *gin.Context) {
 		}
 		// 移除该租户下的角色关联
 		// 使用子查询：先查询指定租户下的所有角色ID，再删除用户在这些角色中的关联
-		subQuery := tx.Table("sys_role").Where("tenant_id = ?", req.TenantID).Select("id")
+		subQuery := tx.Session(&gorm.Session{NewDB: true}).Table("sys_role").Where("tenant_id = ?", req.TenantID).Select("id")
 		e = tx.Where("user_id IN ? AND role_id IN (?)", req.UserIDs, subQuery).Delete(&models.SysUserRole{}).Error
 		if e != nil {
 			return e

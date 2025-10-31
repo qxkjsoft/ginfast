@@ -38,6 +38,15 @@ func (ps *PermissionService) HandleTenantID(c context.Context, tenantID ...uint)
 	return domain
 }
 
+// 删除角色的所有权限
+func (ps *PermissionService) DeleteRoleApis(c context.Context, roleID uint, tenantID ...uint) (err error) {
+	domain := ps.HandleTenantID(c, tenantID...)
+
+	// 删除该角色的所有权限
+	app.CasbinV2.RemoveAllPoliciesForRole(roleID, domain...)
+	return
+}
+
 // 为角色分配资源权限，原有权限会被清除
 func (ps *PermissionService) AddPoliciesForRole(c context.Context, roleID uint, sysapilist models.SysApiList, tenantID ...uint) (err error) {
 	domain := ps.HandleTenantID(c, tenantID...)

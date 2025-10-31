@@ -377,6 +377,10 @@ func (sc *SysRoleController) Delete(c *gin.Context) {
 	if err := sc.CasbinService.DeleteRoleInheritance(c, role.ID, role.ParentID); err != nil {
 		sc.FailAndAbort(c, "删除角色继承关系失败", err)
 	}
+	// 删除角色关联的api权限
+	if err := sc.CasbinService.DeleteRoleApis(c, role.ID); err != nil {
+		sc.FailAndAbort(c, "删除角色关联的api权限失败", err)
+	}
 	sc.SuccessWithMessage(c, "角色删除成功", nil)
 }
 

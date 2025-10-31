@@ -8,17 +8,20 @@ server:
     enabled: false    # 是否启用演示账号功能
     # 演示账号的用户ID列表，可以设置多个账号
     userids: []       # 演示账号的用户ID列表，例如：[1, 2, 3]
+    defaultusername: "admin"  # 登录页默认账号
+    defaultpassword: "123456"  # 登录页默认密码
+
 system: 
   #系统LOGO
-  systemlogo: "/public/uploads/2025-10-10/20251010_d5b3fe78-bf41-43fb-ab36-548fc3cfaad1.svg"
+  systemlogo: ""
   #系统图标
-  systemicon: "/public/uploads/2025-10-10/20251010_95508faf-7cdf-4f6c-9dbc-b4c58d66379b.ico"
+  systemicon: ""
   #系统名称
   systemname: "GinFast"
   #版权声明
-  systemcopyright: "Copyright © 2022 - present gin-fast 版权所有"
+  systemcopyright: "Copyright © 2025 -2028  云南奇讯科技有限公司版权所有"
   #备案号
-  systemrecordno: "粤ICP备12345678号"
+  systemrecordno: "滇ICP备16002997号"
 safe:
   #密码错误锁定阈值(指定时间内连续登录失败次数达到该值将锁定账号,0表示不锁定)
   loginlockthreshold: 3
@@ -38,6 +41,10 @@ httpserver:
   allowcrossdomain: true    #是否允许跨域
   serverrootpath: "/public" # 静态资源路由路径
   serverroot: "./resource/public" # 静态资源根目录
+  read_timeout: 30    # TCP读取超时(秒)
+  write_timeout: 30   # TCP写入超时(秒)
+  idle_timeout: 60    # TCP空闲连接超时(秒)
+  handler_timeout: 30 #  请求处理超时(秒)，超过该时间，将返回超时错误
 token:
   jwttokensignkey:  "gin-fast"   #设置token生成时加密的签名
   jwttokenexpire:  3600    #设置token过期时间，单位秒 示例:43200=12小时

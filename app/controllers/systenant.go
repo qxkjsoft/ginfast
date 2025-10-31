@@ -235,15 +235,16 @@ func (tc *TenantController) Update(c *gin.Context) {
 // @Router /sysTenant/{id} [delete]
 // @Security ApiKeyAuth
 func (tc *TenantController) Delete(c *gin.Context) {
-	var req models.SysTenantDeleteRequest
-	if err := req.Validate(c); err != nil {
-		tc.FailAndAbort(c, err.Error(), err)
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		tc.FailAndAbort(c, "租户ID格式错误", err)
 	}
 
 	// 检查租户是否存在
 	tenant := models.NewTenant()
-	err := tenant.Find(c, func(d *gorm.DB) *gorm.DB {
-		return d.Where("id = ?", req.ID)
+	err = tenant.Find(c, func(d *gorm.DB) *gorm.DB {
+		return d.Where("id = ?", id)
 	})
 	if err != nil {
 		tc.FailAndAbort(c, "查询租户失败", err)
@@ -255,7 +256,7 @@ func (tc *TenantController) Delete(c *gin.Context) {
 	// 使用事务删除租户
 	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
 		// 软删除租户
-		if err := tx.Where("id = ?", req.ID).Delete(tenant).Error; err != nil {
+		if err := tx.Where("id = ?", id).Delete(tenant).Error; err != nil {
 			return err
 		}
 

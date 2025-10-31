@@ -46,6 +46,9 @@ func (con ConfigController) GetConfig(ctx *gin.Context) {
 	systemConfig["systemName"] = app.ConfigYml.GetString("system.systemname")
 	systemConfig["systemCopyright"] = app.ConfigYml.GetString("system.systemcopyright")
 	systemConfig["systemRecordNo"] = app.ConfigYml.GetString("system.systemrecordno")
+	// 获取DemoAccount配置
+	systemConfig["defaultusername"] = app.ConfigYml.GetString("server.demoaccount.defaultusername")
+	systemConfig["defaultpassword"] = app.ConfigYml.GetString("server.demoaccount.defaultpassword")
 	result["system"] = systemConfig
 
 	// 获取Safe配置
@@ -91,6 +94,9 @@ func (con ConfigController) UpdateConfig(ctx *gin.Context) {
 	app.ConfigYml.Set("system.systemname", req.System.SystemName)
 	app.ConfigYml.Set("system.systemcopyright", req.System.SystemCopyright)
 	app.ConfigYml.Set("system.systemrecordno", req.System.SystemRecordNo)
+	// 更新DemoAccount配置
+	app.ConfigYml.Set("server.demoaccount.defaultusername", req.System.DefaultUsername)
+	app.ConfigYml.Set("server.demoaccount.defaultpassword", req.System.DefaultPassword)
 
 	// 更新Safe配置
 	app.ConfigYml.Set("safe.loginlockthreshold", req.Safe.LoginLockThreshold)

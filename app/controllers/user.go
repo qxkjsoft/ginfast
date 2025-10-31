@@ -66,12 +66,20 @@ func (uc *UserController) GetProfile(c *gin.Context) {
 	uc.Success(c, gin.H{
 		"id":          user.ID,
 		"avatar":      user.Avatar,
-		"username":    user.Username,
-		"nickname":    user.NickName,
-		"roles":       user.Roles.GetRoleIDs(),
+		"userName":    user.Username,
+		"nickName":    user.NickName,
+		"roleIDs":     user.Roles.GetRoleIDs(),
 		"permissions": user.Permissions,
 		"tenantID":    claims.TenantID,
 		"tenantCode":  claims.TenantCode,
+		"sex":         user.Sex,
+		"status":      user.Status,
+		"email":       user.Email,
+		"phone":       user.Phone,
+		"createdAt":   user.CreatedAt.Format(time.DateTime),
+		"description": user.Description,
+		"roles":       user.Roles,
+		"department":  user.Department,
 	})
 }
 
@@ -296,8 +304,32 @@ func (uc *UserController) Update(c *gin.Context) {
 		uc.FailAndAbort(c, "用户名已被其他用户使用", nil)
 	}
 
+	// 检查手机号是否已被其他用户使用
+	if req.Phone != "" {
+		existUser := models.NewUser()
+		err = existUser.GetUserByPhone(c, req.Phone)
+		if err != nil {
+			uc.FailAndAbort(c, err.Error(), err)
+		}
+		if !existUser.IsEmpty() && existUser.ID != req.Id {
+			uc.FailAndAbort(c, "手机号已被其他用户使用", nil)
+		}
+	}
+
+	// 检查邮箱是否已被其他用户使用
+	if req.Email != "" {
+		existUser := models.NewUser()
+		err = existUser.GetUserByEmail(c, req.Email)
+		if err != nil {
+			uc.FailAndAbort(c, err.Error(), err)
+		}
+		if !existUser.IsEmpty() && existUser.ID != req.Id {
+			uc.FailAndAbort(c, "邮箱已被其他用户使用", nil)
+		}
+	}
+
 	// 使用事务更新用户和角色关联
-	err = app.DB().Transaction(func(tx *gorm.DB) error {
+	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
 		// 更新用户信息
 		user.Username = req.UserName
 		user.NickName = req.NickName
@@ -307,6 +339,16 @@ func (uc *UserController) Update(c *gin.Context) {
 		user.DeptID = req.DeptId
 		user.Status = req.Status
 		user.Description = req.Description
+
+		// 如果提供了新密码，则加密并更新密码
+		if req.Password != "" {
+			// 加密新密码
+			hashedPassword, err := passwordhelper.HashPassword(req.Password)
+			if err != nil {
+				return err
+			}
+			user.Password = string(hashedPassword)
+		}
 
 		if err := tx.Save(user).Error; err != nil {
 			return err
@@ -374,12 +416,15 @@ func (uc *UserController) Delete(c *gin.Context) {
 	}
 
 	// 使用事务删除用户和角色关联
-	err = app.DB().Transaction(func(tx *gorm.DB) error {
+	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
 		// 删除用户角色关联
 		if err := tx.Where("user_id = ?", user.ID).Delete(&models.SysUserRole{}).Error; err != nil {
 			return err
 		}
-
+		// 删除用户租户关联
+		if err := tx.Where("user_id = ?", user.ID).Delete(&models.SysUserTenant{}).Error; err != nil {
+			return err
+		}
 		// 软删除用户
 		if err := tx.Where("id = ?", user.ID).Delete(user).Error; err != nil {
 			return err
@@ -415,10 +460,11 @@ func (uc *UserController) UpdateAccount(c *gin.Context) {
 	if err := req.Validate(c); err != nil {
 		uc.FailAndAbort(c, err.Error(), err)
 	}
-
+	// 该api只能更新当前用户的账户信息
+	currentUserID := common.GetCurrentUserID(c)
 	// 检查用户是否存在
 	user := models.NewUser()
-	err := user.GetUserByID(c, req.ID)
+	err := user.GetUserByID(c, currentUserID)
 	if err != nil {
 		uc.FailAndAbort(c, err.Error(), err)
 	}
@@ -433,7 +479,7 @@ func (uc *UserController) UpdateAccount(c *gin.Context) {
 		if err != nil {
 			uc.FailAndAbort(c, err.Error(), err)
 		}
-		if !existUser.IsEmpty() && existUser.ID != req.ID {
+		if !existUser.IsEmpty() && existUser.ID != currentUserID {
 			uc.FailAndAbort(c, "手机号已被其他用户使用", nil)
 		}
 	}
@@ -445,7 +491,7 @@ func (uc *UserController) UpdateAccount(c *gin.Context) {
 		if err != nil {
 			uc.FailAndAbort(c, err.Error(), err)
 		}
-		if !existUser.IsEmpty() && existUser.ID != req.ID {
+		if !existUser.IsEmpty() && existUser.ID != currentUserID {
 			uc.FailAndAbort(c, "邮箱已被其他用户使用", nil)
 		}
 	}
@@ -467,7 +513,7 @@ func (uc *UserController) UpdateAccount(c *gin.Context) {
 		user.Email = req.Email
 	}
 
-	if err := app.DB().Save(user).Error; err != nil {
+	if err := app.DB().WithContext(c).Save(user).Error; err != nil {
 		uc.FailAndAbort(c, "更新用户信息失败", err)
 	}
 
@@ -525,7 +571,7 @@ func (uc *UserController) UploadAvatar(c *gin.Context) {
 
 	// 更新用户头像字段
 	user.Avatar = response.Url
-	if err := app.DB().Save(user).Error; err != nil {
+	if err := app.DB().WithContext(c).Save(user).Error; err != nil {
 		uc.FailAndAbort(c, "更新用户头像失败", err)
 	}
 
@@ -533,4 +579,47 @@ func (uc *UserController) UploadAvatar(c *gin.Context) {
 	uc.Success(c, gin.H{
 		"url": response.Url,
 	})
+}
+
+// UpdateBasicInfo 更新当前登录用户基本信息
+// @Summary 更新当前登录用户基本信息
+// @Description 更新当前登录用户的昵称、性别和描述信息
+// @Tags 用户管理
+// @Accept json
+// @Produce json
+// @Param user body models.UpdateBasicInfoRequest true "用户基本信息"
+// @Success 200 {object} map[string]interface{} "用户基本信息更新成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /users/updateBasicInfo [put]
+// @Security ApiKeyAuth
+func (uc *UserController) UpdateBasicInfo(c *gin.Context) {
+	var req models.UpdateBasicInfoRequest
+	if err := req.Validate(c); err != nil {
+		uc.FailAndAbort(c, err.Error(), err)
+	}
+
+	// 该API只能更新当前用户的账户信息
+	currentUserID := common.GetCurrentUserID(c)
+
+	// 检查用户是否存在
+	user := models.NewUser()
+	err := user.GetUserByID(c, currentUserID)
+	if err != nil {
+		uc.FailAndAbort(c, err.Error(), err)
+	}
+	if user.IsEmpty() {
+		uc.FailAndAbort(c, "用户不存在", nil)
+	}
+
+	// 更新用户基本信息
+	user.NickName = req.NickName
+	user.Sex = req.Sex
+	user.Description = req.Description
+
+	if err := app.DB().WithContext(c).Save(user).Error; err != nil {
+		uc.FailAndAbort(c, "更新用户基本信息失败", err)
+	}
+
+	uc.SuccessWithMessage(c, "基本信息更新成功", nil)
 }
