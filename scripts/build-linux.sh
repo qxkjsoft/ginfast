@@ -1,5 +1,3 @@
-
-
 # 设置Go环境变量
 export GO111MODULE=on
 export CGO_ENABLED=0

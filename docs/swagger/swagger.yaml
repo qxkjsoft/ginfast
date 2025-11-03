@@ -19,6 +19,8 @@ definitions:
         type: integer
       nickName:
         type: string
+      password:
+        type: string
       phone:
         type: string
       roles:
@@ -80,6 +82,8 @@ definitions:
   models.LoginRequest:
     properties:
       password:
+        type: string
+      tenantCode:
         type: string
       username:
         type: string
@@ -431,19 +435,104 @@ definitions:
     - id
     - name
     type: object
+  models.SysTenantAddRequest:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      domain:
+        type: string
+      name:
+        type: string
+      status:
+        type: integer
+    required:
+    - code
+    - name
+    type: object
+  models.SysTenantUpdateRequest:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      domain:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      status:
+        type: integer
+    required:
+    - code
+    - id
+    - name
+    type: object
+  models.SysUserTenantBatchAddRequest:
+    properties:
+      tenantID:
+        type: integer
+      userIDs:
+        items:
+          type: integer
+        type: array
+    required:
+    - tenantID
+    - userIDs
+    type: object
+  models.SysUserTenantBatchDeleteRequest:
+    properties:
+      tenantID:
+        type: integer
+      userIDs:
+        items:
+          type: integer
+        type: array
+    required:
+    - tenantID
+    - userIDs
+    type: object
+  models.SysUserTenantSetRolesRequest:
+    properties:
+      roles:
+        items:
+          type: integer
+        type: array
+      tenantID:
+        type: integer
+      userID:
+        type: integer
+    required:
+    - roles
+    - tenantID
+    - userID
+    type: object
   models.UpdateAccountRequest:
     properties:
       email:
         type: string
-      id:
-        type: integer
       password:
+        description: ID       uint   `form:"id" validate:"required" message:"用户ID不能为空"`
         type: string
       phone:
         type: string
     required:
-    - id
     - phone
+    type: object
+  models.UpdateBasicInfoRequest:
+    properties:
+      description:
+        type: string
+      nickName:
+        type: string
+      sex:
+        type: string
+    required:
+    - description
+    - nickName
+    - sex
     type: object
   models.UpdateNameRequest:
     properties:
@@ -1852,6 +1941,42 @@ paths:
       summary: 更新菜单
       tags:
       - 菜单管理
+  /sysMenu/export:
+    get:
+      consumes:
+      - application/json
+      description: 根据菜单ID导出菜单及其关联API的数据
+      parameters:
+      - collectionFormat: csv
+        description: 菜单ID列表
+        in: query
+        items:
+          type: integer
+        name: menuIds
+        required: true
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JSON文件
+          schema:
+            type: file
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 导出菜单数据
+      tags:
+      - 菜单管理
   /sysMenu/getMenuList:
     get:
       consumes:
@@ -1903,6 +2028,40 @@ paths:
       summary: 获取当前用户有权限的菜单数据
       tags:
       - 菜单管理
+  /sysMenu/import:
+    post:
+      consumes:
+      - application/json
+      description: 导入前端上传的菜单JSON文件数据
+      parameters:
+      - description: 菜单JSON文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 菜单导入成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 导入菜单数据
+      tags:
+      - 菜单管理
   /sysMenu/setApis:
     post:
       consumes:
@@ -1938,6 +2097,162 @@ paths:
       summary: 为菜单分配API权限
       tags:
       - 菜单管理
+  /sysOperationLog/delete:
+    delete:
+      consumes:
+      - application/json
+      description: 批量删除操作日志
+      parameters:
+      - description: 日志ID列表
+        in: body
+        name: ids
+        required: true
+        schema:
+          items:
+            type: integer
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 删除操作日志
+      tags:
+      - 操作日志管理
+  /sysOperationLog/export:
+    get:
+      consumes:
+      - application/json
+      description: 导出操作日志为CSV格式
+      parameters:
+      - description: 用户名
+        in: query
+        name: username
+        type: string
+      - description: 操作模块
+        in: query
+        name: module
+        type: string
+      - description: 操作类型
+        in: query
+        name: operation
+        type: string
+      - description: 状态
+        enum:
+        - success
+        - error
+        in: query
+        name: status
+        type: string
+      - description: 开始时间
+        in: query
+        name: startTime
+        type: string
+      - description: 结束时间
+        in: query
+        name: endTime
+        type: string
+      - description: IP地址
+        in: query
+        name: ip
+        type: string
+      produces:
+      - text/csv
+      responses:
+        "200":
+          description: CSV文件
+          schema:
+            type: file
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 导出操作日志
+      tags:
+      - 操作日志管理
+  /sysOperationLog/list:
+    get:
+      consumes:
+      - application/json
+      description: 获取操作日志列表，支持分页和过滤
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: pageNum
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 用户名
+        in: query
+        name: username
+        type: string
+      - description: 操作模块
+        in: query
+        name: module
+        type: string
+      - description: 操作类型
+        in: query
+        name: operation
+        type: string
+      - description: 状态
+        enum:
+        - success
+        - error
+        in: query
+        name: status
+        type: string
+      - description: 开始时间
+        in: query
+        name: startTime
+        type: string
+      - description: 结束时间
+        in: query
+        name: endTime
+        type: string
+      - description: IP地址
+        in: query
+        name: ip
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回日志列表
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 操作日志列表
+      tags:
+      - 操作日志管理
   /sysRole/{id}:
     delete:
       consumes:
@@ -2240,6 +2555,510 @@ paths:
       summary: 更新角色数据权限
       tags:
       - 角色管理
+  /sysTenant/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定租户
+      parameters:
+      - description: 租户ID(数字格式)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 租户删除成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 租户ID格式错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 删除租户
+      tags:
+      - 租户管理
+    get:
+      consumes:
+      - application/json
+      description: 根据租户ID获取租户详细信息
+      parameters:
+      - description: 租户ID(数字格式)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回租户信息
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 租户ID格式错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 根据ID获取租户信息
+      tags:
+      - 租户管理
+  /sysTenant/add:
+    post:
+      consumes:
+      - application/json
+      description: 创建新租户
+      parameters:
+      - description: 租户信息
+        in: body
+        name: tenant
+        required: true
+        schema:
+          $ref: '#/definitions/models.SysTenantAddRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 租户创建成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 新增租户
+      tags:
+      - 租户管理
+  /sysTenant/edit:
+    put:
+      consumes:
+      - application/json
+      description: 更新租户信息
+      parameters:
+      - description: 租户信息
+        in: body
+        name: tenant
+        required: true
+        schema:
+          $ref: '#/definitions/models.SysTenantUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 租户更新成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 更新租户
+      tags:
+      - 租户管理
+  /sysTenant/list:
+    get:
+      consumes:
+      - application/json
+      description: 获取租户列表，支持分页和过滤
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: pageNum
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 租户名称
+        in: query
+        name: name
+        type: string
+      - description: 租户编码
+        in: query
+        name: code
+        type: string
+      - description: 状态
+        in: query
+        name: status
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回租户列表
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 租户列表
+      tags:
+      - 租户管理
+  /sysUserTenant/batchAdd:
+    post:
+      consumes:
+      - application/json
+      description: 批量创建用户租户关联
+      parameters:
+      - description: 批量用户租户关联信息
+        in: body
+        name: sysUserTenant
+        required: true
+        schema:
+          $ref: '#/definitions/models.SysUserTenantBatchAddRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 用户租户关联批量创建成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 批量新增用户租户关联
+      tags:
+      - 用户租户关联管理
+  /sysUserTenant/batchDelete:
+    delete:
+      consumes:
+      - application/json
+      description: 批量删除指定用户租户关联
+      parameters:
+      - description: 批量用户租户关联删除请求参数
+        in: body
+        name: sysUserTenant
+        required: true
+        schema:
+          $ref: '#/definitions/models.SysUserTenantBatchDeleteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 用户租户关联批量删除成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 批量删除用户租户关联
+      tags:
+      - 用户租户关联管理
+  /sysUserTenant/get:
+    get:
+      consumes:
+      - application/json
+      description: 根据用户ID和租户ID获取用户租户关联详细信息
+      parameters:
+      - description: 用户ID
+        in: query
+        name: userID
+        required: true
+        type: integer
+      - description: 租户ID
+        in: query
+        name: tenantID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回用户租户关联信息
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 参数格式错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 根据用户ID和租户ID获取用户租户关联信息
+      tags:
+      - 用户租户关联管理
+  /sysUserTenant/getRolesAll:
+    get:
+      consumes:
+      - application/json
+      description: 获取所有角色列表，支持分页和过滤，不进行租户过滤，可根据tenant_id查询
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: pageNum
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 角色名称
+        in: query
+        name: name
+        type: string
+      - description: 状态
+        in: query
+        name: status
+        type: integer
+      - description: 父级ID
+        in: query
+        name: parentId
+        type: integer
+      - description: 租户ID
+        in: query
+        name: tenantId
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回角色列表
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 角色列表(不进行租户过滤)
+      tags:
+      - 用户租户关联管理
+  /sysUserTenant/getUserRoleIDs:
+    get:
+      consumes:
+      - application/json
+      description: 根据tenant_id和user_id查询角色ID集合，注意sys_user_role表没有tenant_id字段，sys_role表中才有tenant_id字段
+      parameters:
+      - description: 用户ID
+        in: query
+        name: userId
+        required: true
+        type: integer
+      - description: 租户ID
+        in: query
+        name: tenantId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回角色ID集合
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 参数格式错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 根据tenant_id和user_id查询角色ID集合
+      tags:
+      - 用户租户关联管理
+  /sysUserTenant/list:
+    get:
+      consumes:
+      - application/json
+      description: 获取用户租户关联列表，支持分页和过滤
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: pageNum
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 用户ID
+        in: query
+        name: userID
+        type: integer
+      - description: 租户ID
+        in: query
+        name: tenantID
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回用户租户关联列表
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 用户租户关联列表
+      tags:
+      - 用户租户关联管理
+  /sysUserTenant/setUserRoles:
+    post:
+      consumes:
+      - application/json
+      description: 先移除租户相关的角色，再为用户分配新角色
+      parameters:
+      - description: 设置用户角色请求参数
+        in: body
+        name: setUserRoles
+        required: true
+        schema:
+          $ref: '#/definitions/models.SysUserTenantSetRolesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 设置用户角色成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 设置用户角色
+      tags:
+      - 用户租户关联管理
+  /sysUserTenant/userListAll:
+    get:
+      consumes:
+      - application/json
+      description: 获取所有用户列表，支持分页和过滤，不进行租户过滤
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: pageNum
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 用户名或昵称
+        in: query
+        name: name
+        type: string
+      - description: 手机号
+        in: query
+        name: phone
+        type: string
+      - description: 状态
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回用户列表
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 用户列表(不进行租户过滤)
+      tags:
+      - 用户租户关联管理
   /users/{id}:
     get:
       consumes:
@@ -2507,6 +3326,41 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 更新用户账户信息
+      tags:
+      - 用户管理
+  /users/updateBasicInfo:
+    put:
+      consumes:
+      - application/json
+      description: 更新当前登录用户的昵称、性别和描述信息
+      parameters:
+      - description: 用户基本信息
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateBasicInfoRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 用户基本信息更新成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 更新当前登录用户基本信息
       tags:
       - 用户管理
   /users/uploadAvatar:

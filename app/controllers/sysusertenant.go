@@ -232,7 +232,7 @@ func (sut *SysUserTenantController) BatchDelete(c *gin.Context) {
 // UserListAll 用户列表(不进行租户过滤)
 // @Summary 用户列表(不进行租户过滤)
 // @Description 获取所有用户列表，支持分页和过滤，不进行租户过滤
-// @Tags 用户管理
+// @Tags 用户租户关联管理
 // @Accept json
 // @Produce json
 // @Param pageNum query int false "页码" default(1)
@@ -271,7 +271,7 @@ func (sut *SysUserTenantController) UserListAll(c *gin.Context) {
 // GetRolesAll 角色列表（不进行租户过滤，支持tenant_id查询）
 // @Summary 角色列表(不进行租户过滤)
 // @Description 获取所有角色列表，支持分页和过滤，不进行租户过滤，可根据tenant_id查询
-// @Tags 角色管理
+// @Tags 用户租户关联管理
 // @Accept json
 // @Produce json
 // @Param pageNum query int false "页码" default(1)

@@ -1,6 +1,6 @@
-# GinFast
+# GinFast 多租户版
 
-开源、免费、轻量级 Gin 前后分离快速开发基础框架，基于主流技术，集成了 JWT 认证、权限控制、数据库操作等功能，帮助开发者快速搭建一个后台管理系统。
+开源、免费、轻量级 Gin 前后分离快速开发基础框架，基于主流技术，集成了 JWT 认证、权限控制、数据库操作等功能，帮助开发者快速搭建一个支持多租户的后台管理系统。
 
 本项目由[Gfast](https://github.com/tiger1103/gfast)团队（[奇讯科技](https://www.qjit.cn)）开发
 
@@ -13,6 +13,8 @@ github地址：[https://github.com/qxkjsoft/ginfast-ui](https://github.com/qxkjs
 [文档](docs/README.md)
 
 [安装使用视频](https://www.bilibili.com/video/BV14gsgzXEGM/)
+
+[多租户版的使用视频](https://www.bilibili.com/video/BV1Kk1wBaELb/)
 
 ## 演示地址
 
@@ -35,6 +37,9 @@ github地址：[https://github.com/qxkjsoft/ginfast-ui](https://github.com/qxkjs
 - 🔗 **菜单与API权限关联**：支持菜单与API权限的动态关联管理
 - 🏗️ **分层架构**：采用Controller-Service-Model分层架构，代码结构清晰
 - 📚 **API文档**：集成 Swagger API 文档，自动生成接口文档
+- 🏢 **多租户架构**：支持完整的租户管理、用户租户关联、数据隔离等功能
+- 🔒 **数据隔离**：基于GORM钩子函数实现自动租户数据隔离，确保各租户数据安全
+- 👥 **租户用户管理**：支持用户与租户的灵活关联，一个用户可关联多个租户
 
 ## 技术栈
 
@@ -66,7 +71,9 @@ gin-fast/
 │   │   ├── sysdict.go      # 字典管理控制器
 │   │   ├── sysdictitem.go  # 字典项管理控制器
 │   │   ├── sysmenu.go      # 菜单管理控制器
-│   │   └── sysrole.go      # 角色管理控制器
+│   │   ├── sysrole.go      # 角色管理控制器
+│   │   ├── systenant.go    # 租户管理控制器
+│   │   └── sysusertenant.go # 用户租户关联控制器
 │   ├── global/             # 全局变量和接口
 │   │   ├── app/            # 全局应用接口
 │   │   ├── consts/         # 常量定义
@@ -86,6 +93,8 @@ gin-fast/
 │   │   ├── sysdictitem.go  # 字典项模型
 │   │   ├── sysmenu.go      # 菜单模型
 │   │   ├── sysrole.go      # 角色模型
+│   │   ├── systenants.go   # 租户模型
+│   │   ├── sysusertenant.go # 用户租户关联模型
 │   │   └── *param.go       # 各种参数模型
 │   ├── routes/             # 路由配置
 │   │   └── routes.go       # 路由定义
@@ -101,6 +110,7 @@ gin-fast/
 │       ├── gormhelper/     # GORM助手
 │       ├── passwordhelper/ # 密码助手
 │       ├── response/       # 响应助手
+│       ├── tenanthelper/   # 租户助手
 │       ├── tokenhelper/    # Token助手
 │       └── ymlconfig/      # 配置助手
 ├── bootstrap/              # 应用初始化
@@ -225,73 +235,58 @@ Database:
   Loc: "Local"           # 时区
 ```
 
-## 开发指南
+## 多租户架构说明
 
-### 添加新的控制器
+本项目基于标准的多租户架构设计，支持数据隔离和租户管理功能：
 
-1. 在 `app/controllers/` 目录下创建新的控制器文件
-2. 继承 `Common` 结构体并实现控制器方法
-3. 在 `app/routes/routes.go` 中添加路由
-4. 为控制器方法添加 Swagger 注释
+### 核心组件
 
-示例：
-```go
-// app/controllers/product.go
-type ProductController struct {
-    Common
-}
+1. **租户管理 (Tenant Management)**
+   - 租户创建、更新、删除和查询
+   - 租户状态管理（启用/停用）
+   - 租户域名绑定
 
-// GetProducts 获取产品列表
-// @Summary 获取产品列表
-// @Description 获取所有产品列表
-// @Tags 产品管理
-// @Accept json
-// @Produce json
-// @Success 200 {object} map[string]interface{} "成功返回产品列表"
-// @Failure 500 {object} map[string]interface{} "服务器内部错误"
-// @Router /products [get]
-// @Security ApiKeyAuth
-func (pc *ProductController) GetProducts(c *gin.Context) {
-    // 使用 Common 结构体的方法进行响应处理
-    pc.Success(c, "获取产品列表成功", products)
-}
+2. **用户租户关联 (User-Tenant Association)**
+   - 用户与租户的多对多关系管理
+   - 支持用户关联多个租户
+   - 默认租户设置
+   - 批量关联和取消关联操作
 
-// app/routes/routes.go
-var productControllers = &controllers.ProductController{}
+3. **数据隔离 (Data Isolation)**
+   - 基于GORM钩子函数自动实现数据隔离
+   - 通过TenantID字段实现行级数据隔离
+   - JWT中间件自动注入租户信息
 
-func InitRoutes(engine *gin.Engine) {
-    // 其他路由...
-    
-    protected := engine.Group("/api")
-    protected.Use(middleware.JWTAuthMiddleware())
-    protected.Use(middleware.CasbinMiddleware())
-    {
-        protected.GET("/products", productControllers.GetProducts)
-    }
-}
-```
+### 数据模型
 
-### 添加新的数据模型
+- `Tenant` - 租户模型，包含租户基本信息
+- `SysUserTenant` - 用户租户关联模型，管理用户与租户的关系
 
-1. 在 `app/models/` 目录下创建新的模型文件
-2. 继承 `BaseModel` 并定义模型结构体
-3. 使用 GORM 标签定义数据库字段
-4. 为模型添加 Swagger 注释
+### 控制器
 
-示例：
-```go
-// app/models/product.go
-// Product 产品模型
-// @Description 产品信息
-type Product struct {
-    BaseModel
-    Name        string  `gorm:"column:name;size:255;not null;comment:产品名称" json:"name" example:"iPhone 13"`
-    Price       float64 `gorm:"column:price;type:decimal(10,2);comment:价格" json:"price" example:"6999.00"`
-    Description string  `gorm:"column:description;size:500;comment:描述" json:"description" example:"最新款iPhone手机"`
-    Status      int8    `gorm:"column:status;default:1;comment:状态 0下架 1上架" json:"status" example:"1"`
-    CreatedBy   uint    `gorm:"column:created_by;default:0;comment:创建人" json:"createdBy" example:"1"`
-}
-```
+- `TenantController` - 租户管理控制器
+- `SysUserTenantController` - 用户租户关联控制器
+
+### 中间件和工具
+
+- `tenanthelper` - 租户助手函数，提供租户数据隔离作用域
+- `gormhelper/hook.go` - GORM钩子函数，自动设置TenantID字段
+- `jwt.go` - JWT认证中间件，提取并验证租户信息
+
+### 多租户开发注意事项
+
+1. **数据隔离**
+   - 所有需要进行租户隔离的模型都必须包含 `TenantID uint` 字段
+   - GORM钩子函数会自动为创建和更新操作设置TenantID
+   - 查询时会自动应用租户数据隔离作用域
+
+2. **JWT认证与租户信息**
+   - JWT Token中包含租户信息
+   - 通过 `tenanthelper.TenantScope(c)` 可以获取当前用户的租户数据作用域
+
+3. **跨租户操作**
+   - 特殊管理接口可以绕过租户隔离，但需要谨慎使用
+   - 用户租户关联控制器提供了不进行租户过滤的用户和角色查询接口
 
 ### Swagger 注释规范
 
@@ -384,12 +379,14 @@ plugins/
    - 继承 `models.BaseModel` 基础模型
    - 实现标准的 CRUD 方法（Create, Update, Delete, GetByID等）
    - 创建对应的参数验证模型（如 CreateRequest, UpdateRequest等）
+   - 注意添加TenantID字段以支持多租户数据隔离
 
    示例：
    ```go
    // plugins/example/models/example.go
    type Example struct {
        models.BaseModel
+       TenantID    uint   `gorm:"column:tenant_id;default:0;comment:租户ID" json:"tenantID"` // 添加租户ID字段
        Name        string `gorm:"type:varchar(255);comment:名称" json:"name"`
        Description string `gorm:"type:varchar(255);comment:描述" json:"description"`
        CreatedBy   uint   `gorm:"type:int(11);comment:创建者ID" json:"createdBy"`
@@ -520,6 +517,7 @@ plugins/
    - 使用 `app.DB()` 获取数据库连接
    - 遵循 GORM 的操作规范
    - 注意处理数据库错误
+   - 添加TenantID字段以支持多租户数据隔离
 
 ## 部署说明
 
@@ -556,7 +554,7 @@ docker run -p 8080:8080 gin-fast
 
 ### 微信群
 
-![微信群](docs/mdFile/wx.png)
+![微信群](docs/mdFile/wx2.jpg)
 
 ### QQ群
 

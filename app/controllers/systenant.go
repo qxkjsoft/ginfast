@@ -66,7 +66,7 @@ func (tc *TenantController) List(c *gin.Context) {
 // @Tags 租户管理
 // @Accept json
 // @Produce json
-// @Param id path int true "租户ID"
+// @Param id path string true "租户ID(数字格式)"
 // @Success 200 {object} map[string]interface{} "成功返回租户信息"
 // @Failure 400 {object} map[string]interface{} "租户ID格式错误"
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"
@@ -228,7 +228,7 @@ func (tc *TenantController) Update(c *gin.Context) {
 // @Tags 租户管理
 // @Accept json
 // @Produce json
-// @Param id path int true "租户ID"
+// @Param id path string true "租户ID(数字格式)"
 // @Success 200 {object} map[string]interface{} "租户删除成功"
 // @Failure 400 {object} map[string]interface{} "租户ID格式错误"
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"

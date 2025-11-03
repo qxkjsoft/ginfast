@@ -68,3 +68,4 @@ __debug_bin.exe*
 .roo/
 /config/config.yml
 /gin-fast-linux
+/resource/public/uploads
