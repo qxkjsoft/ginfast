@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
 	"gin-fast/app/service"
@@ -431,7 +432,7 @@ func (sm *SysRoleController) AddRoleMenu(c *gin.Context) {
 
 	for _, menuID := range req.MenuID {
 		if !foundMenuIDs[menuID] {
-			sm.FailAndAbort(c, "菜单ID不存在", nil)
+			sm.FailAndAbort(c, fmt.Sprintf("菜单ID %d 不存在", menuID), nil)
 		}
 	}
 

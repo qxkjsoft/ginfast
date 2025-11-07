@@ -36,7 +36,7 @@ func (r *ListRequest) Handle() func(db *gorm.DB) *gorm.DB {
 // UploadRequest 上传文件请求参数
 type UploadRequest struct {
 	Validator
-	File *multipart.FileHeader `form:"file" binding:"required"`
+	File *multipart.FileHeader `form:"file" validate:"required" message:"文件不能为空"`
 }
 
 // Validate 验证请求参数
@@ -47,7 +47,7 @@ func (r *UploadRequest) Validate(c *gin.Context) error {
 // AffixDeleteRequest 删除文件请求参数
 type AffixDeleteRequest struct {
 	Validator
-	ID uint `json:"id" form:"id" binding:"required"`
+	ID uint `json:"id" form:"id" validate:"required" message:"文件ID不能为空"`
 }
 
 // Validate 验证请求参数
@@ -58,8 +58,8 @@ func (r *AffixDeleteRequest) Validate(c *gin.Context) error {
 // UpdateNameRequest 修改文件名请求参数
 type UpdateNameRequest struct {
 	Validator
-	ID   uint   `json:"id" form:"id" binding:"required"`
-	Name string `json:"name" form:"name" binding:"required"`
+	ID   uint   `json:"id" form:"id" validate:"required" message:"文件ID不能为空"`
+	Name string `json:"name" form:"name" validate:"required" message:"文件名不能为空"`
 }
 
 // Validate 验证请求参数

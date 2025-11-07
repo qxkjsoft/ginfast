@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"gin-fast/app/models"
+	"gin-fast/app/utils/common"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -31,7 +32,10 @@ func (u *User) GetUserProfile(c *gin.Context, userID uint) (profile *models.User
 	}
 	// 查询关联角色关联的按钮菜单权限
 	permissions := []string{}
-	if !user.Roles.IsEmpty() {
+	// 跳过权限检查的用户，直接返回所有权限
+	if common.IsSkipAuthUser(userID) {
+		permissions = append(permissions, "*:*:*")
+	} else if !user.Roles.IsEmpty() {
 		// 获取用户的所有角色ID
 		roleIDs := user.Roles.GetRoleIDs()
 
@@ -72,7 +76,6 @@ func (u *User) GetUserProfile(c *gin.Context, userID uint) (profile *models.User
 			for permission := range permissionSet {
 				permissions = append(permissions, permission)
 			}
-
 		}
 	}
 	profile = &models.UserProfile{

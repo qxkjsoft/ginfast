@@ -483,7 +483,10 @@ func (sm *SysMenuController) Delete(c *gin.Context) {
 		if err := tx.Where("id = ?", req.ID).Delete(menu).Error; err != nil {
 			return err
 		}
-
+		// 删除菜单与API的关联
+		if err := tx.Where("menu_id = ?", req.ID).Delete(&models.SysMenuApi{}).Error; err != nil {
+			return err
+		}
 		return nil
 	})
 

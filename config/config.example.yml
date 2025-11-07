@@ -47,7 +47,7 @@ httpserver:
   handler_timeout: 30 #  请求处理超时(秒)，超过该时间，将返回超时错误
 token:
   jwttokensignkey:  "gin-fast"   #设置token生成时加密的签名
-  jwttokenexpire:  3600    #设置token过期时间，单位秒 示例:43200=12小时
+  jwttokenexpire:  43200    #设置token过期时间，单位秒 示例:43200=12小时
   jwttokenrefreshexpire:  2592000  #设置刷新token过期时间，单位秒 示例:2592000=30天
   cachekeyprefix: "gin-fast:"  # 缓存前缀
 redis:
@@ -188,3 +188,8 @@ upload:
     bucket: ""           # 七牛云存储空间名称
     domain: ""           # 七牛云域名
     zone: "ZoneHuadong"  # 七牛云存储区域: ZoneHuadong, ZoneHuabei, ZoneHuanan, ZoneBeimei, ZoneXinjiapo
+
+#代码生成
+gen:
+  # 前端代码生成路径
+  dir: "D:\\go_pro\\ginfasttenant\\ginfast-tenant-front\\src\\plugins"

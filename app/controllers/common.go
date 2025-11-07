@@ -12,6 +12,7 @@ import (
 type Common struct {
 }
 
+// Fail 返回失败响应，支持可变参数：第一个参数为消息，第二个参数为错误，后续参数为响应数据
 func (c Common) Fail(ctx *gin.Context, msg string, err error, data ...interface{}) {
 	app.ZapLog.Error("请求失败", zap.Error(err))
 	app.Response.Fail(ctx, msg, data...)

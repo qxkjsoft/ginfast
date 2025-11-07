@@ -57,7 +57,7 @@ func (m *Example) Delete(c context.Context) error {
 
 // IsEmpty 检查模型是否为空
 func (m *Example) IsEmpty() bool {
-	return m.ID == 0
+	return m == nil || m.ID == 0
 }
 
 // Find 查询示例列表

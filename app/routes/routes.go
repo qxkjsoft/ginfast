@@ -26,6 +26,8 @@ var configControllers = controllers.NewConfigController()                   // �
 var sysOperationLogControllers = controllers.NewSysOperationLogController() // 操作日志控制器
 var sysTenantControllers = controllers.NewTenantController()                // 租户控制器
 var sysUserTenantControllers = controllers.NewSysUserTenantController()     // 用户租户关联控制器
+var codeGenControllers = controllers.NewCodeGenController()                 // 代码生成控制器
+var sysGenControllers = controllers.NewSysGenController()                   // 代码生成配置控制器
 
 // InitRoutes 初始化路由
 func InitRoutes(engine *gin.Engine) {
@@ -298,8 +300,41 @@ func InitRoutes(engine *gin.Engine) {
 				// 设置用户角色(不限租户)
 				sysUserTenant.POST("/setUserRoles", sysUserTenantControllers.SetUserRoles)
 			}
-		}
 
+			// 代码生成配置路由组
+			sysGen := protected.Group("/sysGen")
+			{
+				// 代码生成配置列表（分页查询）
+				sysGen.GET("/list", sysGenControllers.List)
+				// 批量插入代码生成配置
+				sysGen.POST("/batchInsert", sysGenControllers.BatchInsert)
+			}
+
+			// 代码生成路由组
+			codeGen := protected.Group("/codegen")
+			{
+				// 获取数据库列表
+				codeGen.GET("/databases", codeGenControllers.GetDatabases)
+				// 获取指定数据库中的表
+				codeGen.GET("/tables", codeGenControllers.GetTables)
+				// 获取指定表的字段信息
+				codeGen.GET("/columns", codeGenControllers.GetTableColumns)
+				// 生成代码
+				codeGen.POST("/generate", codeGenControllers.GenerateCode)
+				// 预览代码
+				codeGen.GET("/preview", codeGenControllers.PreviewCode)
+				// 下载代码文件
+				codeGen.POST("/download", codeGenControllers.DownloadCode)
+				// 获取配置
+				codeGen.GET("/config", codeGenControllers.GetConfig)
+				// 更新配置
+				codeGen.PUT("/config", codeGenControllers.UpdateConfig)
+				// 获取模板列表
+				codeGen.GET("/templates", codeGenControllers.GetTemplates)
+				// 获取模板内容
+				codeGen.GET("/template", codeGenControllers.GetTemplateContent)
+			}
+		}
 	}
 
 }

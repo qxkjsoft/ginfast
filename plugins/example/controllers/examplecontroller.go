@@ -3,7 +3,7 @@ package controllers
 import (
 	"gin-fast/app/controllers"
 	"gin-fast/plugins/example/models"
-	"strconv"
+	"gin-fast/plugins/example/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,6 +11,13 @@ import (
 // ExampleController 示例控制器
 type ExampleController struct {
 	controllers.Common
+	ExampleService *service.ExampleService
+}
+
+func NewExampleController() *ExampleController {
+	return &ExampleController{
+		ExampleService: service.NewExampleService(),
+	}
 }
 
 // Create 创建示例
@@ -19,18 +26,11 @@ func (ec *ExampleController) Create(c *gin.Context) {
 	if err := req.Validate(c); err != nil {
 		ec.FailAndAbort(c, err.Error(), err)
 	}
-
-	// 创建示例记录
-	example := models.NewExample()
-	example.Name = req.Name
-	example.Description = req.Description
-
-	// 保存到数据库
-	if err := example.Create(c); err != nil {
+	example, err := ec.ExampleService.Create(c, req)
+	if err != nil {
 		ec.FailAndAbort(c, "创建示例失败", err)
 	}
 
-	// 返回成功响应
 	ec.Success(c, gin.H{
 		"id": example.ID,
 	})
@@ -43,16 +43,8 @@ func (ec *ExampleController) Update(c *gin.Context) {
 		ec.FailAndAbort(c, err.Error(), err)
 	}
 
-	// 查找示例记录
-	example := models.NewExample()
-	if err := example.GetByID(c, req.ID); err != nil {
-		ec.FailAndAbort(c, "示例不存在", err)
-	}
-
-	// 更新示例信息
-	example.Name = req.Name
-	example.Description = req.Description
-	if err := example.Update(c); err != nil {
+	err := ec.ExampleService.Update(c, req)
+	if err != nil {
 		ec.FailAndAbort(c, "更新示例失败", err)
 	}
 
@@ -68,14 +60,9 @@ func (ec *ExampleController) Delete(c *gin.Context) {
 		ec.FailAndAbort(c, err.Error(), err)
 	}
 
-	// 查找示例记录
-	example := models.NewExample()
-	if err := example.GetByID(c, req.ID); err != nil {
-		ec.FailAndAbort(c, "示例不存在", err)
-	}
-
-	// 删除数据库记录
-	if err := example.Delete(c); err != nil {
+	// 调用服务层删除示例
+	err := ec.ExampleService.Delete(c, req.ID)
+	if err != nil {
 		ec.FailAndAbort(c, "删除示例失败", err)
 	}
 
@@ -85,27 +72,19 @@ func (ec *ExampleController) Delete(c *gin.Context) {
 
 // GetByID 根据ID获取示例信息
 func (ec *ExampleController) GetByID(c *gin.Context) {
-	// 获取路径参数
-	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		ec.FailAndAbort(c, "无效的示例ID", err)
+
+	var req models.GetByIDRequest
+	if err := req.Validate(c); err != nil {
+		ec.FailAndAbort(c, err.Error(), err)
 	}
 
-	// 查找示例记录
-	example := models.NewExample()
-	if err := example.GetByID(c, uint(id)); err != nil {
+	example, err := ec.ExampleService.GetByID(c, req.ID)
+	if err != nil {
 		ec.FailAndAbort(c, "示例不存在", err)
 	}
 
 	// 返回成功响应
-	ec.Success(c, gin.H{
-		"id":          example.ID,
-		"name":        example.Name,
-		"description": example.Description,
-		"createdAt":   example.CreatedAt,
-		"updatedAt":   example.UpdatedAt,
-	})
+	ec.Success(c, example)
 }
 
 // List 示例列表（分页查询）
@@ -115,18 +94,8 @@ func (ec *ExampleController) List(c *gin.Context) {
 		ec.FailAndAbort(c, err.Error(), err)
 	}
 
-	// 获取查询条件
-	query := req.Handle()
-
-	// 获取总数
-	exampleList := models.NewExampleList()
-	total, err := exampleList.GetTotal(c, query)
-	if err != nil {
-		ec.FailAndAbort(c, "获取示例总数失败", err)
-	}
-
-	// 获取分页数据
-	err = exampleList.Find(c, req.Paginate(), query)
+	// 调用服务层获取示例列表
+	exampleList, total, err := ec.ExampleService.List(c, req)
 	if err != nil {
 		ec.FailAndAbort(c, "获取示例列表失败", err)
 	}

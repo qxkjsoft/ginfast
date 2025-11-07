@@ -20,6 +20,9 @@ type BaseRequest struct {
 func (r *BaseRequest) Bind(c *gin.Context, obj interface{}) (err error) {
 	// 先尝试从URL参数读取数据
 	c.ShouldBindQuery(obj)
+	// 尝试从路径参数读取数据
+	c.ShouldBindUri(obj)
+
 	// 获取Content-Type
 	contentType := c.GetHeader("Content-Type")
 
@@ -50,7 +53,7 @@ func (vt *Validator) Check(c *gin.Context, obj interface{}) error {
 
 	// 解析数组参数
 	vt.parseArrayParams(c, obj)
-
+	// 验证参数
 	v := validate.Struct(obj)
 	if !v.Validate() {
 		return v.Errors.OneError()
@@ -129,8 +132,6 @@ func (bp *BasePaging) Paginate() func(db *gorm.DB) *gorm.DB {
 
 		if bp.Order != "" {
 			db = db.Order(bp.Order)
-		} else {
-			db = db.Order("id desc")
 		}
 		return db
 	}

@@ -29,7 +29,7 @@ type SysMenu struct {
 	Iframe     bool        `gorm:"column:iframe;default:false;comment:是否内嵌" json:"iframe"`
 	SvgIcon    string      `gorm:"column:svg_icon;default:'';size:100;comment:svg图标名称" json:"svgIcon"`
 	Icon       string      `gorm:"column:icon;default:'';size:100;comment:普通图标名称" json:"icon"`
-	Sort       int         `gorm:"column:sort;default:1;comment:排序字段" json:"sort"`
+	Sort       int         `gorm:"column:sort;default:0;comment:排序字段" json:"sort"`
 	Type       int8        `gorm:"column:type;default:2;comment:类型：1-目录，2-菜单，3-按钮" json:"type"`
 	Permission string      `gorm:"column:permission;default:'';size:100;comment:权限标识" json:"permission"`
 	CreatedBy  uint        `gorm:"column:created_by;comment:创建人" json:"createdBy"`
