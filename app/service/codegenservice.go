@@ -108,7 +108,7 @@ func (cgs *CodeGenService) GetDatabases(dbType string) ([]string, error) {
 }
 
 // GetTables 获取指定数据库中的所有表
-func (cgs *CodeGenService) GetTables(dbType, database string) ([]string, error) {
+func (cgs *CodeGenService) GetTables(dbType, database string) ([]models.TableInfo, error) {
 
 	// 获取数据库连接
 	if dbType == "" {
@@ -143,70 +143,91 @@ func (cgs *CodeGenService) GetTables(dbType, database string) ([]string, error) 
 		return nil, err
 	}
 
-	var tables []string
+	var tables []models.TableInfo
 
 	// 根据数据库类型执行不同的查询
 	switch dbType {
 	case "mysql":
-		rows, err := sqlDB.Query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ?", database)
+		rows, err := sqlDB.Query("SELECT TABLE_NAME, TABLE_COMMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ?", database)
 		if err != nil {
 			return nil, err
 		}
 		defer rows.Close()
 
 		for rows.Next() {
-			var tableName string
-			if err := rows.Scan(&tableName); err != nil {
+			var table models.TableInfo
+			if err := rows.Scan(&table.TableName, &table.TableComment); err != nil {
 				return nil, err
 			}
-			tables = append(tables, tableName)
+			tables = append(tables, table)
 		}
 	case "postgresql":
 		// PostgreSQL需要先切换到指定数据库
 		_, err := sqlDB.Exec("USE " + database)
 		if err != nil {
 			// 如果USE命令失败，尝试直接查询
-			rows, err := sqlDB.Query("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
+			rows, err := sqlDB.Query(`
+				SELECT 
+					t.tablename,
+					obj_description(c.oid) as tablecomment
+				FROM pg_tables t
+				LEFT JOIN pg_class c ON c.relname = t.tablename
+				WHERE t.schemaname = 'public'`)
 			if err != nil {
 				return nil, err
 			}
 			defer rows.Close()
 
 			for rows.Next() {
-				var tableName string
-				if err := rows.Scan(&tableName); err != nil {
+				var table models.TableInfo
+				if err := rows.Scan(&table.TableName, &table.TableComment); err != nil {
 					return nil, err
 				}
-				tables = append(tables, tableName)
+				tables = append(tables, table)
 			}
 		} else {
-			rows, err := sqlDB.Query("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
+			rows, err := sqlDB.Query(`
+				SELECT 
+					t.tablename,
+					obj_description(c.oid) as tablecomment
+				FROM pg_tables t
+				LEFT JOIN pg_class c ON c.relname = t.tablename
+				WHERE t.schemaname = 'public'`)
 			if err != nil {
 				return nil, err
 			}
 			defer rows.Close()
 
 			for rows.Next() {
-				var tableName string
-				if err := rows.Scan(&tableName); err != nil {
+				var table models.TableInfo
+				if err := rows.Scan(&table.TableName, &table.TableComment); err != nil {
 					return nil, err
 				}
-				tables = append(tables, tableName)
+				tables = append(tables, table)
 			}
 		}
 	case "sqlserver":
-		rows, err := sqlDB.Query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_CATALOG = ?", database)
+		rows, err := sqlDB.Query(`
+			SELECT 
+				t.TABLE_NAME,
+				ISNULL(ep.value, '') as TABLE_COMMENT
+			FROM INFORMATION_SCHEMA.TABLES t
+			LEFT JOIN sys.extended_properties ep
+				ON ep.major_id = OBJECT_ID(t.TABLE_SCHEMA + '.' + t.TABLE_NAME)
+				AND ep.minor_id = 0
+				AND ep.name = 'MS_Description'
+			WHERE t.TABLE_CATALOG = ? AND t.TABLE_TYPE = 'BASE TABLE'`, database)
 		if err != nil {
 			return nil, err
 		}
 		defer rows.Close()
 
 		for rows.Next() {
-			var tableName string
-			if err := rows.Scan(&tableName); err != nil {
+			var table models.TableInfo
+			if err := rows.Scan(&table.TableName, &table.TableComment); err != nil {
 				return nil, err
 			}
-			tables = append(tables, tableName)
+			tables = append(tables, table)
 		}
 	default:
 		return nil, fmt.Errorf("不支持的数据库类型")

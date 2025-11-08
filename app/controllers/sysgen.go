@@ -5,8 +5,6 @@ import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
 	"gin-fast/app/service"
-	"gin-fast/app/utils/datascope"
-	"gin-fast/app/utils/tenanthelper"
 	"regexp"
 	"strings"
 
@@ -57,7 +55,7 @@ func (sgc *SysGenController) List(c *gin.Context) {
 
 	// 获取总数
 	genList := models.NewSysGenList()
-	total, err := genList.GetTotal(c, query, datascope.GetDataScope(c), tenanthelper.TenantScope(c))
+	total, err := genList.GetTotal(c, query)
 	if err != nil {
 		sgc.FailAndAbort(c, "获取代码生成配置总数失败", err)
 	}
@@ -65,7 +63,7 @@ func (sgc *SysGenController) List(c *gin.Context) {
 	// 获取分页数据及数据权限
 	err = genList.Find(c, req.Paginate(), query, func(d *gorm.DB) *gorm.DB {
 		return d
-	}, datascope.GetDataScope(c), tenanthelper.TenantScope(c))
+	})
 	if err != nil {
 		sgc.FailAndAbort(c, "获取代码生成配置列表失败", err)
 	}
@@ -91,15 +89,20 @@ func (sgc *SysGenController) List(c *gin.Context) {
 // @Security ApiKeyAuth
 func (sgc *SysGenController) BatchInsert(c *gin.Context) {
 	var req models.SysGenBatchInsertRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		sgc.FailAndAbort(c, "请求参数解析失败", err)
+	if err := req.Validate(c); err != nil {
+		sgc.FailAndAbort(c, err.Error(), err)
 	}
-
+	if req.Database == "" {
+		// 获取当前使用的数据库类型
+		dbType := app.ConfigYml.GetString("gormv2.usedbtype")
+		// 从配置文件中获取当前数据库类型的写库名称
+		req.Database = app.ConfigYml.GetString("gormv2." + dbType + ".write.database")
+	}
 	// 获取数据库连接
 	db := app.DB()
 
 	// 开始事务
-	tx := db.Begin()
+	tx := db.WithContext(c).Begin()
 	if tx.Error != nil {
 		sgc.FailAndAbort(c, "开始事务失败", tx.Error)
 	}

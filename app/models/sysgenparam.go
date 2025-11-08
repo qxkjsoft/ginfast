@@ -34,8 +34,8 @@ func (r *SysGenListRequest) Handle() func(db *gorm.DB) *gorm.DB {
 // SysGenBatchInsertRequest 批量插入代码生成配置请求参数
 type SysGenBatchInsertRequest struct {
 	Validator
-	Database string   `json:"database" form:"database" validate:"required" message:"数据库名称不能为空"` // 数据库名称
-	Tables   []string `json:"tables" form:"tables" validate:"required" message:"表名称集合不能为空"`     // 表名称集合
+	Database string   `json:"database" form:"database"`                                     // 数据库名称
+	Tables   []string `json:"tables" form:"tables" validate:"required" message:"表名称集合不能为空"` // 表名称集合
 }
 
 // Validate 验证批量插入请求参数

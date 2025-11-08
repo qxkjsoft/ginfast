@@ -2,6 +2,12 @@ package models
 
 import "database/sql"
 
+// TableInfo 表信息结构体
+type TableInfo struct {
+	TableName    string         `json:"tableName"`    // 表名
+	TableComment sql.NullString `json:"tableComment"` // 表注释/描述
+}
+
 // TableColumn 字段信息结构体
 type TableColumn struct {
 	ColumnName       string         `json:"columnName"`       // 列名
