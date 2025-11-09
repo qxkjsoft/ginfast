@@ -1,12 +1,8 @@
 package controllers
 
 import (
-	"fmt"
-	"gin-fast/app/global/app"
 	"gin-fast/app/models"
 	"gin-fast/app/service"
-	"regexp"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -21,12 +17,14 @@ import (
 // @Router /sysGen [get]
 type SysGenController struct {
 	Common
+	service *service.SysGenService
 }
 
 // NewSysGenController 创建代码生成配置控制器
 func NewSysGenController() *SysGenController {
 	return &SysGenController{
-		Common: Common{},
+		Common:  Common{},
+		service: service.NewSysGenService(),
 	}
 }
 
@@ -77,7 +75,7 @@ func (sgc *SysGenController) List(c *gin.Context) {
 
 // BatchInsert 批量插入代码生成配置
 // @Summary 批量插入代码生成配置
-// @Description 根据数据库名称和表名称集合批量插入代码生成配置，避免重复插入
+// @Description 根据数据库名称和表名称集合批量插入代码生成配置和字段信息，避免重复插入
 // @Tags 代码生成配置管理
 // @Accept json
 // @Produce json
@@ -92,79 +90,13 @@ func (sgc *SysGenController) BatchInsert(c *gin.Context) {
 	if err := req.Validate(c); err != nil {
 		sgc.FailAndAbort(c, err.Error(), err)
 	}
-	if req.Database == "" {
-		// 获取当前使用的数据库类型
-		dbType := app.ConfigYml.GetString("gormv2.usedbtype")
-		// 从配置文件中获取当前数据库类型的写库名称
-		req.Database = app.ConfigYml.GetString("gormv2." + dbType + ".write.database")
-	}
-	// 获取数据库连接
-	db := app.DB()
 
-	// 开始事务
-	tx := db.WithContext(c).Begin()
-	if tx.Error != nil {
-		sgc.FailAndAbort(c, "开始事务失败", tx.Error)
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-
-	// 创建代码生成服务实例
-	codeGenService := service.NewCodeGenService()
-
-	// 记录成功和失败的表
-	successTables := make([]string, 0)
-	failedTables := make(map[string]string)
-
-	// 遍历表名称集合
-	for _, tableName := range req.Tables {
-		// 获取表注释
-		describe, err := codeGenService.GetTableComment(req.Database, tableName)
-		if err != nil {
-			failedTables[tableName] = fmt.Sprintf("获取表注释失败: %v", err)
-			continue
-		}
-
-		// 处理模块名称：只保留字母且全小写
-		moduleName := strings.ToLower(regexp.MustCompile("[^a-zA-Z]").ReplaceAllString(tableName, ""))
-
-		// 检查是否已存在相同的记录
-		var existingGen models.SysGen
-		err = tx.Where("name = ? AND module_name = ?", tableName, moduleName).First(&existingGen).Error
-		if err != nil && err != gorm.ErrRecordNotFound {
-			failedTables[tableName] = fmt.Sprintf("查询记录失败: %v", err)
-			continue
-		}
-
-		// 如果记录不存在，则插入新记录
-		if existingGen.IsEmpty() {
-			gen := models.NewSysGen()
-			gen.Name = tableName
-			gen.ModuleName = moduleName
-			gen.Describe = describe
-			// 插入记录
-			if err := tx.Create(gen).Error; err != nil {
-				failedTables[tableName] = fmt.Sprintf("插入记录失败: %v", err)
-				continue
-			}
-		}
-		// 添加到成功列表
-		successTables = append(successTables, tableName)
-	}
-
-	// 提交事务
-	if err := tx.Commit().Error; err != nil {
-		sgc.FailAndAbort(c, "提交事务失败", err)
+	// 调用服务层方法进行批量插入
+	result, err := sgc.service.BatchInsert(c, &req)
+	if err != nil {
+		sgc.FailAndAbort(c, "批量插入代码生成配置失败", err)
 	}
 
 	// 返回成功响应
-	sgc.Success(c, gin.H{
-		"successCount":  len(successTables),
-		"successTables": successTables,
-		"failedCount":   len(failedTables),
-		"failedTables":  failedTables,
-	})
+	sgc.Success(c, result)
 }

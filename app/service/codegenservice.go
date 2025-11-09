@@ -464,6 +464,7 @@ func (cgs *CodeGenService) GetTableColumns(database, table string) ([]models.Tab
 func (cgs *CodeGenService) ColumnTemplate(columns []models.TableColumn) []models.ColumnTemplate {
 	columnTemplates := make([]models.ColumnTemplate, 0, len(columns))
 	for _, column := range columns {
+		// 转换字段名（驼峰命名）
 		fieldName := cgs.toCamelCase(column.ColumnName)
 
 		// 定义需要排除的字段列表（系统字段）

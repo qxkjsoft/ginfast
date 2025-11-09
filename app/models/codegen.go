@@ -115,12 +115,12 @@ type InitTemplateData struct {
 
 // ColumnTemplate 字段模板数据
 type ColumnTemplate struct {
-	FieldName    string `json:"fieldName"`
-	GoType       string `json:"goType"`
-	FrontendType string `json:"frontendType"`
-	JsonTag      string `json:"jsonTag"`
-	GormTag      string `json:"gormTag"`
-	Comment      string `json:"comment"`
-	IsPrimary    bool   `json:"isPrimary"`
-	Exclude      bool   `json:"exclude"` // 是否在Create/Update中排除
+	FieldName    string `json:"fieldName"`    // 字段名
+	GoType       string `json:"goType"`       // Go类型
+	FrontendType string `json:"frontendType"` // 前端类型
+	JsonTag      string `json:"jsonTag"`      // JSON标签
+	GormTag      string `json:"gormTag"`      // GORM标签
+	Comment      string `json:"comment"`      // 注释
+	IsPrimary    bool   `json:"isPrimary"`    // 是否主键
+	Exclude      bool   `json:"exclude"`      // 是否在Create/Update中排除
 }
