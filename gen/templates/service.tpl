@@ -14,11 +14,11 @@ func New{{.StructName}}Service() *{{.StructName}}Service {
 }
 
 // Create 创建{{.TableName}}
-func (s *{{.StructName}}Service) Create(c *gin.Context, req models.CreateRequest) (*models.{{.StructName}}, error) {
+func (s *{{.StructName}}Service) Create(c *gin.Context, req models.{{.StructName}}CreateRequest) (*models.{{.StructName}}, error) {
 	// 创建{{.TableName}}记录
 	{{.StructNameLower}} := models.New{{.StructName}}()
     {{- range .Columns}}
-    {{- if not .Exclude}}
+    {{- if and (not .Exclude) .FormShow}}
     {{$.StructNameLower}}.{{.FieldName}} = req.{{.FieldName}}
     {{- end}}
     {{- end}}
@@ -31,7 +31,7 @@ func (s *{{.StructName}}Service) Create(c *gin.Context, req models.CreateRequest
 }
 
 // Update 更新{{.TableName}}
-func (s *{{.StructName}}Service) Update(c *gin.Context, req models.UpdateRequest) error {
+func (s *{{.StructName}}Service) Update(c *gin.Context, req models.{{.StructName}}UpdateRequest) error {
 	// 查找{{.TableName}}记录
 	{{.StructNameLower}} := models.New{{.StructName}}()
 	if err := {{.StructNameLower}}.GetByID(c, req.{{if .PrimaryKey}}{{.PrimaryKey.FieldName}}{{else}}Id{{end}}); err != nil {
@@ -39,7 +39,7 @@ func (s *{{.StructName}}Service) Update(c *gin.Context, req models.UpdateRequest
 	}
 	// 更新{{.TableName}}信息
     {{- range .Columns}}
-    {{- if not .Exclude}}
+    {{- if and (not .Exclude) (not .IsPrimary) .FormShow}}
     {{$.StructNameLower}}.{{.FieldName}} = req.{{.FieldName}}
     {{- end}}
     {{- end}}
@@ -78,7 +78,7 @@ func (s *{{.StructName}}Service) GetByID(c *gin.Context, id {{if .PrimaryKey}}{{
 }
 
 // List {{.TableName}}列表（分页查询）
-func (s *{{.StructName}}Service) List(c *gin.Context, req models.ListRequest) (*models.{{.StructName}}List, int64, error) {
+func (s *{{.StructName}}Service) List(c *gin.Context, req models.{{.StructName}}ListRequest) (*models.{{.StructName}}List, int64, error) {
 	// 获取总数
 	{{.StructNameLower}}List := models.New{{.StructName}}List()
 	total, err := {{.StructNameLower}}List.GetTotal(c, req.Handle())

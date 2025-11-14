@@ -5,6 +5,7 @@ import (
 	"gin-fast/app/service"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // CodeGenController 代码生成控制器
@@ -118,35 +119,30 @@ func (cgc *CodeGenController) GenerateCode(ctx *gin.Context) {
 		cgc.FailAndAbort(ctx, "请求参数解析失败", err)
 	}
 
-	database, _ := request["database"].(string)
-	table, _ := request["table"].(string)
-
-	if database == "" || table == "" {
-		cgc.FailAndAbort(ctx, "数据库名称、表名不能为空", nil)
-	}
-	// 获取表注释
-	comment, err := cgc.service.GetTableComment(database, table)
-	if err != nil {
-		cgc.FailAndAbort(ctx, "获取表注释失败", err)
-	}
-	// 获取表的字段信息
-	columns, err := cgc.service.GetTableColumns(database, table)
-	if err != nil {
-		cgc.FailAndAbort(ctx, "获取字段信息失败", err)
-	}
-	// 检查是否包含主键
-	if models.TableColumns(columns).PrimaryKeyCount() != 1 {
-		cgc.FailAndAbort(ctx, "表必须包含一个主键", nil)
+	genID, _ := request["genId"].(float64)
+	if genID == 0 {
+		cgc.FailAndAbort(ctx, "代码生成配置ID不能为空", nil)
 	}
 
+	// 使用service层获取代码生成配置详情
+	sysGen := models.NewSysGen()
+	err := sysGen.Find(ctx, func(db *gorm.DB) *gorm.DB {
+		return db.Where("id = ?", uint(genID)).Preload("SysGenFields")
+	})
+	if err != nil {
+		cgc.FailAndAbort(ctx, "获取代码生成配置详情失败", err)
+	}
+	if sysGen.SysGenFields.PrimaryKeyCount() != 1 {
+		cgc.FailAndAbort(ctx, "表必须也只能包含一个主键", nil)
+	}
 	// 生成后端代码
-	err = cgc.service.GenerateBackendCodeFiles(ctx, table, comment, columns)
+	err = cgc.service.GenerateBackendCodeFiles(ctx, sysGen)
 	if err != nil {
 		cgc.FailAndAbort(ctx, "生成后端代码失败", err)
 	}
 
 	// 生成前端代码
-	err = cgc.service.GenerateFrontendCodeFiles(table, columns)
+	err = cgc.service.GenerateFrontendCodeFiles(sysGen)
 	if err != nil {
 		cgc.FailAndAbort(ctx, "生成前端代码失败", err)
 	}

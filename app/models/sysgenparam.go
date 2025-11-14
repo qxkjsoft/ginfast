@@ -42,3 +42,32 @@ type SysGenBatchInsertRequest struct {
 func (r *SysGenBatchInsertRequest) Validate(c *gin.Context) error {
 	return r.Validator.Check(c, r)
 }
+
+// SysGenUpdateRequest 代码生成配置更新请求参数
+type SysGenUpdateRequest struct {
+	Validator
+	ID           uint                       `json:"id" form:"id" validate:"required" message:"ID不能为空"`
+	ModuleName   string                     `json:"moduleName" form:"moduleName" validate:"required" message:"模块名称不能为空"`       // 模块名称
+	FileName     string                     `json:"fileName" form:"fileName" validate:"required" message:"文件名不能为空"`            // 文件名
+	Describe     string                     `json:"describe" form:"describe" validate:"required" message:"描述不能为空"`             // 描述
+	FieldUpdates []SysGenFieldUpdateRequest `json:"sysGenFields" form:"sysGenFields" validate:"required" message:"字段更新列表不能为空"` // 字段更新列表
+}
+
+// Validate 验证更新请求参数
+func (r *SysGenUpdateRequest) Validate(c *gin.Context) error {
+	return r.Validator.Check(c, r)
+}
+
+// SysGenFieldUpdateRequest 代码生成字段配置更新请求参数
+type SysGenFieldUpdateRequest struct {
+	ID          uint   `json:"id" form:"id"`
+	DataComment string `json:"dataComment" form:"dataComment"` // 列注释
+	CustomName  string `json:"customName" form:"customName"`   // 自定义字段名称
+	Require     *int   `json:"require" form:"require" `        // 是否必填
+	ListShow    *int   `json:"listShow" form:"listShow" `      // 列表显示
+	FormShow    *int   `json:"formShow" form:"formShow" `      // 表单显示
+	QueryShow   *int   `json:"queryShow" form:"queryShow" `    // 查询显示
+	QueryType   string `json:"queryType" form:"queryType" `    // 查询方式
+	FormType    string `json:"formType" form:"formType" `      // 表单类型
+	DictType    string `json:"dictType" form:"dictType"`       // 关联的字典
+}

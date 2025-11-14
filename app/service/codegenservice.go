@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
+	"gin-fast/app/utils/common"
 	"gin-fast/app/utils/gormhelper"
 	"os"
 	"path/filepath"
@@ -237,7 +238,7 @@ func (cgs *CodeGenService) GetTables(dbType, database string) ([]models.TableInf
 }
 
 // GetTableColumns 获取指定表的所有字段信息
-func (cgs *CodeGenService) GetTableColumns(database, table string) ([]models.TableColumn, error) {
+func (cgs *CodeGenService) GetTableColumns(database, table string) (models.TableColumns, error) {
 	if database == "" {
 		return nil, fmt.Errorf("数据库名称不能为空")
 	}
@@ -460,57 +461,16 @@ func (cgs *CodeGenService) GetTableColumns(database, table string) ([]models.Tab
 	return columns, nil
 }
 
-// ColumnTemplate 生成列模板
-func (cgs *CodeGenService) ColumnTemplate(columns []models.TableColumn) []models.ColumnTemplate {
-	columnTemplates := make([]models.ColumnTemplate, 0, len(columns))
-	for _, column := range columns {
-		// 转换字段名（驼峰命名）
-		fieldName := cgs.toCamelCase(column.ColumnName)
-
-		// 定义需要排除的字段列表（系统字段）
-		excludeFields := map[string]bool{
-			"CreatedAt": true,
-			"UpdatedAt": true,
-			"DeletedAt": true,
-			"CreatedBy": true,
-			"TenantId":  true,
-		}
-
-		// 主键字段
-		isPrimary := column.ColumnKey.String == "PRI"
-		comment := fieldName
-		if column.ColumnComment.String != "" {
-			comment = column.ColumnComment.String
-		}
-
-		columnTemplates = append(columnTemplates, models.ColumnTemplate{
-			FieldName:    fieldName,
-			GoType:       cgs.getGoType(column.DataType, column.IsUnsigned),
-			FrontendType: cgs.getFrontendType(column.DataType),
-			JsonTag:      cgs.toCamelCaseLower(column.ColumnName),
-			GormTag:      cgs.buildGormTag(column),
-			Comment:      comment,
-			IsPrimary:    isPrimary,
-			Exclude:      isPrimary || excludeFields[fieldName],
-		})
-	}
-	return columnTemplates
-}
-
-// GetPrimaryKey 获取主键字段信息
-func (cgs *CodeGenService) GetPrimaryKey(columns []models.ColumnTemplate) *models.ColumnTemplate {
-	for _, column := range columns {
-		if column.IsPrimary {
-			return &column
-		}
-	}
-	return nil
-}
-
 // 生成后端代码文件
-func (cgs *CodeGenService) GenerateBackendCodeFiles(ctx context.Context, tableName string, comment string, columns []models.TableColumn) error {
-	// 将表名转换为目录名（移除下划线并转为小写）
-	dirName := strings.ReplaceAll(strings.ToLower(tableName), "_", "")
+func (cgs *CodeGenService) GenerateBackendCodeFiles(ctx context.Context, sysGen *models.SysGen) error {
+	var tableName, dirName, fileName, comment string
+	var columnTemplates models.ColumnTemplateList
+	tableName = sysGen.Name
+	//KeepLettersOnlyLower 只保留字符串中的英文字母，并且全部转换为小写
+	dirName = common.KeepLettersOnlyLower(sysGen.ModuleName)
+	fileName = common.KeepLettersOnlyLower(sysGen.FileName)
+	comment = sysGen.Describe
+	columnTemplates = sysGen.SysGenFields.ToColumnTemplate()
 
 	// 构建插件目录路径
 	pluginsDir := filepath.Join("plugins", dirName)
@@ -529,52 +489,55 @@ func (cgs *CodeGenService) GenerateBackendCodeFiles(ctx context.Context, tableNa
 			return fmt.Errorf("创建目录失败: %s, 错误: %v", dir, err)
 		}
 	}
-	columnTemplates := cgs.ColumnTemplate(columns)
+
+	// 创建代码生成上下文
+	codeGenCtx := models.NewCodeGenContext(tableName, sysGen.ModuleName, sysGen.FileName, comment, columnTemplates)
+
 	// 生成模型代码
-	modelCode := cgs.generateModelCode(tableName, columnTemplates, nil)
-	modelFilePath := filepath.Join(pluginsDir, "models", dirName+".go")
+	modelCode := cgs.generateModelCode(codeGenCtx)
+	modelFilePath := filepath.Join(pluginsDir, "models", fileName+".go")
 	if err := cgs.writeCodeToFile(modelFilePath, modelCode); err != nil {
 		return fmt.Errorf("生成模型文件失败: %v", err)
 	}
 
 	// 生成参数模型代码
-	modelParamCode := cgs.generateModelParamCode(tableName, columnTemplates, nil)
-	modelParamFilePath := filepath.Join(pluginsDir, "models", dirName+"param.go")
+	modelParamCode := cgs.generateModelParamCode(codeGenCtx)
+	modelParamFilePath := filepath.Join(pluginsDir, "models", fileName+"param.go")
 	if err := cgs.writeCodeToFile(modelParamFilePath, modelParamCode); err != nil {
 		return fmt.Errorf("生成参数模型文件失败: %v", err)
 	}
 
 	// 生成控制器代码
-	primaryKey := cgs.GetPrimaryKey(columnTemplates)
-	controllerCode := cgs.generateControllerCodeWithPrimaryKey(tableName, dirName, primaryKey, nil)
-	controllerFilePath := filepath.Join(pluginsDir, "controllers", dirName+"controller.go")
+	controllerCode := cgs.generateControllerCode(codeGenCtx)
+	controllerFilePath := filepath.Join(pluginsDir, "controllers", fileName+"controller.go")
 	if err := cgs.writeCodeToFile(controllerFilePath, controllerCode); err != nil {
 		return fmt.Errorf("生成控制器文件失败: %v", err)
 	}
 
 	// 生成服务代码
-	serviceCode := cgs.generateServiceCode(tableName, dirName, columnTemplates, nil)
-	serviceFilePath := filepath.Join(pluginsDir, "service", dirName+"service.go")
+	serviceCode := cgs.generateServiceCode(codeGenCtx)
+	serviceFilePath := filepath.Join(pluginsDir, "service", fileName+"service.go")
 	if err := cgs.writeCodeToFile(serviceFilePath, serviceCode); err != nil {
 		return fmt.Errorf("生成服务文件失败: %v", err)
 	}
 
 	// 生成路由代码
-	routesCode := cgs.generateRoutesCode(tableName, dirName, primaryKey, nil)
-	routesFilePath := filepath.Join(pluginsDir, "routes", "routes.go")
+	routesCode := cgs.generateRoutesCode(codeGenCtx)
+	routesFilePath := filepath.Join(pluginsDir, "routes", fileName+"routes.go")
 	if err := cgs.writeCodeToFile(routesFilePath, routesCode); err != nil {
 		return fmt.Errorf("生成路由文件失败: %v", err)
 	}
 
 	// 生成初始化代码
-	initCode := cgs.generateInitCode(tableName, dirName, nil)
+	initCode := cgs.generateInitCode(codeGenCtx)
 	initFilePath := filepath.Join("plugins", dirName+"init.go")
 	if err := cgs.writeCodeToFile(initFilePath, initCode); err != nil {
 		return fmt.Errorf("生成初始化文件失败: %v", err)
 	}
 
 	// 插入菜单和API数据
-	if err := cgs.InsertMenuAndApiData(ctx, tableName, dirName, comment); err != nil {
+	menuApiCtx := &models.MenuApiContext{TableName: tableName, FileName: fileName, DirName: dirName, Comment: comment}
+	if err := cgs.InsertMenuAndApiData(ctx, menuApiCtx); err != nil {
 		return fmt.Errorf("插入菜单和API数据失败: %v", err)
 	}
 
@@ -582,10 +545,13 @@ func (cgs *CodeGenService) GenerateBackendCodeFiles(ctx context.Context, tableNa
 }
 
 // 生成前端代码文件
-func (cgs *CodeGenService) GenerateFrontendCodeFiles(tableName string, columns []models.TableColumn) error {
-	// 将表名转换为目录名（移除下划线并转为小写）
-	dirName := strings.ReplaceAll(strings.ToLower(tableName), "_", "")
-
+func (cgs *CodeGenService) GenerateFrontendCodeFiles(sysGen *models.SysGen) error {
+	var tableName, dirName, fileName string
+	tableName = sysGen.Name
+	// KeepLettersOnlyLower 只保留字符串中的英文字母，并且全部转换为小写
+	dirName = common.KeepLettersOnlyLower(sysGen.ModuleName)
+	fileName = common.KeepLettersOnlyLower(sysGen.FileName)
+	columnTemplates := sysGen.SysGenFields.ToColumnTemplate()
 	// 获取前端代码生成目录配置
 	frontendDir := cgs.getFrontendGenDir()
 	if frontendDir == "" {
@@ -609,25 +575,24 @@ func (cgs *CodeGenService) GenerateFrontendCodeFiles(tableName string, columns [
 		}
 	}
 
-	columnTemplates := cgs.ColumnTemplate(columns)
-
 	// 生成API代码
-	apiCode := cgs.generateFrontendAPICode(tableName, dirName, columnTemplates, nil)
-	apiFilePath := filepath.Join(pluginsDir, "api", dirName+".ts")
+	frontendCtx := models.NewFrontendGenContext(tableName, sysGen.ModuleName, sysGen.FileName, columnTemplates)
+	apiCode := cgs.generateFrontendAPICode(frontendCtx)
+	apiFilePath := filepath.Join(pluginsDir, "api", fileName+".ts")
 	if err := cgs.writeCodeToFile(apiFilePath, apiCode); err != nil {
 		return fmt.Errorf("生成API文件失败: %v", err)
 	}
 
 	// 生成Store代码
-	storeCode := cgs.generateFrontendStoreCode(tableName, dirName, columnTemplates, nil)
-	storeFilePath := filepath.Join(pluginsDir, "store", dirName+".ts")
+	storeCode := cgs.generateFrontendStoreCode(frontendCtx)
+	storeFilePath := filepath.Join(pluginsDir, "store", fileName+".ts")
 	if err := cgs.writeCodeToFile(storeFilePath, storeCode); err != nil {
 		return fmt.Errorf("生成Store文件失败: %v", err)
 	}
 
 	// 生成视图代码
-	viewCode := cgs.generateFrontendViewCode(tableName, dirName, columnTemplates, nil)
-	viewFilePath := filepath.Join(pluginsDir, "views", dirName+"list.vue")
+	viewCode := cgs.generateFrontendViewCode(frontendCtx)
+	viewFilePath := filepath.Join(pluginsDir, "views", fileName+"list.vue")
 	if err := cgs.writeCodeToFile(viewFilePath, viewCode); err != nil {
 		return fmt.Errorf("生成视图文件失败: %v", err)
 	}
@@ -656,21 +621,19 @@ func (cgs *CodeGenService) getFrontendGenDir() string {
 }
 
 // generateFrontendAPICode 生成前端API代码
-func (cgs *CodeGenService) generateFrontendAPICode(tableName string, dirName string, columns []models.ColumnTemplate, params map[string]interface{}) string {
-	structName := cgs.toCamelCase(tableName)
-	primaryKey := cgs.GetPrimaryKey(columns)
-
+func (cgs *CodeGenService) generateFrontendAPICode(ctx *models.FrontendGenContext) string {
 	// 创建模板数据
 	templateData := map[string]interface{}{
-		"StructName":      structName,
-		"StructNameLower": cgs.toCamelCaseLower(tableName),
-		"TableName":       tableName,
-		"DirName":         dirName,
-		"Columns":         columns,
-		"PrimaryKey":      primaryKey,
+		"StructName":      ctx.StructName,
+		"StructNameLower": ctx.StructNameLower,
+		"TableName":       ctx.TableName,
+		"DirName":         ctx.DirName,
+		"FileName":        ctx.FileName,
+		"Columns":         ctx.Columns,
+		"PrimaryKey":      ctx.PrimaryKey,
 	}
 
-	for key, value := range params {
+	for key, value := range ctx.ExtraParams {
 		templateData[key] = value
 	}
 
@@ -679,21 +642,19 @@ func (cgs *CodeGenService) generateFrontendAPICode(tableName string, dirName str
 }
 
 // generateFrontendStoreCode 生成前端Store代码
-func (cgs *CodeGenService) generateFrontendStoreCode(tableName string, dirName string, columns []models.ColumnTemplate, params map[string]interface{}) string {
-	structName := cgs.toCamelCase(tableName)
-	primaryKey := cgs.GetPrimaryKey(columns)
-
+func (cgs *CodeGenService) generateFrontendStoreCode(ctx *models.FrontendGenContext) string {
 	// 创建模板数据
 	templateData := map[string]interface{}{
-		"StructName":      structName,
-		"StructNameLower": cgs.toCamelCaseLower(tableName),
-		"TableName":       tableName,
-		"DirName":         dirName,
-		"Columns":         columns,
-		"PrimaryKey":      primaryKey,
+		"StructName":      ctx.StructName,
+		"StructNameLower": ctx.StructNameLower,
+		"TableName":       ctx.TableName,
+		"DirName":         ctx.DirName,
+		"FileName":        ctx.FileName,
+		"Columns":         ctx.Columns,
+		"PrimaryKey":      ctx.PrimaryKey,
 	}
 
-	for key, value := range params {
+	for key, value := range ctx.ExtraParams {
 		templateData[key] = value
 	}
 
@@ -702,21 +663,19 @@ func (cgs *CodeGenService) generateFrontendStoreCode(tableName string, dirName s
 }
 
 // generateFrontendViewCode 生成前端视图代码
-func (cgs *CodeGenService) generateFrontendViewCode(tableName string, dirName string, columns []models.ColumnTemplate, params map[string]interface{}) string {
-	structName := cgs.toCamelCase(tableName)
-	primaryKey := cgs.GetPrimaryKey(columns)
-
+func (cgs *CodeGenService) generateFrontendViewCode(ctx *models.FrontendGenContext) string {
 	// 创建模板数据
 	templateData := map[string]interface{}{
-		"StructName":      structName,
-		"StructNameLower": cgs.toCamelCaseLower(tableName),
-		"TableName":       tableName,
-		"DirName":         dirName,
-		"Columns":         columns,
-		"PrimaryKey":      primaryKey,
+		"StructName":      ctx.StructName,
+		"StructNameLower": ctx.StructNameLower,
+		"TableName":       ctx.TableName,
+		"DirName":         ctx.DirName,
+		"FileName":        ctx.FileName,
+		"Columns":         ctx.Columns,
+		"PrimaryKey":      ctx.PrimaryKey,
 	}
 
-	for key, value := range params {
+	for key, value := range ctx.ExtraParams {
 		templateData[key] = value
 	}
 
@@ -741,26 +700,30 @@ func (cgs *CodeGenService) GenerateCode(database, table string) (map[string]stri
 	}
 
 	// 将表名转换为目录名（移除下划线并转为小写）
-	dirName := strings.ReplaceAll(strings.ToLower(table), "_", "")
-	columnTemplates := cgs.ColumnTemplate(columns)
+	dirName := common.KeepLettersOnlyLower(table)
+	fileName := common.KeepLettersOnlyLower(table)
+	columnTemplates := columns.ColumnTemplate()
+
+	// 创建代码生成上下文
+	codeGenCtx := models.NewCodeGenContext(table, dirName, fileName, table, columnTemplates)
+
 	// 生成模型代码
-	modelCode := cgs.generateModelCode(table, columnTemplates, nil)
+	modelCode := cgs.generateModelCode(codeGenCtx)
 
 	// 生成参数模型代码
-	modelParamCode := cgs.generateModelParamCode(table, columnTemplates, nil)
+	modelParamCode := cgs.generateModelParamCode(codeGenCtx)
 
 	// 生成控制器代码
-	primaryKey := cgs.GetPrimaryKey(columnTemplates)
-	controllerCode := cgs.generateControllerCodeWithPrimaryKey(table, dirName, primaryKey, nil)
+	controllerCode := cgs.generateControllerCode(codeGenCtx)
 
 	// 生成服务代码
-	serviceCode := cgs.generateServiceCode(table, dirName, columnTemplates, nil)
+	serviceCode := cgs.generateServiceCode(codeGenCtx)
 
 	// 生成路由代码
-	routesCode := cgs.generateRoutesCode(table, dirName, primaryKey, nil)
+	routesCode := cgs.generateRoutesCode(codeGenCtx)
 
 	// 生成初始化代码
-	initCode := cgs.generateInitCode(table, dirName, nil)
+	initCode := cgs.generateInitCode(codeGenCtx)
 
 	return map[string]string{
 		"model":      modelCode,
@@ -773,19 +736,19 @@ func (cgs *CodeGenService) GenerateCode(database, table string) (map[string]stri
 }
 
 // generateModelCode 生成模型代码
-func (cgs *CodeGenService) generateModelCode(tableName string, columns []models.ColumnTemplate, params map[string]interface{}) string {
-	structName := cgs.toCamelCase(tableName)
-	primaryKey := cgs.GetPrimaryKey(columns)
+func (cgs *CodeGenService) generateModelCode(ctx *models.CodeGenContext) string {
+	primaryKey := ctx.PrimaryKey
 
 	// 创建模板数据
 	templateData := map[string]interface{}{
-		"StructName": structName,
-		"TableName":  tableName,
-		"Columns":    columns,
-		"PrimaryKey": primaryKey,
+		"StructName":   ctx.StructName,
+		"TableName":    ctx.TableName,
+		"Columns":      ctx.Columns,
+		"PrimaryKey":   primaryKey,
+		"HasTimeField": ctx.HasTimeField,
 	}
 
-	for key, value := range params {
+	for key, value := range ctx.ExtraParams {
 		templateData[key] = value
 	}
 
@@ -794,40 +757,38 @@ func (cgs *CodeGenService) generateModelCode(tableName string, columns []models.
 }
 
 // generateModelParamCode 生成参数模型代码
-func (cgs *CodeGenService) generateModelParamCode(tableName string, columnTemplates []models.ColumnTemplate, params map[string]interface{}) string {
-	structName := cgs.toCamelCase(tableName)
-	primaryKey := cgs.GetPrimaryKey(columnTemplates)
+func (cgs *CodeGenService) generateModelParamCode(ctx *models.CodeGenContext) string {
+	primaryKey := ctx.PrimaryKey
 
 	// 创建模板数据
 	templateData := map[string]interface{}{
-		"StructName": structName,
-		"TableName":  tableName,
-		"Columns":    columnTemplates,
-		"PrimaryKey": primaryKey,
+		"StructName":   ctx.StructName,
+		"TableName":    ctx.TableName,
+		"Columns":      ctx.Columns,
+		"PrimaryKey":   primaryKey,
+		"HasTimeField": ctx.HasTimeField,
 	}
 
-	for key, value := range params {
+	for key, value := range ctx.ExtraParams {
 		templateData[key] = value
 	}
+
 	// 解析模板并生成代码
 	return cgs.executeTemplate("modelparam.tpl", templateData)
 }
 
-// generateControllerCodeWithPrimaryKey 生成控制器代码（带主键信息）
-func (cgs *CodeGenService) generateControllerCodeWithPrimaryKey(tableName string, dirName string, primaryKey *models.ColumnTemplate, params map[string]interface{}) string {
-	structName := cgs.toCamelCase(tableName)
-	structNameLower := cgs.toCamelCaseLower(tableName)
-
+// generateControllerCode 生成控制器代码
+func (cgs *CodeGenService) generateControllerCode(ctx *models.CodeGenContext) string {
 	// 创建模板数据
 	templateData := map[string]interface{}{
-		"StructName":      structName,
-		"StructNameLower": structNameLower,
-		"TableName":       tableName,
-		"DirName":         dirName,
-		"PrimaryKey":      primaryKey,
+		"StructName":      ctx.StructName,
+		"StructNameLower": ctx.StructNameLower,
+		"TableName":       ctx.TableName,
+		"DirName":         ctx.DirName,
+		"PrimaryKey":      ctx.PrimaryKey,
 	}
-	// 添加自定义参数到模板数据
-	for key, value := range params {
+
+	for key, value := range ctx.ExtraParams {
 		templateData[key] = value
 	}
 
@@ -836,22 +797,18 @@ func (cgs *CodeGenService) generateControllerCodeWithPrimaryKey(tableName string
 }
 
 // generateServiceCode 生成服务代码
-func (cgs *CodeGenService) generateServiceCode(tableName string, dirName string, columnTemplates []models.ColumnTemplate, params map[string]interface{}) string {
-	structName := cgs.toCamelCase(tableName)
-	structNameLower := cgs.toCamelCaseLower(tableName)
-	primaryKey := cgs.GetPrimaryKey(columnTemplates)
-
+func (cgs *CodeGenService) generateServiceCode(ctx *models.CodeGenContext) string {
 	// 创建模板数据
 	templateData := map[string]interface{}{
-		"StructName":      structName,
-		"StructNameLower": structNameLower,
-		"TableName":       tableName,
-		"DirName":         dirName,
-		"Columns":         columnTemplates,
-		"PrimaryKey":      primaryKey,
+		"StructName":      ctx.StructName,
+		"StructNameLower": ctx.StructNameLower,
+		"TableName":       ctx.TableName,
+		"DirName":         ctx.DirName,
+		"Columns":         ctx.Columns,
+		"PrimaryKey":      ctx.PrimaryKey,
 	}
-	// 添加自定义参数到模板数据
-	for key, value := range params {
+
+	for key, value := range ctx.ExtraParams {
 		templateData[key] = value
 	}
 
@@ -860,20 +817,18 @@ func (cgs *CodeGenService) generateServiceCode(tableName string, dirName string,
 }
 
 // generateRoutesCode 生成路由代码
-func (cgs *CodeGenService) generateRoutesCode(tableName string, dirName string, primaryKey *models.ColumnTemplate, params map[string]interface{}) string {
-	structName := cgs.toCamelCase(tableName)
-	structNameLower := cgs.toCamelCaseLower(tableName)
-
+func (cgs *CodeGenService) generateRoutesCode(ctx *models.CodeGenContext) string {
 	// 创建模板数据
 	templateData := map[string]interface{}{
-		"StructName":      structName,
-		"StructNameLower": structNameLower,
-		"TableName":       tableName,
-		"DirName":         dirName,
-		"PrimaryKey":      primaryKey,
+		"StructName":      ctx.StructName,
+		"StructNameLower": ctx.StructNameLower,
+		"TableName":       ctx.TableName,
+		"DirName":         ctx.DirName,
+		"FileName":        ctx.FileName,
+		"PrimaryKey":      ctx.PrimaryKey,
 	}
-	// 添加自定义参数到模板数据
-	for key, value := range params {
+
+	for key, value := range ctx.ExtraParams {
 		templateData[key] = value
 	}
 
@@ -882,44 +837,21 @@ func (cgs *CodeGenService) generateRoutesCode(tableName string, dirName string, 
 }
 
 // generateInitCode 生成初始化代码
-func (cgs *CodeGenService) generateInitCode(tableName string, dirName string, params map[string]interface{}) string {
-	structName := cgs.toCamelCase(tableName)
-	structNameLower := cgs.toCamelCaseLower(tableName)
-
+func (cgs *CodeGenService) generateInitCode(ctx *models.CodeGenContext) string {
 	// 创建模板数据
 	templateData := map[string]interface{}{
-		"StructName":      structName,
-		"StructNameLower": structNameLower,
-		"TableName":       tableName,
-		"DirName":         dirName,
+		"StructName":      ctx.StructName,
+		"StructNameLower": ctx.StructNameLower,
+		"TableName":       ctx.TableName,
+		"DirName":         ctx.DirName,
 	}
-	// 添加自定义参数到模板数据
-	for key, value := range params {
+
+	for key, value := range ctx.ExtraParams {
 		templateData[key] = value
 	}
 
 	// 解析模板并生成代码
 	return cgs.executeTemplate("init.tpl", templateData)
-}
-
-// toCamelCase 将字符串转换为驼峰命名
-func (cgs *CodeGenService) toCamelCase(str string) string {
-	parts := strings.Split(str, "_")
-	for i := range parts {
-		if len(parts[i]) > 0 {
-			parts[i] = strings.ToUpper(parts[i][:1]) + parts[i][1:]
-		}
-	}
-	return strings.Join(parts, "")
-}
-
-// toCamelCaseLower 将字符串转换为小驼峰命名
-func (cgs *CodeGenService) toCamelCaseLower(str string) string {
-	camel := cgs.toCamelCase(str)
-	if len(camel) > 0 {
-		return strings.ToLower(camel[:1]) + camel[1:]
-	}
-	return camel
 }
 
 // GetConfig 获取代码生成配置
@@ -971,66 +903,6 @@ func (cgs *CodeGenService) DownloadCode(database, table, moduleName string) (str
 
 	// 实际应该创建文件并返回下载路径
 	return fmt.Sprintf("/downloads/%s_%s.zip", database, table), nil
-}
-
-// getGoType 根据数据库类型获取Go类型
-func (cgs *CodeGenService) getGoType(dataType string, isUnsigned bool) string {
-	// 根据数据类型和是否unsigned返回对应的Go类型
-	switch dataType {
-	case "int", "integer", "smallint", "tinyint":
-		if isUnsigned {
-			return "uint"
-		}
-		return "int"
-	case "bigint":
-		if isUnsigned {
-			return "uint64"
-		}
-		return "int64"
-	case "varchar", "text", "char", "nvarchar", "ntext":
-		return "string"
-	case "datetime", "timestamp", "date":
-		return "time.Time"
-	case "decimal", "numeric", "float", "double":
-		return "float64"
-	case "boolean", "bool":
-		return "bool"
-	default:
-		return "string"
-	}
-}
-
-// getFrontendType 根据数据库类型获取前端TypeScript类型
-func (cgs *CodeGenService) getFrontendType(dataType string) string {
-	// 根据数据类型返回对应的TypeScript类型
-	switch dataType {
-	case "int", "integer", "smallint", "tinyint", "bigint":
-		return "number"
-	case "varchar", "text", "char", "nvarchar", "ntext":
-		return "string"
-	case "datetime", "timestamp", "date":
-		return "string" // 前端通常使用字符串表示日期
-	case "decimal", "numeric", "float", "double":
-		return "number"
-	case "boolean", "bool":
-		return "boolean"
-	default:
-		return "string"
-	}
-}
-
-// buildGormTag 构建GORM标签
-func (cgs *CodeGenService) buildGormTag(column models.TableColumn) string {
-	gormTag := "column:" + column.ColumnName
-
-	if column.ColumnKey.String == "PRI" {
-		gormTag += ";primaryKey"
-	}
-
-	if column.Extra.String == "auto_increment" {
-		gormTag += ";autoIncrement"
-	}
-	return gormTag
 }
 
 // executeTemplate 执行模板
@@ -1087,12 +959,12 @@ func (cgs *CodeGenService) writeCodeToFile(filePath string, content string) erro
 }
 
 // InsertMenuAndApiData 在生成代码时插入菜单和API数据
-func (cgs *CodeGenService) InsertMenuAndApiData(ctx context.Context, tableName, dirName, comment string) error {
+func (cgs *CodeGenService) InsertMenuAndApiData(ctx context.Context, menuApiCtx *models.MenuApiContext) error {
 	// 获取数据库连接
 	db := app.DB()
 
 	// 生成菜单和API数据
-	menuData, apiData, err := cgs.generateMenuAndApiData(tableName, dirName, comment)
+	menuData, apiData, err := cgs.generateMenuAndApiData(menuApiCtx.FileName, menuApiCtx.DirName, menuApiCtx.Comment)
 	if err != nil {
 		return fmt.Errorf("生成菜单和API数据失败: %v", err)
 	}
@@ -1209,18 +1081,19 @@ func (cgs *CodeGenService) InsertMenuAndApiData(ctx context.Context, tableName, 
 }
 
 // generateMenuAndApiData 生成菜单和API数据
-func (cgs *CodeGenService) generateMenuAndApiData(tableName, dirName, comment string) (
+func (cgs *CodeGenService) generateMenuAndApiData(fileName, dirName, comment string) (
 	[]models.SysMenu, []models.SysApi, error) {
 
 	// 父级菜单ID
 	parentMenuID := uint(0)
 
+	routerPath := dirName + fileName
 	// 生成主菜单项
 	mainMenu := models.SysMenu{
 		ParentID:   parentMenuID,
-		Path:       "/plugins/" + dirName,
-		Name:       "Plugins" + cgs.toCamelCase(tableName),
-		Component:  "plugins/" + dirName + "/views/" + dirName + "list",
+		Path:       "/plugins/" + dirName + "/" + fileName + "list",
+		Name:       "Plugins" + routerPath,
+		Component:  "plugins/" + dirName + "/views/" + fileName + "list",
 		Title:      comment, // 使用表注释作为菜单标题
 		IsFull:     false,
 		Hide:       false,
@@ -1252,7 +1125,7 @@ func (cgs *CodeGenService) generateMenuAndApiData(tableName, dirName, comment st
 		Sort:       0,
 		Type:       3, // 按钮类型
 		IsLink:     false,
-		Permission: "plugins:" + dirName + ":add",
+		Permission: "plugins:" + routerPath + ":add",
 	}
 
 	editButton := models.SysMenu{
@@ -1269,7 +1142,7 @@ func (cgs *CodeGenService) generateMenuAndApiData(tableName, dirName, comment st
 		Sort:       0,
 		Type:       3, // 按钮类型
 		IsLink:     false,
-		Permission: "plugins:" + dirName + ":edit",
+		Permission: "plugins:" + routerPath + ":edit",
 	}
 
 	deleteButton := models.SysMenu{
@@ -1286,7 +1159,7 @@ func (cgs *CodeGenService) generateMenuAndApiData(tableName, dirName, comment st
 		Sort:       0,
 		Type:       3, // 按钮类型
 		IsLink:     false,
-		Permission: "plugins:" + dirName + ":delete",
+		Permission: "plugins:" + routerPath + ":delete",
 	}
 
 	// 菜单列表
@@ -1295,35 +1168,35 @@ func (cgs *CodeGenService) generateMenuAndApiData(tableName, dirName, comment st
 	// 生成API数据
 	listApi := models.SysApi{
 		Title:    "列表查询",
-		Path:     "/api/plugins/" + dirName + "/list",
+		Path:     "/api/plugins/" + dirName + "/" + fileName + "/list",
 		Method:   "GET",
 		ApiGroup: comment, // 使用表注释作为API分组
 	}
 
 	addApi := models.SysApi{
 		Title:    "新增",
-		Path:     "/api/plugins/" + dirName + "/add",
+		Path:     "/api/plugins/" + dirName + "/" + fileName + "/add",
 		Method:   "POST",
 		ApiGroup: comment, // 使用表注释作为API分组
 	}
 
 	editApi := models.SysApi{
 		Title:    "修改",
-		Path:     "/api/plugins/" + dirName + "/edit",
+		Path:     "/api/plugins/" + dirName + "/" + fileName + "/edit",
 		Method:   "PUT",
 		ApiGroup: comment, // 使用表注释作为API分组
 	}
 
 	deleteApi := models.SysApi{
 		Title:    "删除",
-		Path:     "/api/plugins/" + dirName + "/delete",
+		Path:     "/api/plugins/" + dirName + "/" + fileName + "/delete",
 		Method:   "DELETE",
 		ApiGroup: comment, // 使用表注释作为API分组
 	}
 
 	getByIdApi := models.SysApi{
 		Title:    "查询单条数据",
-		Path:     "/api/plugins/" + dirName + "/:id", // 这里使用:id作为参数
+		Path:     "/api/plugins/" + dirName + "/" + fileName + "/:id", // 这里使用:id作为参数
 		Method:   "GET",
 		ApiGroup: comment, // 使用表注释作为API分组
 	}

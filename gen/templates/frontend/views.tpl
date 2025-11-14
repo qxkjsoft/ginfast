@@ -3,14 +3,25 @@
         <a-card :loading="loading">
                 <a-space wrap>
 {{- range .Columns}}
-{{- if and (not .IsPrimary) (ne .FieldName "CreatedAt") (ne .FieldName "UpdatedAt") (ne .FieldName "DeletedAt") (ne .FieldName "CreatedBy") (ne .FieldName "TenantId")}}
-                    <a-input-search v-model="searchForm.{{.JsonTag}}" placeholder="请输入{{.Comment}}搜索" style="width: 240px;"
-                        @search="handleSearch" allow-clear />
+{{- if .QueryShow}}
+                    {{- if eq .QueryType "BETWEEN"}}
+                    <!-- {{.Comment}}范围查询 -->
+                    <a-range-picker v-model="searchForm.{{.JsonTag}}Range"  style="width: 240px;" @change="handleSearch" />
+                    {{- else if eq .QueryType "LIKE"}}
+                    <!-- {{.Comment}}模糊查询 -->
+                    <a-input-search v-model="searchForm.{{.JsonTag}}" placeholder="请输入{{.Comment}}搜索" style="width: 240px;" @search="handleSearch" allow-clear />
+                    {{- else if or (eq .QueryType "GT") (eq .QueryType "GTE") (eq .QueryType "LT") (eq .QueryType "LTE")}}
+                    <!-- {{.Comment}}大小比较 -->
+                    {{- if eq .FrontendType "number"}}<a-input-number v-model="searchForm.{{.JsonTag}}" placeholder="请输入{{.Comment}}" style="width: 240px;" />{{- else if eq .GoType "time.Time"}}<a-date-picker v-model="searchForm.{{.JsonTag}}" placeholder="请选择{{.Comment}}" style="width: 240px;" />{{- else}}<a-input v-model="searchForm.{{.JsonTag}}" placeholder="请输入{{.Comment}}" style="width: 240px;" />{{- end}}
+                    {{- else}}
+                    <!-- {{.Comment}}精确查询 (EQ/NE) -->
+                    {{- if eq .FrontendType "number"}}<a-input-number v-model="searchForm.{{.JsonTag}}" placeholder="请输入{{.Comment}}" style="width: 240px;" />{{- else if eq .GoType "time.Time"}}<a-date-picker v-model="searchForm.{{.JsonTag}}" placeholder="请选择{{.Comment}}" style="width: 240px;" />{{- else}}<a-input v-model="searchForm.{{.JsonTag}}" placeholder="请输入{{.Comment}}搜索" style="width: 240px;" />{{- end}}
+                    {{- end}}
 {{- end}}
 {{- end}}
                     <a-button type="primary" @click="handleSearch">查询</a-button>
                     <a-button @click="handleReset">重置</a-button>
-                    <a-button type="primary" @click="handleCreate" v-hasPerm="['plugins:{{.DirName}}:add']">
+                    <a-button type="primary" @click="handleCreate" v-hasPerm="['plugins:{{.DirName}}{{.FileName}}:add']">
                         <template #icon>
                             <icon-plus />
                         </template>
@@ -23,20 +34,18 @@
                 @page-size-change="handlePageSizeChange">
                 <template #columns>
 {{- range .Columns}}
-{{- if and (not .IsPrimary) (ne .FieldName "CreatedAt") (ne .FieldName "UpdatedAt") (ne .FieldName "DeletedAt") (ne .FieldName "CreatedBy") (ne .FieldName "TenantId")}}
+{{- if .ListShow}}
                     <a-table-column title="{{.Comment}}" data-index="{{.JsonTag}}"  :width="150"  ellipsis tooltip/>
-{{- else if .IsPrimary}}
-                    <a-table-column title="{{.Comment}}" data-index="{{.JsonTag}}" :width="70" align="center" />
 {{- end}}
 {{- end}}
                     <a-table-column title="操作" :width="200">
                         <template #cell="{ record }">
                             <a-space>
-                                <a-button size="small" @click="handleEdit(record)" v-hasPerm="['plugins:{{.DirName}}:edit']">
+                                <a-button size="small" @click="handleEdit(record)" v-hasPerm="['plugins:{{.DirName}}{{.FileName}}:edit']">
                                     编辑
                                 </a-button>
                                 <a-popconfirm content="确定要删除这条数据吗？" @ok="handleDelete(record.{{if .PrimaryKey}}{{.PrimaryKey.JsonTag}}{{else}}id{{end}})">
-                                    <a-button size="small" status="danger" v-hasPerm="['plugins:{{.DirName}}:delete']">
+                                    <a-button size="small" status="danger" v-hasPerm="['plugins:{{.DirName}}{{.FileName}}:delete']">
                                         删除
                                     </a-button>
                                 </a-popconfirm>
@@ -53,11 +62,76 @@
             @cancel="handleCancel">
             <a-form :model="editingData" :rules="rules" ref="formRef">
 {{- range .Columns}}
-{{- if and (not .IsPrimary) (not .Exclude) }}
+{{- if and (not .IsPrimary) (not .Exclude) .FormShow}}
                 <a-form-item field="{{.JsonTag}}" label="{{.Comment}}">
-                    {{- if eq .FrontendType "number"}}<a-input-number v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />
-                    {{- else if eq .GoType "time.Time"}}<a-date-picker value-format="YYYY-MM-DDTHH:mm:ss[Z]" v-model="editingData.{{.JsonTag}}" placeholder="请选择{{.Comment}}" />
+                    {{- if eq .FrontendType "number"}}
+                    {{- if or (eq .FormType "") (eq .FormType "number")}}<a-input-number v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />
+                    {{- else if eq .FormType "select"}}
+                    <a-select v-model="editingData.{{.JsonTag}}" placeholder="请选择{{.Comment}}" {{- if ne .DictType ""}} :options="{{.JsonTag}}Option"{{- end}}>
+                        {{- if ne .DictType ""}}
+                        <template #label="{ data }">
+                            <div>{{`{{ data.name }}`}}</div>
+                        </template>
+                        <template #option="{ data }">
+                            <div>{{`{{ data.name }}`}}</div>
+                        </template>
+                        {{- end}}
+                    </a-select>
+                    {{- else if eq .FormType "radio"}}<a-radio-group v-model="editingData.{{.JsonTag}}" {{- if ne .DictType ""}} :options="{{.JsonTag}}Option"{{- end}}>
+                        {{- if ne .DictType ""}}<template #label="{ data }">
+                            <div>{{`{{ data.name }}`}}</div>
+                        </template>{{- end}}
+                    </a-radio-group>
+                    {{- else}}<a-input-number v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />{{- end}}
+                    {{- else if eq .GoType "time.Time"}}
+                    {{- if eq .FormType "input"}}<a-input v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />
+                    {{- else if eq .FormType "select"}}
+                    <a-select v-model="editingData.{{.JsonTag}}" placeholder="请选择{{.Comment}}" {{- if ne .DictType ""}} :options="{{.JsonTag}}Option"{{- end}}>
+                        {{- if ne .DictType ""}}
+                        <template #label="{ data }">
+                            <div>{{`{{ data.name }}`}}</div>
+                        </template>
+                        <template #option="{ data }">
+                            <div>{{`{{ data.name }}`}}</div>
+                        </template>
+                        {{- end}}
+                    </a-select>
+                    {{- else if eq .FormType "radio"}}<a-radio-group v-model="editingData.{{.JsonTag}}" {{- if ne .DictType ""}} :options="{{.JsonTag}}Option"{{- end}}>
+                        {{- if ne .DictType ""}}<template #label="{ data }">
+                            <div>{{`{{ data.name }}`}}</div>
+                        </template>{{- end}}
+                    </a-radio-group>
+                    {{- else}}<a-date-picker value-format="YYYY-MM-DDTHH:mm:ss[Z]" v-model="editingData.{{.JsonTag}}" placeholder="请选择{{.Comment}}" />{{- end}}
+                    {{- else}}
+                    {{- if eq .FormType "textarea"}}<a-textarea v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />
+                    {{- else if eq .FormType "number"}}<a-input-number v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />
+                    {{- else if eq .FormType "select"}}
+                    <a-select v-model="editingData.{{.JsonTag}}" placeholder="请选择{{.Comment}}" {{- if ne .DictType ""}} :options="{{.JsonTag}}Option"{{- end}}>
+                        {{- if ne .DictType ""}}
+                        <template #label="{ data }">
+                            <div>{{`{{ data.name }}`}}</div>
+                        </template>
+                        <template #option="{ data }">
+                            <div>{{`{{ data.name }}`}}</div>
+                        </template>
+                        {{- end}}
+                    </a-select>
+                    {{- else if eq .FormType "radio"}}<a-radio-group v-model="editingData.{{.JsonTag}}" {{- if ne .DictType ""}} :options="{{.JsonTag}}Option"{{- end}}>
+                        {{- if ne .DictType ""}}<template #label="{ data }">
+                            <div>{{`{{ data.name }}`}}</div>
+                        </template>{{- end}}
+                    </a-radio-group>
+                    {{- else if eq .FormType "checkbox"}}<a-checkbox-group 
+                        :modelValue="editingData.{{.JsonTag}} ? JSON.parse(editingData.{{.JsonTag}}) : []"
+                        @update:modelValue="(val: any) => editingData.{{.JsonTag}} = val.length > 0 ? JSON.stringify(val) : undefined"
+                        {{- if ne .DictType ""}} :options="{{.JsonTag}}Option"{{- end}}>
+                        {{- if ne .DictType ""}}<template #label="{ data }">
+                            <div>{{`{{ data.name }}`}}</div>
+                        </template>{{- end}}
+                    </a-checkbox-group>
+                    {{- else if eq .FormType "datetime"}}<a-date-picker value-format="YYYY-MM-DDTHH:mm:ss[Z]" v-model="editingData.{{.JsonTag}}" placeholder="请选择{{.Comment}}" />
                     {{- else}}<a-input v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />{{- end}}
+                    {{- end}}
                 </a-form-item>
 {{- end}}
 {{- end}}
@@ -68,9 +142,14 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue';
-import { use{{.StructName}}PluginStore } from '../store/{{.DirName}}';
-import type { {{.StructName}}Data } from '../api/{{.DirName}}';
+import { use{{.StructName}}PluginStore } from '../store/{{.FileName}}';
+import type { {{.StructName}}Data } from '../api/{{.FileName}}';
 import { storeToRefs } from 'pinia';
+{{- range .Columns}}
+{{- if and (not .IsPrimary) (not .Exclude) .FormShow (ne .DictType "")}}
+const {{.JsonTag}}Option = ref(dictFilter("{{.DictType}}"));
+{{- end}}
+{{- end}}
 const {{.StructNameLower}}Store = use{{.StructName}}PluginStore();
 const {
     fetchDataList,
@@ -88,26 +167,30 @@ const formRef = ref();
 // 搜索表单
 const searchForm = reactive({
 {{- range .Columns}}
-{{- if and (not .IsPrimary) (ne .FieldName "CreatedAt") (ne .FieldName "UpdatedAt") (ne .FieldName "DeletedAt") (ne .FieldName "CreatedBy") (ne .FieldName "TenantId")}}
-    {{.JsonTag}}: '',
+{{- if .QueryShow}}
+    {{- if eq .QueryType "BETWEEN"}}
+    {{.JsonTag}}Range: [],
+    {{- else}}
+    {{.JsonTag}}: {{if eq .FrontendType "string"}}''{{else if eq .FrontendType "number"}}undefined{{else}}''{{end}},
+    {{- end}}
 {{- end}}
 {{- end}}
 });
 
-const editingData = reactive({
+const editingData = reactive<Partial<{{.StructName}}Data>>({
 {{- range .Columns}}
-{{- if and (not .IsPrimary) (ne .FieldName "CreatedAt") (ne .FieldName "UpdatedAt") (ne .FieldName "DeletedAt") (ne .FieldName "CreatedBy") (ne .FieldName "TenantId")}}
-    {{.JsonTag}}: {{if eq .FrontendType "string"}}''{{else if eq .FrontendType "number"}}0{{else if eq .FrontendType "boolean"}}false{{else}}''{{end}},
+{{- if and (not .IsPrimary) (not .Exclude)}}
+    {{.JsonTag}}: undefined,
 {{- else if .IsPrimary}}
-    {{.JsonTag}}: 0,
+    {{.JsonTag}}: undefined,
 {{- end}}
 {{- end}}
 });
 
 const rules = {
 {{- range .Columns}}
-{{- if and (not .IsPrimary) (ne .FieldName "CreatedAt") (ne .FieldName "UpdatedAt") (ne .FieldName "DeletedAt") (ne .FieldName "CreatedBy") (ne .FieldName "TenantId")}}
-    {{.JsonTag}}: [{ required: true, message: '请输入{{.Comment}}' }],
+{{- if and (not .IsPrimary) (not .Exclude) .Required}}
+    {{.JsonTag}}: [{ required: true, message: '{{.Comment}}不能为空' }],
 {{- end}}
 {{- end}}
 };
@@ -125,15 +208,24 @@ const paginationConfig = computed(() => ({
 
 // 获取数据列表
 const loadData = async (pageNum: number = currentPage.value, pageSizeVal: number = pageSize.value) => {
-    await fetchDataList({
+    const params: any = {
         pageNum,
         pageSize: pageSizeVal,
+    };
 {{- range .Columns}}
-{{- if and (not .IsPrimary) (ne .FieldName "CreatedAt") (ne .FieldName "UpdatedAt") (ne .FieldName "DeletedAt") (ne .FieldName "CreatedBy") (ne .FieldName "TenantId")}}
-        {{.JsonTag}}: searchForm.{{.JsonTag}} || undefined,
+{{- if .QueryShow}}
+    {{- if eq .QueryType "BETWEEN"}}
+    if (searchForm.{{.JsonTag}}Range && searchForm.{{.JsonTag}}Range.length === 2) {
+        params.{{.JsonTag}} = searchForm.{{.JsonTag}}Range;
+    }
+    {{- else}}
+    if (searchForm.{{.JsonTag}}) {
+        params.{{.JsonTag}} = searchForm.{{.JsonTag}};
+    }
+    {{- end}}
 {{- end}}
 {{- end}}
-    });
+    await fetchDataList(params);
 };
 
 // 处理分页变化
@@ -154,8 +246,12 @@ const handleSearch = () => {
 // 重置搜索
 const handleReset = () => {
 {{- range .Columns}}
-{{- if and (not .IsPrimary) (ne .FieldName "CreatedAt") (ne .FieldName "UpdatedAt") (ne .FieldName "DeletedAt") (ne .FieldName "CreatedBy") (ne .FieldName "TenantId")}}
-    searchForm.{{.JsonTag}} = '';
+{{- if .QueryShow}}
+    {{- if eq .QueryType "BETWEEN"}}
+    searchForm.{{.JsonTag}}Range = [];
+    {{- else}}
+    searchForm.{{.JsonTag}} = {{if eq .FrontendType "string"}}''{{else if eq .FrontendType "number"}}undefined{{else}}''{{end}};
+    {{- end}}
 {{- end}}
 {{- end}}
     resetSearchParams();
@@ -167,10 +263,10 @@ const handleCreate = () => {
     // 重置表单数据
     Object.assign(editingData, {
 {{- range .Columns}}
-{{- if and (not .IsPrimary) (ne .FieldName "CreatedAt") (ne .FieldName "UpdatedAt") (ne .FieldName "DeletedAt") (ne .FieldName "CreatedBy") (ne .FieldName "TenantId")}}
-        {{.JsonTag}}: {{if eq .FrontendType "string"}}''{{else if eq .FrontendType "number"}}0{{else if eq .FrontendType "boolean"}}false{{else}}''{{end}},
+{{- if and (not .IsPrimary) (not .Exclude)}}
+        {{.JsonTag}}: undefined,
 {{- else if .IsPrimary}}
-        {{.JsonTag}}: 0,
+        {{.JsonTag}}: undefined,
 {{- end}}
 {{- end}}
     });

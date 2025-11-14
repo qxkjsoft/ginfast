@@ -2,9 +2,10 @@ package models
 
 import (
 	"context"
+{{- if .HasTimeField}}
 	"time"
+{{- end}}
 	"gin-fast/app/global/app"
-
 	"gorm.io/gorm"
 )
 

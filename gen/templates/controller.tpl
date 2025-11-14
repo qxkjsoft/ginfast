@@ -23,7 +23,7 @@ func New{{.StructName}}Controller() *{{.StructName}}Controller {
 
 // Create 创建{{.TableName}}
 func (c *{{.StructName}}Controller) Create(ctx *gin.Context) {
-	var req models.CreateRequest
+	var req models.{{.StructName}}CreateRequest
 	if err := req.Validate(ctx); err != nil {
 		c.FailAndAbort(ctx, err.Error(), err)
 	}
@@ -40,7 +40,7 @@ func (c *{{.StructName}}Controller) Create(ctx *gin.Context) {
 
 // Update 更新{{.TableName}}
 func (c *{{.StructName}}Controller) Update(ctx *gin.Context) {
-	var req models.UpdateRequest
+	var req models.{{.StructName}}UpdateRequest
 	if err := req.Validate(ctx); err != nil {
 		c.FailAndAbort(ctx, err.Error(), err)
 	}
@@ -55,7 +55,7 @@ func (c *{{.StructName}}Controller) Update(ctx *gin.Context) {
 
 // Delete 删除{{.TableName}}
 func (c *{{.StructName}}Controller) Delete(ctx *gin.Context) {
-	var req models.DeleteRequest
+	var req models.{{.StructName}}DeleteRequest
 	if err := req.Validate(ctx); err != nil {
 		c.FailAndAbort(ctx, err.Error(), err)
 	}
@@ -70,7 +70,7 @@ func (c *{{.StructName}}Controller) Delete(ctx *gin.Context) {
 
 // GetByID 根据ID获取{{.TableName}}信息
 func (c *{{.StructName}}Controller) GetByID(ctx *gin.Context) {
-	var req models.GetByIDRequest
+	var req models.{{.StructName}}GetByIDRequest
 	if err := req.Validate(ctx); err != nil {
 		c.FailAndAbort(ctx, err.Error(), err)
 	}
@@ -85,7 +85,7 @@ func (c *{{.StructName}}Controller) GetByID(ctx *gin.Context) {
 
 // List {{.TableName}}列表（分页查询）
 func (c *{{.StructName}}Controller) List(ctx *gin.Context) {
-	var req models.ListRequest
+	var req models.{{.StructName}}ListRequest
 	if err := req.Validate(ctx); err != nil {
 		c.FailAndAbort(ctx, err.Error(), err)
 	}

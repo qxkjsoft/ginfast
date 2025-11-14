@@ -308,6 +308,12 @@ func InitRoutes(engine *gin.Engine) {
 				sysGen.GET("/list", sysGenControllers.List)
 				// 批量插入代码生成配置
 				sysGen.POST("/batchInsert", sysGenControllers.BatchInsert)
+				// 根据ID获取代码生成配置详情
+				sysGen.GET("/:id", sysGenControllers.GetByID)
+				// 根据ID更新代码生成配置和字段信息
+				sysGen.PUT("/update", sysGenControllers.Update)
+				// 根据ID删除代码生成配置和字段信息
+				sysGen.DELETE("/:id", sysGenControllers.Delete)
 			}
 
 			// 代码生成路由组

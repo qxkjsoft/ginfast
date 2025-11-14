@@ -1,16 +1,16 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { {{.StructName}}Data, {{.StructName}}ListParams, {{.StructName}}ListResult, {{.StructName}}Result } from '../api/{{.DirName}}';
+import type { {{.StructName}}Data, {{.StructName}}ListParams, {{.StructName}}ListResult, {{.StructName}}Result } from '../api/{{.FileName}}';
 import {
     get{{.StructName}}List,
     create{{.StructName}},
     update{{.StructName}},
     delete{{.StructName}},
     get{{.StructName}}
-} from '../api/{{.DirName}}';
+} from '../api/{{.FileName}}';
 
 
-export const use{{.StructName}}PluginStore = defineStore('{{.DirName}}-plugin', () => {
+export const use{{.StructName}}PluginStore = defineStore('{{.DirName}}-{{.FileName}}-plugin', () => {
     // State
     const dataList = ref<{{.StructName}}Data[]>([]);
     const loading = ref<boolean>(false);

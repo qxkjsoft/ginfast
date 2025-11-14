@@ -18,51 +18,33 @@ type BaseRequest struct {
 
 // Bind 绑定请求参数
 func (r *BaseRequest) Bind(c *gin.Context, obj interface{}) (err error) {
-	// 先尝试从URL参数读取数据
-	c.ShouldBindQuery(obj)
-	// 尝试从路径参数读取数据
-	c.ShouldBindUri(obj)
-
 	// 获取Content-Type
 	contentType := c.GetHeader("Content-Type")
 
-	// 处理表单数据（不会消耗body用于后续绑定）
-	if strings.Contains(contentType, "application/x-www-form-urlencoded") ||
-		strings.Contains(contentType, "multipart/form-data") {
-		return c.ShouldBind(obj)
-	}
-
-	// 处理JSON数据，使用ShouldBindBodyWith避免消耗request body
+	// 根据Content-Type决定绑定策略
 	if strings.Contains(contentType, "application/json") {
+		// JSON请求：只处理路径参数，body由ShouldBindBodyWith处理 避免消耗request body
+		c.ShouldBindUri(obj)
 		return c.ShouldBindBodyWith(obj, binding.JSON)
+	} else if strings.Contains(contentType, "application/x-www-form-urlencoded") ||
+		strings.Contains(contentType, "multipart/form-data") {
+		// 表单数据：先解析数组参数，然后处理query和uri，最后处理body
+		r.parseArrayParams(c, obj)
+		c.ShouldBindQuery(obj)
+		c.ShouldBindUri(obj)
+		return c.ShouldBind(obj)
+	} else {
+		// GET请求：处理数组参数、query和uri参数
+		r.parseArrayParams(c, obj)
+		c.ShouldBindQuery(obj)
+		c.ShouldBindUri(obj)
+		return nil // GET请求通常没有body
 	}
 
-	// 其他情况尝试ShouldBind
-	return c.ShouldBind(obj)
-}
-
-type Validator struct {
-	BaseRequest
-}
-
-// Validate 验证参数
-func (vt *Validator) Check(c *gin.Context, obj interface{}) error {
-	if err := vt.Bind(c, obj); err != nil {
-		return err
-	}
-
-	// 解析数组参数
-	vt.parseArrayParams(c, obj)
-	// 验证参数
-	v := validate.Struct(obj)
-	if !v.Validate() {
-		return v.Errors.OneError()
-	}
-	return nil
 }
 
 // parseArrayParams 解析数组参数
-func (vt *Validator) parseArrayParams(c *gin.Context, obj interface{}) {
+func (r *BaseRequest) parseArrayParams(c *gin.Context, obj interface{}) {
 	// 获取查询参数
 	query := c.Request.URL.RawQuery
 	if query == "" {
@@ -87,10 +69,11 @@ func (vt *Validator) parseArrayParams(c *gin.Context, obj interface{}) {
 		if field.Kind() == reflect.Slice {
 			formTag := fieldType.Tag.Get("form")
 			if formTag != "" {
-				// 查找匹配的数组参数
+				// 查找匹配的数组参数，支持 field[0], field[1] 等格式
 				var arrayValues []string
+
 				for key, vals := range values {
-					if key == formTag || (strings.HasPrefix(key, formTag+"[") && strings.HasSuffix(key, "]")) {
+					if key == formTag || strings.HasPrefix(key, formTag+"[") {
 						arrayValues = append(arrayValues, vals...)
 					}
 				}
@@ -109,11 +92,70 @@ func (vt *Validator) parseArrayParams(c *gin.Context, obj interface{}) {
 						field.Set(reflect.ValueOf(uintSlice))
 					case reflect.String:
 						field.Set(reflect.ValueOf(arrayValues))
+					case reflect.Struct:
+						// 处理 time.Time 类型
+						if elemType.Name() == "Time" && elemType.PkgPath() == "time" {
+							timeSlice := make([]time.Time, len(arrayValues))
+							for j, val := range arrayValues {
+								// 尝试多种日期格式
+								var t time.Time
+								var err error
+
+								// 首先尝试标准格式 2006-01-02
+								t, err = time.Parse("2006-01-02", val)
+								if err != nil {
+									// 再尝试完整格式 2006-01-02 15:04:05
+									t, err = time.Parse("2006-01-02 15:04:05", val)
+								}
+								if err == nil {
+									timeSlice[j] = t
+								}
+							}
+							field.Set(reflect.ValueOf(timeSlice))
+						}
+						// 处理 JSONTime 类型
+						if elemType.Name() == "JSONTime" && elemType.PkgPath() == "models" {
+							timeSlice := make([]JSONTime, len(arrayValues))
+							for j, val := range arrayValues {
+								// 尝试多种日期格式
+								var t time.Time
+								var err error
+
+								// 首先尝试标准格式 2006-01-02
+								t, err = time.Parse("2006-01-02", val)
+								if err != nil {
+									// 再尝试完整格式 2006-01-02 15:04:05
+									t, err = time.Parse("2006-01-02 15:04:05", val)
+								}
+								if err == nil {
+									timeSlice[j] = JSONTime{Time: t}
+								}
+							}
+							field.Set(reflect.ValueOf(timeSlice))
+						}
 					}
 				}
 			}
 		}
 	}
+}
+
+type Validator struct {
+	BaseRequest
+}
+
+// Validate 验证参数
+func (vt *Validator) Check(c *gin.Context, obj interface{}) error {
+	if err := vt.Bind(c, obj); err != nil {
+		return err
+	}
+
+	// 验证参数
+	v := validate.Struct(obj)
+	if !v.Validate() {
+		return v.Errors.OneError()
+	}
+	return nil
 }
 
 // 分页

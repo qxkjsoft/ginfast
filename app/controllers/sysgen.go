@@ -3,6 +3,7 @@ package controllers
 import (
 	"gin-fast/app/models"
 	"gin-fast/app/service"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -99,4 +100,112 @@ func (sgc *SysGenController) BatchInsert(c *gin.Context) {
 
 	// 返回成功响应
 	sgc.Success(c, result)
+}
+
+// GetByID 根据ID获取代码生成配置详情
+// @Summary 获取代码生成配置详情
+// @Description 根据ID获取代码生成配置详情
+// @Tags 代码生成配置管理
+// @Accept json
+// @Produce json
+// @Param id path int true "代码生成配置ID"
+// @Success 200 {object} map[string]interface{} "成功返回代码生成配置详情"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 404 {object} map[string]interface{} "数据不存在"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysGen/{id} [get]
+// @Security ApiKeyAuth
+func (sgc *SysGenController) GetByID(c *gin.Context) {
+	// 从路径参数中获取ID
+	id := c.Param("id")
+	if id == "" {
+		sgc.FailAndAbort(c, "ID参数不能为空", nil)
+	}
+
+	// 将ID转换为uint
+	genID, err := strconv.ParseUint(id, 10, 64)
+	if err != nil || genID == 0 {
+		sgc.FailAndAbort(c, "ID参数格式错误", err)
+	}
+
+	// 创建SysGen实例并查找数据
+	gen := models.NewSysGen()
+	gen.ID = uint(genID)
+	err = gen.Find(c, func(db *gorm.DB) *gorm.DB {
+		return db.Preload("SysGenFields") // 预加载字段信息
+	})
+	if err != nil {
+		sgc.FailAndAbort(c, "查询代码生成配置失败", err)
+	}
+
+	// 检查数据是否存在
+	if gen.IsEmpty() {
+		sgc.FailAndAbort(c, "代码生成配置不存在", nil)
+	}
+
+	// 返回成功响应
+	sgc.Success(c, gen)
+}
+
+// Update 根据ID更新代码生成配置和字段信息
+// @Summary 更新代码生成配置和字段信息
+// @Description 根据ID更新sys_gen表的module_name、describe字段，以及sys_gen_field表的data_name、data_comment字段
+// @Tags 代码生成配置管理
+// @Accept json
+// @Produce json
+// @Param request body models.SysGenUpdateRequest true "更新请求参数"
+// @Success 200 {object} map[string]interface{} "成功返回更新结果"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysGen/update [put]
+// @Security ApiKeyAuth
+func (sgc *SysGenController) Update(c *gin.Context) {
+	var req models.SysGenUpdateRequest
+	if err := req.Validate(c); err != nil {
+		sgc.FailAndAbort(c, err.Error(), err)
+	}
+
+	// 调用服务层方法进行更新
+	err := sgc.service.Update(c, &req)
+	if err != nil {
+		sgc.FailAndAbort(c, "更新代码生成配置失败", err)
+	}
+
+	// 返回成功响应
+	sgc.Success(c, "更新成功")
+}
+
+// Delete 根据ID删除代码生成配置和字段信息
+// @Summary 删除代码生成配置和字段信息
+// @Description 根据ID硬删除sys_gen表记录以及关联的sys_gen_field表记录
+// @Tags 代码生成配置管理
+// @Accept json
+// @Produce json
+// @Param id path int true "代码生成配置ID"
+// @Success 200 {object} map[string]interface{} "成功返回删除结果"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysGen/{id} [delete]
+// @Security ApiKeyAuth
+func (sgc *SysGenController) Delete(c *gin.Context) {
+	// 从路径参数中获取ID
+	id := c.Param("id")
+	if id == "" {
+		sgc.FailAndAbort(c, "ID参数不能为空", nil)
+	}
+
+	// 将ID转换为uint
+	genID, err := strconv.ParseUint(id, 10, 64)
+	if err != nil || genID == 0 {
+		sgc.FailAndAbort(c, "ID参数格式错误", err)
+	}
+
+	// 调用服务层方法进行删除
+	err = sgc.service.Delete(c, uint(genID))
+	if err != nil {
+		sgc.FailAndAbort(c, "删除代码生成配置失败", err)
+	}
+
+	// 返回成功响应
+	sgc.Success(c, "删除成功")
 }

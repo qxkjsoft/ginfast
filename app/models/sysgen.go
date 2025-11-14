@@ -10,10 +10,14 @@ import (
 // SysGen 代码生成配置模型
 type SysGen struct {
 	BaseModel
-	Name       string `gorm:"column:name;size:255;comment:表名" json:"name"`
-	ModuleName string `gorm:"column:module_name;size:255;comment:模块名称" json:"moduleName"`
-	Describe   string `gorm:"column:describe;size:1000;comment:描述" json:"describe"`
-	CreatedBy  uint   `gorm:"column:created_by;comment:创建人" json:"createdBy"`
+	DbType       string          `gorm:"column:db_type;size:255;comment:数据库类型" json:"dbType"`
+	Database     string          `gorm:"column:database;size:255;comment:数据库名称" json:"database"`
+	Name         string          `gorm:"column:name;size:255;comment:表名" json:"name"`
+	ModuleName   string          `gorm:"column:module_name;size:255;comment:模块名称" json:"moduleName"`
+	FileName     string          `gorm:"column:file_name;size:255;comment:文件名" json:"fileName"`
+	Describe     string          `gorm:"column:describe;size:1000;comment:描述" json:"describe"`
+	CreatedBy    uint            `gorm:"column:created_by;comment:创建人" json:"createdBy"`
+	SysGenFields SysGenFieldList `gorm:"foreignKey:GenID;references:ID" json:"sysGenFields"`
 }
 
 // TableName 设置表名
@@ -38,6 +42,12 @@ func (gen *SysGen) Find(c context.Context, funcs ...func(*gorm.DB) *gorm.DB) (er
 		err = nil // 将记录未找到的错误转换为nil，通过IsEmpty()方法判断
 	}
 	return
+}
+
+func (gen *SysGen) Get(c context.Context, id uint) (err error) {
+	return gen.Find(c, func(db *gorm.DB) *gorm.DB {
+		return db.Where("id = ?", id)
+	})
 }
 
 // Save 保存代码生成配置
