@@ -22,6 +22,7 @@ func (s *TestStudentsService) Create(c *gin.Context, req models.TestStudentsCrea
     testStudents.Gender = req.Gender
     testStudents.ClassName = req.ClassName
     testStudents.AdmissionDate = req.AdmissionDate
+    testStudents.Email = req.Email
     testStudents.Address = req.Address
 	// 保存到数据库
 	if err := testStudents.Create(c); err != nil {
@@ -44,6 +45,7 @@ func (s *TestStudentsService) Update(c *gin.Context, req models.TestStudentsUpda
     testStudents.Gender = req.Gender
     testStudents.ClassName = req.ClassName
     testStudents.AdmissionDate = req.AdmissionDate
+    testStudents.Email = req.Email
     testStudents.Address = req.Address
 	// 保存到数据库
 	if err := testStudents.Update(c); err != nil {

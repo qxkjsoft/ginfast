@@ -192,4 +192,4 @@ upload:
 #代码生成
 gen:
   # 前端代码生成路径
-  dir: "D:\\go_pro\\ginfasttenant\\ginfast-tenant-front\\src\\plugins"
+  dir: "../ginfast-tenant-ui/src/plugins"

@@ -16,8 +16,8 @@ type {{.StructName}}ListRequest struct {
 	models.Validator
 {{- range .Columns}}
 	{{- if .QueryShow}}
-	{{- if eq .QueryType "BETWEEN"}}
-	{{.FieldName}} []{{.GoType}} `form:"{{.JsonTag}}"`{{if .Comment}} // {{.Comment}}范围{{end}}
+	{{- if and (eq .QueryType "BETWEEN") (eq .GoType "time.Time")}}
+	{{.FieldName}} []{{.GoType}} `form:"{{.JsonTag}}"`{{if .Comment}} // {{.Comment}}范围（仅日期类型支持）{{end}}
 	{{- else}}
 	{{.FieldName}} *{{.GoType}} `form:"{{.JsonTag}}"`{{if .Comment}} // {{.Comment}}{{end}}
 	{{- end}}
@@ -35,9 +35,14 @@ func (r *{{.StructName}}ListRequest) Handle() func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 {{- range .Columns}}
 		{{- if .QueryShow}}
-            {{- if eq .QueryType "BETWEEN"}}
+            {{- if and (eq .QueryType "BETWEEN") (eq .GoType "time.Time")}}
         if len(r.{{.FieldName}}) >= 2 {
             db = db.Where("{{.DataName}} BETWEEN ? AND ?", r.{{.FieldName}}[0], r.{{.FieldName}}[1])
+        }
+            {{- else if eq .QueryType "BETWEEN"}}
+        // 非日期类型不支持BETWEEN查询，使用精确查询
+        if r.{{.FieldName}} != nil {
+            db = db.Where("{{.DataName}} = ?", *r.{{.FieldName}})
         }
             {{- else}}
         if r.{{.FieldName}} != nil {
@@ -45,8 +50,11 @@ func (r *{{.StructName}}ListRequest) Handle() func(db *gorm.DB) *gorm.DB {
             db = db.Where("{{.DataName}} = ?", *r.{{.FieldName}})
             {{- else if eq .QueryType "NE"}}
             db = db.Where("{{.DataName}} != ?", *r.{{.FieldName}})
-            {{- else if eq .QueryType "LIKE"}}
+            {{- else if and (eq .QueryType "LIKE") (ne .FrontendType "number")}}
             db = db.Where("{{.DataName}} LIKE ?", "%" + *r.{{.FieldName}} + "%")
+            {{- else if and (eq .QueryType "LIKE") (eq .FrontendType "number")}}
+            // 数值类型不支持LIKE查询，使用精确查询
+            db = db.Where("{{.DataName}} = ?", *r.{{.FieldName}})
             {{- else if eq .QueryType "GT"}}
             db = db.Where("{{.DataName}} > ?", *r.{{.FieldName}})
             {{- else if eq .QueryType "GTE"}}

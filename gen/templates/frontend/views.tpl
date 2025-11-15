@@ -2,20 +2,39 @@
     <div class="snow-fill">
         <a-card :loading="loading">
                 <a-space wrap>
+                    <!-- 查询表单-->
 {{- range .Columns}}
 {{- if .QueryShow}}
-                    {{- if eq .QueryType "BETWEEN"}}
-                    <!-- {{.Comment}}范围查询 -->
-                    <a-range-picker v-model="searchForm.{{.JsonTag}}Range"  style="width: 240px;" @change="handleSearch" />
-                    {{- else if eq .QueryType "LIKE"}}
-                    <!-- {{.Comment}}模糊查询 -->
+                    {{- if and (eq .QueryType "BETWEEN") (eq .GoType "time.Time")}}
+                    <!-- {{.Comment}}范围查询（日期类型专用） -->
+                    <a-range-picker v-model="searchForm.{{.JsonTag}}Range" style="width: 240px;" @change="handleSearch" />
+                    {{- else if or (eq .FormType "radio") (eq .FormType "select") (eq .FormType "checkbox")}}
+                    <!-- {{.Comment}}选择框查询（radio/select/checkbox统一使用select） -->
+                    <a-select v-model="searchForm.{{.JsonTag}}" placeholder="请选择{{.Comment}}" style="width: 240px;" {{- if ne .DictType ""}} :options="{{.JsonTag}}Option"{{- end}} allow-clear>
+                        {{- if ne .DictType ""}}
+                        <template #label="{ data }">
+                            <div>{{`{{ data.name }}`}}</div>
+                        </template>
+                        <template #option="{ data }">
+                            <div>{{`{{ data.name }}`}}</div>
+                        </template>
+                        {{- end}}
+                    </a-select>
+                    {{- else if and (eq .QueryType "LIKE") (ne .FrontendType "number")}}
+                    <!-- {{.Comment}}模糊查询（仅非数值类型支持） -->
                     <a-input-search v-model="searchForm.{{.JsonTag}}" placeholder="请输入{{.Comment}}搜索" style="width: 240px;" @search="handleSearch" allow-clear />
-                    {{- else if or (eq .QueryType "GT") (eq .QueryType "GTE") (eq .QueryType "LT") (eq .QueryType "LTE")}}
-                    <!-- {{.Comment}}大小比较 -->
-                    {{- if eq .FrontendType "number"}}<a-input-number v-model="searchForm.{{.JsonTag}}" placeholder="请输入{{.Comment}}" style="width: 240px;" />{{- else if eq .GoType "time.Time"}}<a-date-picker v-model="searchForm.{{.JsonTag}}" placeholder="请选择{{.Comment}}" style="width: 240px;" />{{- else}}<a-input v-model="searchForm.{{.JsonTag}}" placeholder="请输入{{.Comment}}" style="width: 240px;" />{{- end}}
+                    {{- else if and (eq .QueryType "LIKE") (eq .FrontendType "number")}}
+                    <!-- {{.Comment}}数值类型不支持模糊查询，使用精确查询 -->
+                    <a-input-number v-model="searchForm.{{.JsonTag}}" placeholder="请输入{{.Comment}}" style="width: 240px;" @change="handleSearch" />
                     {{- else}}
-                    <!-- {{.Comment}}精确查询 (EQ/NE) -->
-                    {{- if eq .FrontendType "number"}}<a-input-number v-model="searchForm.{{.JsonTag}}" placeholder="请输入{{.Comment}}" style="width: 240px;" />{{- else if eq .GoType "time.Time"}}<a-date-picker v-model="searchForm.{{.JsonTag}}" placeholder="请选择{{.Comment}}" style="width: 240px;" />{{- else}}<a-input v-model="searchForm.{{.JsonTag}}" placeholder="请输入{{.Comment}}搜索" style="width: 240px;" />{{- end}}
+                    <!-- {{.Comment}}精确查询 -->
+                    {{- if eq .FrontendType "number"}}
+                    <a-input-number v-model="searchForm.{{.JsonTag}}" placeholder="请输入{{.Comment}}" style="width: 240px;" />
+                    {{- else if eq .GoType "time.Time"}}
+                    <a-date-picker v-model="searchForm.{{.JsonTag}}" placeholder="请选择{{.Comment}}" style="width: 240px;" />
+                    {{- else}}
+                    <a-input v-model="searchForm.{{.JsonTag}}" placeholder="请输入{{.Comment}}" style="width: 240px;" />
+                    {{- end}}
                     {{- end}}
 {{- end}}
 {{- end}}
@@ -146,8 +165,10 @@ import { use{{.StructName}}PluginStore } from '../store/{{.FileName}}';
 import type { {{.StructName}}Data } from '../api/{{.FileName}}';
 import { storeToRefs } from 'pinia';
 {{- range .Columns}}
-{{- if and (not .IsPrimary) (not .Exclude) .FormShow (ne .DictType "")}}
+{{- if and (not .IsPrimary) (not .Exclude) (ne .DictType "")}}
+    {{- if or .FormShow .QueryShow}}
 const {{.JsonTag}}Option = ref(dictFilter("{{.DictType}}"));
+    {{- end}}
 {{- end}}
 {{- end}}
 const {{.StructNameLower}}Store = use{{.StructName}}PluginStore();
@@ -168,7 +189,7 @@ const formRef = ref();
 const searchForm = reactive({
 {{- range .Columns}}
 {{- if .QueryShow}}
-    {{- if eq .QueryType "BETWEEN"}}
+    {{- if and (eq .QueryType "BETWEEN") (eq .GoType "time.Time")}}
     {{.JsonTag}}Range: [],
     {{- else}}
     {{.JsonTag}}: {{if eq .FrontendType "string"}}''{{else if eq .FrontendType "number"}}undefined{{else}}''{{end}},
@@ -214,7 +235,7 @@ const loadData = async (pageNum: number = currentPage.value, pageSizeVal: number
     };
 {{- range .Columns}}
 {{- if .QueryShow}}
-    {{- if eq .QueryType "BETWEEN"}}
+    {{- if and (eq .QueryType "BETWEEN") (eq .GoType "time.Time")}}
     if (searchForm.{{.JsonTag}}Range && searchForm.{{.JsonTag}}Range.length === 2) {
         params.{{.JsonTag}} = searchForm.{{.JsonTag}}Range;
     }
@@ -247,7 +268,7 @@ const handleSearch = () => {
 const handleReset = () => {
 {{- range .Columns}}
 {{- if .QueryShow}}
-    {{- if eq .QueryType "BETWEEN"}}
+    {{- if and (eq .QueryType "BETWEEN") (eq .GoType "time.Time")}}
     searchForm.{{.JsonTag}}Range = [];
     {{- else}}
     searchForm.{{.JsonTag}} = {{if eq .FrontendType "string"}}''{{else if eq .FrontendType "number"}}undefined{{else}}''{{end}};

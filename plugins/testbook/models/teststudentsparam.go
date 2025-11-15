@@ -16,8 +16,10 @@ type TestStudentsListRequest struct {
 	StuName *string `form:"stuName"` // 姓名
 	Age *int `form:"age"` // 年龄
 	Gender *string `form:"gender"` // 性别
+	Email *string `form:"email"` //  邮箱
 	Address *string `form:"address"` // 地址
-	CreatedAt []time.Time `form:"createdAt"` // 创建时间范围
+	CreatedAt []time.Time `form:"createdAt"` // 创建时间范围（仅日期类型支持）
+	TenantId *uint `form:"tenantId"` // 租户ID字段
 }
 
 // Validate 验证请求参数
@@ -35,11 +37,16 @@ func (r *TestStudentsListRequest) Handle() func(db *gorm.DB) *gorm.DB {
             db = db.Where("student_name LIKE ?", "%" + *r.StuName + "%")
         }
         if r.Age != nil {
-            db = db.Where("age >= ?", *r.Age)
+            // 数值类型不支持LIKE查询，使用精确查询
+            db = db.Where("age = ?", *r.Age)
         }
+        // 非日期类型不支持BETWEEN查询，使用精确查询
         if r.Gender != nil {
-            // 默认等于查询
             db = db.Where("gender = ?", *r.Gender)
+        }
+        if r.Email != nil {
+            // 默认等于查询
+            db = db.Where("email = ?", *r.Email)
         }
         if r.Address != nil {
             // 默认等于查询
@@ -47,6 +54,10 @@ func (r *TestStudentsListRequest) Handle() func(db *gorm.DB) *gorm.DB {
         }
         if len(r.CreatedAt) >= 2 {
             db = db.Where("created_at BETWEEN ? AND ?", r.CreatedAt[0], r.CreatedAt[1])
+        }
+        if r.TenantId != nil {
+            // 默认等于查询
+            db = db.Where("tenant_id = ?", *r.TenantId)
         }
 		return db
 	}
@@ -60,6 +71,7 @@ type TestStudentsCreateRequest struct {
 	Gender string `form:"gender" validate:"required" message:"性别不能为空"` // 性别
 	ClassName string `form:"className"` // 班级名称
 	AdmissionDate time.Time `form:"admissionDate"` // 入学日期
+	Email string `form:"email"` //  邮箱
 	Address string `form:"address"` // 地址
 }
 
@@ -77,6 +89,7 @@ type TestStudentsUpdateRequest struct {
 	Gender string `form:"gender" validate:"required" message:"性别不能为空"` // 性别
 	ClassName string `form:"className"` // 班级名称
 	AdmissionDate time.Time `form:"admissionDate"` // 入学日期
+	Email string `form:"email"` //  邮箱
 	Address string `form:"address"` // 地址
 }
 
