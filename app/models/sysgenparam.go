@@ -35,7 +35,7 @@ func (r *SysGenListRequest) Handle() func(db *gorm.DB) *gorm.DB {
 type SysGenBatchInsertRequest struct {
 	Validator
 	Database string   `json:"database" form:"database"`                                     // 数据库名称
-	Tables   []string `json:"tables" form:"tables" validate:"required" message:"表名称集合不能为空"` // 表名称集合
+	Tables   []string `json:"tables" form:"tables" validate:"required" message:"表名称集合不能为空"` // 表名称集合                                   // 是否覆盖
 }
 
 // Validate 验证批量插入请求参数
@@ -47,9 +47,10 @@ func (r *SysGenBatchInsertRequest) Validate(c *gin.Context) error {
 type SysGenUpdateRequest struct {
 	Validator
 	ID           uint                       `json:"id" form:"id" validate:"required" message:"ID不能为空"`
-	ModuleName   string                     `json:"moduleName" form:"moduleName" validate:"required" message:"模块名称不能为空"`       // 模块名称
-	FileName     string                     `json:"fileName" form:"fileName" validate:"required" message:"文件名不能为空"`            // 文件名
-	Describe     string                     `json:"describe" form:"describe" validate:"required" message:"描述不能为空"`             // 描述
+	ModuleName   string                     `json:"moduleName" form:"moduleName" validate:"required" message:"模块名称不能为空"` // 模块名称
+	FileName     string                     `json:"fileName" form:"fileName" validate:"required" message:"文件名不能为空"`      // 文件名
+	Describe     string                     `json:"describe" form:"describe" validate:"required" message:"描述不能为空"`       // 描述
+	IsCover      int                        `json:"isCover" form:"isCover" `
 	FieldUpdates []SysGenFieldUpdateRequest `json:"sysGenFields" form:"sysGenFields" validate:"required" message:"字段更新列表不能为空"` // 字段更新列表
 }
 
@@ -70,4 +71,15 @@ type SysGenFieldUpdateRequest struct {
 	QueryType   string `json:"queryType" form:"queryType" `    // 查询方式
 	FormType    string `json:"formType" form:"formType" `      // 表单类型
 	DictType    string `json:"dictType" form:"dictType"`       // 关联的字典
+}
+
+// SysGenRefreshFieldsRequest 刷新字段信息请求参数
+type SysGenRefreshFieldsRequest struct {
+	Validator
+	ID uint `json:"id" form:"id" validate:"required" message:"ID不能为空"` // sys_gen配置ID
+}
+
+// Validate 验证刷新字段请求参数
+func (r *SysGenRefreshFieldsRequest) Validate(c *gin.Context) error {
+	return r.Validator.Check(c, r)
 }

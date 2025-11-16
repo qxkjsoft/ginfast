@@ -54,7 +54,15 @@
                 <template #columns>
 {{- range .Columns}}
 {{- if .ListShow}}
+                    {{- if eq .GoType "time.Time"}}
+                    <a-table-column title="{{.Comment}}" data-index="{{.JsonTag}}"  :width="150"  ellipsis tooltip>
+                        <template #cell="{ record }">
+                            {{`{{ record['`}}{{.JsonTag}}{{`'] ? formatTime(record['`}}{{.JsonTag}}{{`']) : "" }}`}}
+                        </template>
+                    </a-table-column>
+                    {{- else}}
                     <a-table-column title="{{.Comment}}" data-index="{{.JsonTag}}"  :width="150"  ellipsis tooltip/>
+                    {{- end}}
 {{- end}}
 {{- end}}
                     <a-table-column title="操作" :width="200">
@@ -164,6 +172,7 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import { use{{.StructName}}PluginStore } from '../store/{{.FileName}}';
 import type { {{.StructName}}Data } from '../api/{{.FileName}}';
 import { storeToRefs } from 'pinia';
+import { formatTime } from '@/globals';
 {{- range .Columns}}
 {{- if and (not .IsPrimary) (not .Exclude) (ne .DictType "")}}
     {{- if or .FormShow .QueryShow}}

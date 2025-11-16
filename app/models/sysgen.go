@@ -18,6 +18,7 @@ type SysGen struct {
 	Describe     string          `gorm:"column:describe;size:1000;comment:描述" json:"describe"`
 	CreatedBy    uint            `gorm:"column:created_by;comment:创建人" json:"createdBy"`
 	SysGenFields SysGenFieldList `gorm:"foreignKey:GenID;references:ID" json:"sysGenFields"`
+	IsCover      bool            `gorm:"column:is_cover;default:false;comment:是否覆盖" json:"isCover"`
 }
 
 // TableName 设置表名

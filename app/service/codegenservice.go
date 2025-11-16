@@ -496,42 +496,42 @@ func (cgs *CodeGenService) GenerateBackendCodeFiles(ctx context.Context, sysGen 
 	// 生成模型代码
 	modelCode := cgs.generateModelCode(codeGenCtx)
 	modelFilePath := filepath.Join(pluginsDir, "models", fileName+".go")
-	if err := cgs.writeCodeToFile(modelFilePath, modelCode); err != nil {
+	if err := cgs.writeCodeToFileWithCover(modelFilePath, modelCode, sysGen.IsCover); err != nil {
 		return fmt.Errorf("生成模型文件失败: %v", err)
 	}
 
 	// 生成参数模型代码
 	modelParamCode := cgs.generateModelParamCode(codeGenCtx)
 	modelParamFilePath := filepath.Join(pluginsDir, "models", fileName+"param.go")
-	if err := cgs.writeCodeToFile(modelParamFilePath, modelParamCode); err != nil {
+	if err := cgs.writeCodeToFileWithCover(modelParamFilePath, modelParamCode, sysGen.IsCover); err != nil {
 		return fmt.Errorf("生成参数模型文件失败: %v", err)
 	}
 
 	// 生成控制器代码
 	controllerCode := cgs.generateControllerCode(codeGenCtx)
 	controllerFilePath := filepath.Join(pluginsDir, "controllers", fileName+"controller.go")
-	if err := cgs.writeCodeToFile(controllerFilePath, controllerCode); err != nil {
+	if err := cgs.writeCodeToFileWithCover(controllerFilePath, controllerCode, sysGen.IsCover); err != nil {
 		return fmt.Errorf("生成控制器文件失败: %v", err)
 	}
 
 	// 生成服务代码
 	serviceCode := cgs.generateServiceCode(codeGenCtx)
 	serviceFilePath := filepath.Join(pluginsDir, "service", fileName+"service.go")
-	if err := cgs.writeCodeToFile(serviceFilePath, serviceCode); err != nil {
+	if err := cgs.writeCodeToFileWithCover(serviceFilePath, serviceCode, sysGen.IsCover); err != nil {
 		return fmt.Errorf("生成服务文件失败: %v", err)
 	}
 
 	// 生成路由代码
 	routesCode := cgs.generateRoutesCode(codeGenCtx)
 	routesFilePath := filepath.Join(pluginsDir, "routes", fileName+"routes.go")
-	if err := cgs.writeCodeToFile(routesFilePath, routesCode); err != nil {
+	if err := cgs.writeCodeToFileWithCover(routesFilePath, routesCode, sysGen.IsCover); err != nil {
 		return fmt.Errorf("生成路由文件失败: %v", err)
 	}
 
 	// 生成初始化代码
 	initCode := cgs.generateInitCode(codeGenCtx)
 	initFilePath := filepath.Join("plugins", dirName+"init.go")
-	if err := cgs.writeCodeToFile(initFilePath, initCode); err != nil {
+	if err := cgs.writeCodeToFileWithCover(initFilePath, initCode, sysGen.IsCover); err != nil {
 		return fmt.Errorf("生成初始化文件失败: %v", err)
 	}
 
@@ -579,21 +579,21 @@ func (cgs *CodeGenService) GenerateFrontendCodeFiles(sysGen *models.SysGen) erro
 	frontendCtx := models.NewFrontendGenContext(tableName, sysGen.ModuleName, sysGen.FileName, columnTemplates)
 	apiCode := cgs.generateFrontendAPICode(frontendCtx)
 	apiFilePath := filepath.Join(pluginsDir, "api", fileName+".ts")
-	if err := cgs.writeCodeToFile(apiFilePath, apiCode); err != nil {
+	if err := cgs.writeCodeToFileWithCover(apiFilePath, apiCode, sysGen.IsCover); err != nil {
 		return fmt.Errorf("生成API文件失败: %v", err)
 	}
 
 	// 生成Store代码
 	storeCode := cgs.generateFrontendStoreCode(frontendCtx)
 	storeFilePath := filepath.Join(pluginsDir, "store", fileName+".ts")
-	if err := cgs.writeCodeToFile(storeFilePath, storeCode); err != nil {
+	if err := cgs.writeCodeToFileWithCover(storeFilePath, storeCode, sysGen.IsCover); err != nil {
 		return fmt.Errorf("生成Store文件失败: %v", err)
 	}
 
 	// 生成视图代码
 	viewCode := cgs.generateFrontendViewCode(frontendCtx)
 	viewFilePath := filepath.Join(pluginsDir, "views", fileName+"list.vue")
-	if err := cgs.writeCodeToFile(viewFilePath, viewCode); err != nil {
+	if err := cgs.writeCodeToFileWithCover(viewFilePath, viewCode, sysGen.IsCover); err != nil {
 		return fmt.Errorf("生成视图文件失败: %v", err)
 	}
 
@@ -948,6 +948,31 @@ func (cgs *CodeGenService) writeCodeToFile(filePath string, content string) erro
 	dir := filepath.Dir(filePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("创建目录失败: %v", err)
+	}
+
+	// 写入文件
+	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
+		return fmt.Errorf("写入文件失败: %v", err)
+	}
+
+	return nil
+}
+
+// writeCodeToFileWithCover 将代码写入文件，根据isCover决定是否覆盖
+func (cgs *CodeGenService) writeCodeToFileWithCover(filePath string, content string, isCover bool) error {
+	// 确保目录存在
+	dir := filepath.Dir(filePath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("创建目录失败: %v", err)
+	}
+
+	// 如果isCover为false且文件已存在，则跳过
+	if !isCover {
+		if _, err := os.Stat(filePath); err == nil {
+			// 文件已存在，跳过写入
+			app.ZapLog.Info("文件已存在，跳过生成", zap.String("filePath", filePath))
+			return nil
+		}
 	}
 
 	// 写入文件

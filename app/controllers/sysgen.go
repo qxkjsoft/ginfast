@@ -209,3 +209,31 @@ func (sgc *SysGenController) Delete(c *gin.Context) {
 	// 返回成功响应
 	sgc.Success(c, "删除成功")
 }
+
+// RefreshFields 根据sys_gen的id刷新数据库表字段信息
+// @Summary 刷新字段信息
+// @Description 根据sys_gen的id刷新数据库表字段信息
+// @Tags 代码生成配置管理
+// @Accept json
+// @Produce json
+// @Param id path int true "代码生成配置ID"
+// @Success 200 {object} map[string]interface{} "成功返回刷新结果"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysGen/{id}/refresh [put]
+// @Security ApiKeyAuth
+func (sgc *SysGenController) RefreshFields(c *gin.Context) {
+	var req models.SysGenRefreshFieldsRequest
+	if err := req.Validate(c); err != nil {
+		sgc.FailAndAbort(c, err.Error(), err)
+	}
+
+	// 调用服务层方法刷新字段信息
+	err := sgc.service.RefreshFields(c, req.ID)
+	if err != nil {
+		sgc.FailAndAbort(c, "刷新字段信息失败", err)
+	}
+
+	// 返回成功响应
+	sgc.Success(c, "字段信息刷新成功")
+}

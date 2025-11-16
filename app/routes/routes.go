@@ -314,6 +314,8 @@ func InitRoutes(engine *gin.Engine) {
 				sysGen.PUT("/update", sysGenControllers.Update)
 				// 根据ID删除代码生成配置和字段信息
 				sysGen.DELETE("/:id", sysGenControllers.Delete)
+				// 根据ID刷新字段信息
+				sysGen.PUT("/refreshFields", sysGenControllers.RefreshFields)
 			}
 
 			// 代码生成路由组

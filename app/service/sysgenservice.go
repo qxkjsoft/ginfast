@@ -82,6 +82,7 @@ func (sgs *SysGenService) BatchInsert(ctx context.Context, req *models.SysGenBat
 			gen.ModuleName = moduleName
 			gen.Describe = describe
 			gen.FileName = moduleName
+
 			// 插入记录
 			if err := tx.Create(gen).Error; err != nil {
 				failedTables[tableName] = fmt.Sprintf("插入记录失败: %v", err)
@@ -190,6 +191,49 @@ func (sgs *SysGenService) insertTableFields(ctx context.Context, tx *gorm.DB, da
 	return nil
 }
 
+// RefreshFields 根据sys_gen的id刷新数据库表字段信息
+func (sgs *SysGenService) RefreshFields(ctx context.Context, id uint) error {
+	// 获取数据库连接
+	db := app.DB()
+
+	// 根据ID查询sys_gen配置
+	var sysGen models.SysGen
+	if err := db.WithContext(ctx).Where("id = ?", id).First(&sysGen).Error; err != nil {
+		return fmt.Errorf("查询sys_gen配置失败: %v", err)
+	}
+
+	// 开始事务
+	tx := db.WithContext(ctx).Begin()
+	if tx.Error != nil {
+		return fmt.Errorf("开始事务失败: %v", tx.Error)
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			app.ZapLog.Error("刷新字段信息事务回滚", zap.Any("recover", r))
+		}
+	}()
+
+	// 删除原有的字段信息
+	if err := tx.Where("gen_id = ?", id).Delete(&models.SysGenField{}).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("删除原有字段信息失败: %v", err)
+	}
+
+	// 重新插入表的字段信息
+	if err := sgs.insertTableFields(ctx, tx, sysGen.Database, sysGen.Name, id); err != nil {
+		tx.Rollback()
+		return fmt.Errorf("插入字段信息失败: %v", err)
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		return fmt.Errorf("提交事务失败: %v", err)
+	}
+
+	return nil
+}
+
 // Update 根据ID更新代码生成配置和字段信息
 func (sgs *SysGenService) Update(ctx context.Context, req *models.SysGenUpdateRequest) error {
 
@@ -234,7 +278,9 @@ func (sgs *SysGenService) Update(ctx context.Context, req *models.SysGenUpdateRe
 	if req.Describe != "" {
 		updates["describe"] = req.Describe
 	}
-
+	if req.IsCover != 0 {
+		updates["is_cover"] = 1
+	}
 	if len(updates) > 0 {
 		if err := tx.Model(gen).Updates(updates).Error; err != nil {
 			tx.Rollback()
