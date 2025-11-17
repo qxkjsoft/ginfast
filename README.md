@@ -40,6 +40,7 @@ github地址：[https://github.com/qxkjsoft/ginfast-ui](https://github.com/qxkjs
 - 🏢 **多租户架构**：支持完整的租户管理、用户租户关联、数据隔离等功能
 - 🔒 **数据隔离**：基于GORM钩子函数实现自动租户数据隔离，确保各租户数据安全
 - 👥 **租户用户管理**：支持用户与租户的灵活关联，一个用户可关联多个租户
+- 🤖 **代码生成**：强大的代码生成器，支持根据数据库表一键生成完整的后端和前端代码，包括模型、控制器、服务和视图层
 
 ## 技术栈
 
@@ -49,27 +50,30 @@ github地址：[https://github.com/qxkjsoft/ginfast-ui](https://github.com/qxkjs
 - **权限控制**：Casbin
 - **日志系统**：Zap + Lumberjack
 - **配置管理**：Viper
-- **数据库**：MySQL、SQL Server、PostgreSQL
-- **缓存**：Redis
+- **数据库**：MySQL、SQL Server、PostgreSQL（多数据库支持）
+- **缓存**：Redis、内存缓存
 - **验证码**：Captcha (dchest/captcha)
 - **参数验证**：Gookit Validate
 - **密码加密**：Bcrypt
 - **性能监控**：Pprof
 - **API文档**：Swagger (swaggo)
+- **代码生成**：Go text/template（支持后端和前端代码生成）
 
 ## 项目结构
 
 ```
-gin-fast/
+ginfast-tenant/
 ├── app/                    # 应用核心代码
 │   ├── controllers/        # 控制器层
 │   │   ├── auth.go         # 认证控制器
+│   │   ├── codegen.go      # 代码生成控制器
 │   │   ├── common.go       # 通用控制器基类
 │   │   ├── user.go         # 用户控制器
 │   │   ├── sysapi.go       # 系统API管理控制器
 │   │   ├── sysdepartment.go # 部门管理控制器
 │   │   ├── sysdict.go      # 字典管理控制器
 │   │   ├── sysdictitem.go  # 字典项管理控制器
+│   │   ├── sysgen.go       # 代码生成配置控制器
 │   │   ├── sysmenu.go      # 菜单管理控制器
 │   │   ├── sysrole.go      # 角色管理控制器
 │   │   ├── systenant.go    # 租户管理控制器
@@ -86,12 +90,17 @@ gin-fast/
 │   │   └── requestaborted.go # 请求中断处理中间件
 │   ├── models/             # 数据模型
 │   │   ├── base.go         # 基础模型
+│   │   ├── codegen.go      # 代码生成模型
 │   │   ├── user.go         # 用户模型
 │   │   ├── sysapi.go       # 系统API模型
+│   │   ├── sysapiparam.go  # 系统API参数模型
 │   │   ├── sysdepartment.go # 部门模型
 │   │   ├── sysdict.go      # 字典模型
 │   │   ├── sysdictitem.go  # 字典项模型
+│   │   ├── sysgen.go       # 代码生成配置模型
+│   │   ├── sysgenfield.go  # 代码生成字段模型
 │   │   ├── sysmenu.go      # 菜单模型
+│   │   ├── sysmenuapi.go   # 菜单API关联模型
 │   │   ├── sysrole.go      # 角色模型
 │   │   ├── systenants.go   # 租户模型
 │   │   ├── sysusertenant.go # 用户租户关联模型
@@ -100,6 +109,9 @@ gin-fast/
 │   │   └── routes.go       # 路由定义
 │   ├── service/            # 服务层
 │   │   ├── casbinservice.go # 权限服务
+│   │   ├── codegenservice.go # 代码生成服务
+│   │   ├── sysgenservice.go # 代码生成配置服务
+│   │   ├── sysmenu.go      # 菜单服务
 │   │   ├── userservice.go  # 用户服务
 │   │   └── zaphooks.go     # 日志钩子
 │   └── utils/              # 工具类
@@ -120,9 +132,14 @@ gin-fast/
 ├── docs/                   # 文档
 │   ├── swagger/            # Swagger API 文档
 │   └── catalog.md          # 项目目录说明
+├── gen/                    # 代码生成模板
+│   └── templates/          # 代码生成器使用的模板文件
+├── plugins/                # 插件目录
+│   ├── example/            # 示例插件
+│   └── exampleinit.go      # 插件初始化文件
 ├── resource/               # 资源文件
 │   ├── database/           # 数据库脚本
-│   │   └── gin-fast.sql    # 数据库初始化脚本
+│   │   └── gin-fast-tenant.sql # 数据库初始化脚本
 │   ├── logs/               # 日志文件目录
 │   └── public/             # 静态资源
 ├── scripts/                # 脚本文件
@@ -287,6 +304,127 @@ Database:
 3. **跨租户操作**
    - 特殊管理接口可以绕过租户隔离，但需要谨慎使用
    - 用户租户关联控制器提供了不进行租户过滤的用户和角色查询接口
+
+## 代码生成功能说明
+
+本项目集成了强大的代码生成器，支持根据数据库表自动生成完整的后端和前端代码。
+
+### 代码生成特性
+
+- **后端代码生成**
+  - 自动生成Go数据模型（Model）
+  - 生成RESTful API控制器（Controller）
+  - 生成业务逻辑服务层（Service）
+  - 生成路由配置（Routes）
+  - 支持参数验证模型生成
+
+- **前端代码生成**
+  - 生成Vue 3组件及API接口调用（API）
+  - 生成Pinia状态管理模块（Store）
+  - 生成完整的CRUD页面视图（View）
+  - 自动适配表单校验和表格展示规则
+
+- **智能特性**
+  - 支持多数据库类型（MySQL、PostgreSQL、SQL Server）
+  - 自动识别数据库字段注释生成代码文档
+  - 支持字段级别的显示控制（列表展示、表单展示、查询展示）
+  - 自动处理时间字段、主键字段等特殊字段
+  - 支持代码预览，可在生成前查看效果
+  - 支持覆盖现有文件选项
+  - 集成菜单和API权限自动注册
+
+### 代码生成API接口
+
+#### 获取数据库列表
+```
+GET /api/codegen/databases
+```
+获取当前连接的数据库服务器中的所有数据库列表
+
+#### 获取表列表
+```
+GET /api/codegen/tables?database=<database_name>
+```
+根据数据库名称获取该数据库中的所有表名和表注释
+
+#### 获取表字段信息
+```
+GET /api/codegen/columns?database=<database_name>&table=<table_name>
+```
+获取指定表的所有字段信息（包括字段名、类型、注释、是否主键等）
+
+#### 生成代码
+```
+POST /api/codegen/generate
+```
+根据代码生成配置ID实际生成后端和前端代码文件
+
+**请求体示例：**
+```json
+{
+  "genId": 1
+}
+```
+
+#### 预览生成代码
+```
+GET /api/codegen/preview?genId=<gen_id>
+```
+预览即将生成的代码内容，不实际创建文件
+
+### 代码生成工作流程
+
+1. **配置代码生成**
+   - 在后台管理系统中配置代码生成任务（选择数据库、表、输出模块名等）
+   - 配置字段显示规则（是否在列表、表单、查询中显示）
+   - 设置字段的自定义名称、表单类型、字典关联等
+
+2. **预览生成代码**
+   - 调用预览接口查看生成的代码效果
+   - 确认代码无误后再执行生成
+
+3. **执行代码生成**
+   - 调用生成接口执行代码生成
+   - 系统将自动生成后端代码到 `app/controllers`、`app/models`、`app/service` 等目录
+   - 前端代码生成到指定的前端项目目录
+
+4. **集成生成的代码**
+   - 自动注册菜单和API权限
+   - 自动生成的代码遵循项目规范，可直接使用
+   - 如需修改，建议在生成后进行微调
+
+### 代码生成最佳实践
+
+1. **字段设计规范**
+   - 为所有需要隔离的字段添加 `TenantID` 字段
+   - 为表和字段添加有意义的注释，便于代码文档生成
+   - 使用标准的数据类型（VARCHAR、INT、DATETIME等）
+
+2. **生成配置规范**
+   - 选择有意义的模块名和文件名
+   - 根据业务需求配置字段的显示规则
+   - 为不同的字段类型选择合适的表单组件（日期选择器、下拉框等）
+
+3. **生成后处理**
+   - 检查生成的代码是否符合项目规范
+   - 根据实际业务需求调整校验规则
+   - 添加必要的业务逻辑实现
+   - 在前端添加特定的交互和样式
+
+### 代码生成配置模型
+
+代码生成配置保存在 `SysGen` 和 `SysGenField` 数据库表中，包含以下主要信息：
+
+| 字段 | 说明 | 示例 |
+|------|------|------|
+| dbType | 数据库类型 | mysql、postgresql、sqlserver |
+| database | 数据库名 | gin-fast |
+| name | 表名 | sys_user |
+| moduleName | 模块名 | user |
+| fileName | 文件名 | user |
+| describe | 功能描述 | 用户管理 |
+| isCover | 是否覆盖现有文件 | true/false |
+| packageName | 包名 | models、controllers 等 |
 
 ### Swagger 注释规范
 

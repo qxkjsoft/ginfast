@@ -25,6 +25,8 @@ type CodeGenContext struct {
 	Columns      ColumnTemplateList `json:"columns"`      // 字段列表
 	PrimaryKey   *ColumnTemplate    `json:"primaryKey"`   // 主键
 	HasTimeField bool               `json:"hasTimeField"` // 是否有时间字段
+	HasCreatedBy bool               `json:"hasCreatedBy"` // 是否有created_by字段
+	HasTenantID  bool               `json:"hasTenantID"`  // 是否有tenant_id字段
 
 	// 扩展参数
 	ExtraParams map[string]interface{} `json:"extraParams"` // 额外参数
@@ -43,6 +45,8 @@ func NewCodeGenContext(tableName, dirName, fileName, comment string, columns Col
 		StructNameLower: common.ToCamelCaseLower(fileName),
 		ExtraParams:     make(map[string]interface{}),
 		HasTimeField:    columns.HasTimeField(),
+		HasCreatedBy:    columns.HasCreatedBy(),
+		HasTenantID:     columns.HasTenantID(),
 	}
 	return ctx
 }
@@ -324,58 +328,10 @@ func (tcs TableColumns) GetPrimaryKey() *TableColumn {
 	return nil
 }
 
-// CodeGenConfig 代码生成配置
-type CodeGenConfig struct {
-	ModelTemplate      string `json:"model_template"`      // 模型模板
-	ControllerTemplate string `json:"controller_template"` // 控制器模板
-	ServiceTemplate    string `json:"service_template"`    // 服务模板
-	OutputPath         string `json:"output_path"`         // 输出路径
-	PackageName        string `json:"package_name"`        // 包名
-}
-
-// ModelTemplateData 模型模板数据
-type ModelTemplateData struct {
-	StructName string             `json:"structName"`
-	TableName  string             `json:"tableName"`
-	Columns    ColumnTemplateList `json:"columns"`
-}
-
-// ControllerTemplateData 控制器模板数据
-type ControllerTemplateData struct {
-	StructName      string `json:"structName"`
-	StructNameLower string `json:"structNameLower"`
-	TableName       string `json:"tableName"`
-	DirName         string `json:"dirName"`
-}
-
-// ServiceTemplateData 服务模板数据
-type ServiceTemplateData struct {
-	StructName      string `json:"structName"`
-	StructNameLower string `json:"structNameLower"`
-	TableName       string `json:"tableName"`
-	DirName         string `json:"dirName"`
-}
-
-// RoutesTemplateData 路由模板数据
-type RoutesTemplateData struct {
-	StructName      string `json:"structName"`
-	StructNameLower string `json:"structNameLower"`
-	TableName       string `json:"tableName"`
-	DirName         string `json:"dirName"`
-}
-
-// InitTemplateData 初始化模板数据
-type InitTemplateData struct {
-	StructName      string `json:"structName"`
-	StructNameLower string `json:"structNameLower"`
-	TableName       string `json:"tableName"`
-	DirName         string `json:"dirName"`
-}
-
 // ColumnTemplate 字段模板数据
 type ColumnTemplate struct {
 	DataName     string `json:"dataName"`     // 数据库字段名
-	FieldName    string `json:"fieldName"`    // 字段名
+	FieldName    string `json:"fieldName"`    // 字段名 （驼峰命名）
 	GoType       string `json:"goType"`       // Go类型
 	FrontendType string `json:"frontendType"` // 前端类型
 	JsonTag      string `json:"jsonTag"`      // JSON标签
@@ -408,6 +364,26 @@ func (c ColumnTemplateList) GetPrimaryKey() *ColumnTemplate {
 func (c ColumnTemplateList) HasTimeField() bool {
 	for _, col := range c {
 		if col.GoType == "time.Time" {
+			return true
+		}
+	}
+	return false
+}
+
+// HasCreatedBy 是否有created_by字段
+func (c ColumnTemplateList) HasCreatedBy() bool {
+	for _, col := range c {
+		if col.DataName == "created_by" {
+			return true
+		}
+	}
+	return false
+}
+
+// HasTenantID 是否有tenant_id字段
+func (c ColumnTemplateList) HasTenantID() bool {
+	for _, col := range c {
+		if col.DataName == "tenant_id" {
 			return true
 		}
 	}

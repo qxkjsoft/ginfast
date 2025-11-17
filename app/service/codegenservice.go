@@ -536,11 +536,12 @@ func (cgs *CodeGenService) GenerateBackendCodeFiles(ctx context.Context, sysGen 
 	}
 
 	// 插入菜单和API数据
-	menuApiCtx := &models.MenuApiContext{TableName: tableName, FileName: fileName, DirName: dirName, Comment: comment}
-	if err := cgs.InsertMenuAndApiData(ctx, menuApiCtx); err != nil {
-		return fmt.Errorf("插入菜单和API数据失败: %v", err)
+	if sysGen.IsMenu {
+		menuApiCtx := &models.MenuApiContext{TableName: tableName, FileName: fileName, DirName: dirName, Comment: comment}
+		if err := cgs.InsertMenuAndApiData(ctx, menuApiCtx); err != nil {
+			return fmt.Errorf("插入菜单和API数据失败: %v", err)
+		}
 	}
-
 	return nil
 }
 
@@ -683,29 +684,38 @@ func (cgs *CodeGenService) generateFrontendViewCode(ctx *models.FrontendGenConte
 	return cgs.executeTemplate("frontend/views.tpl", templateData)
 }
 
-// GenerateCode 生成后端代码
-func (cgs *CodeGenService) GenerateCode(database, table string) (map[string]string, error) {
-	if database == "" {
-		return nil, fmt.Errorf("数据库名称不能为空")
+// PreviewCode 根据genID生成代码预览
+func (cgs *CodeGenService) PreviewCode(ctx context.Context, genID uint) (map[string]string, error) {
+	if genID == 0 {
+		return nil, fmt.Errorf("代码生成配置ID不能为空")
 	}
 
-	if table == "" {
-		return nil, fmt.Errorf("表名不能为空")
-	}
-
-	// 获取表的字段信息
-	columns, err := cgs.GetTableColumns(database, table)
+	// 获取代码生成配置详情
+	sysGen := models.NewSysGen()
+	err := sysGen.Find(ctx, func(db *gorm.DB) *gorm.DB {
+		return db.Where("id = ?", genID).Preload("SysGenFields")
+	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("获取代码生成配置详情失败: %v", err)
 	}
 
-	// 将表名转换为目录名（移除下划线并转为小写）
-	dirName := common.KeepLettersOnlyLower(table)
-	fileName := common.KeepLettersOnlyLower(table)
-	columnTemplates := columns.ColumnTemplate()
+	if sysGen.IsEmpty() {
+		return nil, fmt.Errorf("代码生成配置不存在")
+	}
+
+	if sysGen.SysGenFields.PrimaryKeyCount() != 1 {
+		return nil, fmt.Errorf("表必须也只能包含一个主键")
+	}
+
+	// 提取配置信息
+	var tableName, comment string
+	var columnTemplates models.ColumnTemplateList
+	tableName = sysGen.Name
+	comment = sysGen.Describe
+	columnTemplates = sysGen.SysGenFields.ToColumnTemplate()
 
 	// 创建代码生成上下文
-	codeGenCtx := models.NewCodeGenContext(table, dirName, fileName, table, columnTemplates)
+	codeGenCtx := models.NewCodeGenContext(tableName, sysGen.ModuleName, sysGen.FileName, comment, columnTemplates)
 
 	// 生成模型代码
 	modelCode := cgs.generateModelCode(codeGenCtx)
@@ -725,13 +735,22 @@ func (cgs *CodeGenService) GenerateCode(database, table string) (map[string]stri
 	// 生成初始化代码
 	initCode := cgs.generateInitCode(codeGenCtx)
 
+	// 生成前端代码
+	frontendCtx := models.NewFrontendGenContext(tableName, sysGen.ModuleName, sysGen.FileName, columnTemplates)
+	frontendApiCode := cgs.generateFrontendAPICode(frontendCtx)
+	frontendStoreCode := cgs.generateFrontendStoreCode(frontendCtx)
+	frontendViewCode := cgs.generateFrontendViewCode(frontendCtx)
+
 	return map[string]string{
-		"model":      modelCode,
-		"modelparam": modelParamCode,
-		"controller": controllerCode,
-		"service":    serviceCode,
-		"routes":     routesCode,
-		"init":       initCode,
+		"model":         modelCode,
+		"modelparam":    modelParamCode,
+		"controller":    controllerCode,
+		"service":       serviceCode,
+		"routes":        routesCode,
+		"init":          initCode,
+		"frontendApi":   frontendApiCode,
+		"frontendStore": frontendStoreCode,
+		"frontendView":  frontendViewCode,
 	}, nil
 }
 
@@ -806,6 +825,8 @@ func (cgs *CodeGenService) generateServiceCode(ctx *models.CodeGenContext) strin
 		"DirName":         ctx.DirName,
 		"Columns":         ctx.Columns,
 		"PrimaryKey":      ctx.PrimaryKey,
+		"HasCreatedBy":    ctx.HasCreatedBy,
+		"HasTenantID":     ctx.HasTenantID,
 	}
 
 	for key, value := range ctx.ExtraParams {
@@ -854,57 +875,6 @@ func (cgs *CodeGenService) generateInitCode(ctx *models.CodeGenContext) string {
 	return cgs.executeTemplate("init.tpl", templateData)
 }
 
-// GetConfig 获取代码生成配置
-func (cgs *CodeGenService) GetConfig() (map[string]interface{}, error) {
-	// 简化实现，返回默认配置
-	return map[string]interface{}{
-		"model_template":      "default",
-		"controller_template": "default",
-		"service_template":    "default",
-		"output_path":         "./generated",
-		"package_name":        "generated",
-	}, nil
-}
-
-// UpdateConfig 更新代码生成配置
-func (cgs *CodeGenService) UpdateConfig(config models.CodeGenConfig) error {
-	// 简化实现，实际应该保存配置到文件或数据库
-	return nil
-}
-
-// GetTemplates 获取模板列表
-func (cgs *CodeGenService) GetTemplates() ([]string, error) {
-	// 简化实现，返回默认模板列表
-	return []string{"default", "simple", "advanced"}, nil
-}
-
-// GetTemplateContent 获取模板内容
-func (cgs *CodeGenService) GetTemplateContent(templateName string) (string, error) {
-	// 简化实现，返回默认模板内容
-	switch templateName {
-	case "default":
-		return "默认模板内容", nil
-	case "simple":
-		return "简单模板内容", nil
-	case "advanced":
-		return "高级模板内容", nil
-	default:
-		return "", fmt.Errorf("模板不存在: %s", templateName)
-	}
-}
-
-// DownloadCode 下载生成的代码
-func (cgs *CodeGenService) DownloadCode(database, table, moduleName string) (string, error) {
-	// 简化实现，生成代码并返回下载路径
-	_, err := cgs.GenerateCode(database, table)
-	if err != nil {
-		return "", err
-	}
-
-	// 实际应该创建文件并返回下载路径
-	return fmt.Sprintf("/downloads/%s_%s.zip", database, table), nil
-}
-
 // executeTemplate 执行模板
 func (cgs *CodeGenService) executeTemplate(templateName string, data interface{}) string {
 	// 获取当前工作目录
@@ -940,22 +910,6 @@ func (cgs *CodeGenService) executeTemplate(templateName string, data interface{}
 	}
 
 	return buf.String()
-}
-
-// writeCodeToFile 将代码写入文件
-func (cgs *CodeGenService) writeCodeToFile(filePath string, content string) error {
-	// 确保目录存在
-	dir := filepath.Dir(filePath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("创建目录失败: %v", err)
-	}
-
-	// 写入文件
-	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
-		return fmt.Errorf("写入文件失败: %v", err)
-	}
-
-	return nil
 }
 
 // writeCodeToFileWithCover 将代码写入文件，根据isCover决定是否覆盖

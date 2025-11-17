@@ -331,12 +331,21 @@ const handleSave = async () => {
     const isValid = await formRef.value?.validate();
     if (isValid) return false;
     try {
+        // 类型转换：将FrontendType为number的字段转换为数字类型
+        const dataToSave = JSON.parse(JSON.stringify(editingData));
+{{- range .Columns}}
+{{- if and (not .IsPrimary) (not .Exclude) (eq .FrontendType "number")}}
+        if (dataToSave.{{.JsonTag}} !== undefined && dataToSave.{{.JsonTag}} !== null && dataToSave.{{.JsonTag}} !== '') {
+            dataToSave.{{.JsonTag}} = Number(dataToSave.{{.JsonTag}});
+        }
+{{- end}}
+{{- end}}
         if (editingData.{{if .PrimaryKey}}{{.PrimaryKey.JsonTag}}{{else}}id{{end}}) {
             // 更新数据
-            await updateData(editingData);
+            await updateData(dataToSave);
         } else {
             // 创建数据
-            await createData(editingData);
+            await createData(dataToSave);
         }
         // 重新加载数据
         await loadData();

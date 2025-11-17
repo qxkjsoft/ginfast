@@ -74,14 +74,14 @@ func (sgc *SysGenController) List(c *gin.Context) {
 	})
 }
 
-// BatchInsert 批量插入代码生成配置
-// @Summary 批量插入代码生成配置
-// @Description 根据数据库名称和表名称集合批量插入代码生成配置和字段信息，避免重复插入
+// BatchInsert 批量创建代码生成配置
+// @Summary 批量创建代码生成配置
+// @Description 根据数据库名称和表名称集合批量创建代码生成配置和字段信息，避免重复创建
 // @Tags 代码生成配置管理
 // @Accept json
 // @Produce json
-// @Param request body models.SysGenBatchInsertRequest true "批量插入请求参数"
-// @Success 200 {object} map[string]interface{} "成功返回插入结果"
+// @Param request body models.SysGenBatchInsertRequest true "批量创建请求参数"
+// @Success 200 {object} map[string]interface{} "成功返回创建结果"
 // @Failure 400 {object} map[string]interface{} "请求参数错误"
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"
 // @Router /sysGen/batchInsert [post]

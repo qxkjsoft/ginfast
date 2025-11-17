@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"gin-fast/app/models"
 	"gin-fast/app/service"
 
@@ -156,165 +157,31 @@ func (cgc *CodeGenController) GenerateCode(ctx *gin.Context) {
 // @Tags 代码生成
 // @Accept json
 // @Produce json
-// @Param request body map[string]interface{} true "预览代码请求参数"
+// @Param genId query uint true "代码生成配置ID"
 // @Success 200 {object} map[string]interface{} "成功返回预览的代码"
 // @Failure 400 {object} map[string]interface{} "请求参数错误"
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"
-// @Router /codegen/preview [post]
+// @Router /codegen/preview [get]
 // @Security ApiKeyAuth
 func (cgc *CodeGenController) PreviewCode(ctx *gin.Context) {
-	database := ctx.Query("database")
-	table := ctx.Query("table")
-	if database == "" || table == "" {
-		cgc.FailAndAbort(ctx, "数据库名称和表名不能为空", nil)
+	genID := ctx.Query("genId")
+	if genID == "" {
+		cgc.FailAndAbort(ctx, "代码生成配置ID不能为空", nil)
+	}
+
+	var id uint
+	_, err := fmt.Sscanf(genID, "%d", &id)
+	if err != nil || id == 0 {
+		cgc.FailAndAbort(ctx, "代码生成配置ID格式错误", nil)
 	}
 
 	// 使用service层生成预览代码
-	result, err := cgc.service.GenerateCode(database, table)
+	result, err := cgc.service.PreviewCode(ctx, id)
 	if err != nil {
 		cgc.FailAndAbort(ctx, "生成预览代码失败", err)
 	}
 
 	cgc.Success(ctx, gin.H{
 		"preview": result,
-	})
-}
-
-// DownloadCode 下载生成的代码
-// @Summary 下载生成的代码
-// @Description 下载根据配置生成的模型、控制器、服务代码文件
-// @Tags 代码生成
-// @Accept json
-// @Produce json
-// @Param request body map[string]interface{} true "下载代码请求参数"
-// @Success 200 {object} map[string]interface{} "成功返回下载链接"
-// @Failure 400 {object} map[string]interface{} "请求参数错误"
-// @Failure 500 {object} map[string]interface{} "服务器内部错误"
-// @Router /codegen/download [post]
-// @Security ApiKeyAuth
-func (cgc *CodeGenController) DownloadCode(ctx *gin.Context) {
-	var request map[string]interface{}
-	if err := ctx.ShouldBindJSON(&request); err != nil {
-		cgc.FailAndAbort(ctx, "请求参数解析失败", err)
-	}
-
-	database, _ := request["database"].(string)
-	table, _ := request["table"].(string)
-	moduleName, _ := request["moduleName"].(string)
-
-	if database == "" || table == "" || moduleName == "" {
-		cgc.FailAndAbort(ctx, "数据库名称、表名和模块名称不能为空", nil)
-	}
-
-	// 使用service层生成代码并创建下载文件
-	downloadPath, err := cgc.service.DownloadCode(database, table, moduleName)
-	if err != nil {
-		cgc.FailAndAbort(ctx, "下载代码失败", err)
-	}
-
-	cgc.Success(ctx, gin.H{
-		"downloadUrl": downloadPath,
-	})
-}
-
-// GetConfig 获取代码生成配置
-// @Summary 获取代码生成配置
-// @Description 获取当前的代码生成配置
-// @Tags 代码生成
-// @Accept json
-// @Produce json
-// @Success 200 {object} map[string]interface{} "成功返回配置信息"
-// @Failure 500 {object} map[string]interface{} "服务器内部错误"
-// @Router /codegen/config [get]
-// @Security ApiKeyAuth
-func (cgc *CodeGenController) GetConfig(ctx *gin.Context) {
-	config, err := cgc.service.GetConfig()
-	if err != nil {
-		cgc.FailAndAbort(ctx, "获取配置失败", err)
-	}
-
-	cgc.Success(ctx, gin.H{
-		"config": config,
-	})
-}
-
-// UpdateConfig 更新代码生成配置
-// @Summary 更新代码生成配置
-// @Description 更新代码生成配置信息
-// @Tags 代码生成
-// @Accept json
-// @Produce json
-// @Param config body models.CodeGenConfig true "配置信息"
-// @Success 200 {object} map[string]interface{} "成功返回更新后的配置"
-// @Failure 400 {object} map[string]interface{} "请求参数错误"
-// @Failure 500 {object} map[string]interface{} "服务器内部错误"
-// @Router /codegen/config [put]
-// @Security ApiKeyAuth
-func (cgc *CodeGenController) UpdateConfig(ctx *gin.Context) {
-	var config models.CodeGenConfig
-	if err := ctx.ShouldBindJSON(&config); err != nil {
-		cgc.FailAndAbort(ctx, "参数绑定失败", err)
-	}
-
-	// 使用service层更新配置
-	err := cgc.service.UpdateConfig(config)
-	if err != nil {
-		cgc.FailAndAbort(ctx, "更新配置失败", err)
-	}
-
-	cgc.Success(ctx, gin.H{
-		"message": "配置更新成功",
-		"config":  config,
-	})
-}
-
-// GetTemplates 获取模板列表
-// @Summary 获取模板列表
-// @Description 获取可用的代码生成模板列表
-// @Tags 代码生成
-// @Accept json
-// @Produce json
-// @Success 200 {object} map[string]interface{} "成功返回模板列表"
-// @Failure 500 {object} map[string]interface{} "服务器内部错误"
-// @Router /codegen/templates [get]
-// @Security ApiKeyAuth
-func (cgc *CodeGenController) GetTemplates(ctx *gin.Context) {
-	templates, err := cgc.service.GetTemplates()
-	if err != nil {
-		cgc.FailAndAbort(ctx, "获取模板列表失败", err)
-	}
-
-	cgc.Success(ctx, gin.H{
-		"templates": templates,
-	})
-}
-
-// GetTemplateContent 获取模板内容
-// @Summary 获取模板内容
-// @Description 根据模板名称获取模板的具体内容
-// @Tags 代码生成
-// @Accept json
-// @Produce json
-// @Param templateName query string true "模板名称"
-// @Success 200 {object} map[string]interface{} "成功返回模板内容"
-// @Failure 400 {object} map[string]interface{} "请求参数错误"
-// @Failure 500 {object} map[string]interface{} "服务器内部错误"
-// @Router /codegen/template [get]
-// @Security ApiKeyAuth
-func (cgc *CodeGenController) GetTemplateContent(ctx *gin.Context) {
-	templateName := ctx.Query("templateName")
-	if templateName == "" {
-		cgc.FailAndAbort(ctx, "模板名称不能为空", nil)
-	}
-
-	// 使用service层获取模板内容
-	templateContent, err := cgc.service.GetTemplateContent(templateName)
-	if err != nil {
-		cgc.FailAndAbort(ctx, "获取模板内容失败", err)
-	}
-
-	cgc.Success(ctx, gin.H{
-		"templateName":    templateName,
-		"templateContent": templateContent,
 	})
 }

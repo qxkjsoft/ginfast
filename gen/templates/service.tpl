@@ -3,6 +3,13 @@ package service
 import (
 	"gin-fast/plugins/{{.DirName}}/models"
 	"github.com/gin-gonic/gin"
+{{- if or .HasCreatedBy .HasTenantID}}
+	"gin-fast/app/utils/datascope"
+	"gorm.io/gorm"
+{{- end}}
+{{- if .HasTenantID}}
+	"gin-fast/app/utils/tenanthelper"
+{{- end}}
 )
 
 // {{.StructName}}Service {{.TableName}}服务
@@ -81,13 +88,20 @@ func (s *{{.StructName}}Service) GetByID(c *gin.Context, id {{if .PrimaryKey}}{{
 func (s *{{.StructName}}Service) List(c *gin.Context, req models.{{.StructName}}ListRequest) (*models.{{.StructName}}List, int64, error) {
 	// 获取总数
 	{{.StructNameLower}}List := models.New{{.StructName}}List()
-	total, err := {{.StructNameLower}}List.GetTotal(c, req.Handle())
+	scopes := []func(*gorm.DB) *gorm.DB{req.Handle()}
+{{- if .HasCreatedBy}}
+	scopes = append(scopes, datascope.GetDataScope(c))
+{{- end}}
+{{- if .HasTenantID}}
+	scopes = append(scopes, tenanthelper.TenantScope(c))
+{{- end}}
+	total, err := {{.StructNameLower}}List.GetTotal(c, scopes...)
 	if err != nil {
 		return nil, 0, err
 	}
-
+    scopes = append(scopes, req.Paginate())
 	// 获取分页数据
-	err = {{.StructNameLower}}List.Find(c,req.Paginate(),req.Handle())
+	err = {{.StructNameLower}}List.Find(c, scopes...)
 	if err != nil {
 		return nil, 0, err
 	}

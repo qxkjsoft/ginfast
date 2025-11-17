@@ -69,3 +69,4 @@ __debug_bin.exe*
 /config/config.yml
 /gin-fast-linux
 /resource/public/uploads
+/.qoder

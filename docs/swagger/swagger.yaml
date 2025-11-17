@@ -272,6 +272,80 @@ definitions:
     - id
     - name
     type: object
+  models.SysGenBatchInsertRequest:
+    properties:
+      database:
+        description: 数据库名称
+        type: string
+      tables:
+        description: 表名称集合                                   // 是否覆盖
+        items:
+          type: string
+        type: array
+    required:
+    - tables
+    type: object
+  models.SysGenFieldUpdateRequest:
+    properties:
+      customName:
+        description: 自定义字段名称
+        type: string
+      dataComment:
+        description: 列注释
+        type: string
+      dictType:
+        description: 关联的字典
+        type: string
+      formShow:
+        description: 表单显示
+        type: integer
+      formType:
+        description: 表单类型
+        type: string
+      id:
+        type: integer
+      listShow:
+        description: 列表显示
+        type: integer
+      queryShow:
+        description: 查询显示
+        type: integer
+      queryType:
+        description: 查询方式
+        type: string
+      require:
+        description: 是否必填
+        type: integer
+    type: object
+  models.SysGenUpdateRequest:
+    properties:
+      describe:
+        description: 描述
+        type: string
+      fileName:
+        description: 文件名
+        type: string
+      id:
+        type: integer
+      isCover:
+        type: boolean
+      isMenu:
+        type: boolean
+      moduleName:
+        description: 模块名称
+        type: string
+      sysGenFields:
+        description: 字段更新列表
+        items:
+          $ref: '#/definitions/models.SysGenFieldUpdateRequest'
+        type: array
+    required:
+    - describe
+    - fileName
+    - id
+    - moduleName
+    - sysGenFields
+    type: object
   models.SysMenuAddRequest:
     properties:
       affix:
@@ -607,6 +681,172 @@ paths:
       summary: 获取验证码图片
       tags:
       - 认证
+  /codegen/columns:
+    get:
+      consumes:
+      - application/json
+      description: 根据数据库名称和表名获取该表的所有字段信息
+      parameters:
+      - description: 数据库名称
+        in: query
+        name: database
+        required: true
+        type: string
+      - description: 表名
+        in: query
+        name: table
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回字段列表
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取指定表的字段信息
+      tags:
+      - 代码生成
+  /codegen/databases:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前连接的数据库服务器中的所有数据库列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回数据库列表
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取数据库列表
+      tags:
+      - 代码生成
+  /codegen/generate:
+    post:
+      consumes:
+      - application/json
+      description: 根据配置生成模型、控制器、服务代码
+      parameters:
+      - description: 生成代码请求参数
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回生成的代码
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 生成代码
+      tags:
+      - 代码生成
+  /codegen/preview:
+    get:
+      consumes:
+      - application/json
+      description: 预览根据配置生成的模型、控制器、服务代码
+      parameters:
+      - description: 代码生成配置ID
+        in: query
+        name: genId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回预览的代码
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 预览生成的代码
+      tags:
+      - 代码生成
+  /codegen/tables:
+    get:
+      consumes:
+      - application/json
+      description: 根据数据库名称获取该数据库中的所有表名
+      parameters:
+      - description: 数据库名称
+        in: query
+        name: database
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回表列表
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取指定数据库中的所有表
+      tags:
+      - 代码生成
   /config/get:
     get:
       consumes:
@@ -1768,6 +2008,224 @@ paths:
       summary: 字典项列表
       tags:
       - 字典项管理
+  /sysGen/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据ID硬删除sys_gen表记录以及关联的sys_gen_field表记录
+      parameters:
+      - description: 代码生成配置ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回删除结果
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 删除代码生成配置和字段信息
+      tags:
+      - 代码生成配置管理
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取代码生成配置详情
+      parameters:
+      - description: 代码生成配置ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回代码生成配置详情
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 数据不存在
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取代码生成配置详情
+      tags:
+      - 代码生成配置管理
+  /sysGen/{id}/refresh:
+    put:
+      consumes:
+      - application/json
+      description: 根据sys_gen的id刷新数据库表字段信息
+      parameters:
+      - description: 代码生成配置ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回刷新结果
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 刷新字段信息
+      tags:
+      - 代码生成配置管理
+  /sysGen/batchInsert:
+    post:
+      consumes:
+      - application/json
+      description: 根据数据库名称和表名称集合批量创建代码生成配置和字段信息，避免重复创建
+      parameters:
+      - description: 批量创建请求参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.SysGenBatchInsertRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回创建结果
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 批量创建代码生成配置
+      tags:
+      - 代码生成配置管理
+  /sysGen/list:
+    get:
+      consumes:
+      - application/json
+      description: 获取代码生成配置列表，支持分页和过滤
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: pageNum
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 表名
+        in: query
+        name: name
+        type: string
+      - description: 模块名称
+        in: query
+        name: moduleName
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回代码生成配置列表
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 代码生成配置列表
+      tags:
+      - 代码生成配置管理
+  /sysGen/update:
+    put:
+      consumes:
+      - application/json
+      description: 根据ID更新sys_gen表的module_name、describe字段，以及sys_gen_field表的data_name、data_comment字段
+      parameters:
+      - description: 更新请求参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.SysGenUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回更新结果
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 更新代码生成配置和字段信息
+      tags:
+      - 代码生成配置管理
   /sysMenu/{id}:
     get:
       consumes:

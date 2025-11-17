@@ -82,7 +82,8 @@ func (sgs *SysGenService) BatchInsert(ctx context.Context, req *models.SysGenBat
 			gen.ModuleName = moduleName
 			gen.Describe = describe
 			gen.FileName = moduleName
-
+			gen.IsCover = true
+			gen.IsMenu = true
 			// 插入记录
 			if err := tx.Create(gen).Error; err != nil {
 				failedTables[tableName] = fmt.Sprintf("插入记录失败: %v", err)
@@ -278,8 +279,15 @@ func (sgs *SysGenService) Update(ctx context.Context, req *models.SysGenUpdateRe
 	if req.Describe != "" {
 		updates["describe"] = req.Describe
 	}
-	if req.IsCover != 0 {
+	if req.IsCover {
 		updates["is_cover"] = 1
+	} else {
+		updates["is_cover"] = 0
+	}
+	if req.IsMenu {
+		updates["is_menu"] = 1
+	} else {
+		updates["is_menu"] = 0
 	}
 	if len(updates) > 0 {
 		if err := tx.Model(gen).Updates(updates).Error; err != nil {

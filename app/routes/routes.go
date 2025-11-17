@@ -306,7 +306,7 @@ func InitRoutes(engine *gin.Engine) {
 			{
 				// 代码生成配置列表（分页查询）
 				sysGen.GET("/list", sysGenControllers.List)
-				// 批量插入代码生成配置
+				// 批量创建代码生成配置
 				sysGen.POST("/batchInsert", sysGenControllers.BatchInsert)
 				// 根据ID获取代码生成配置详情
 				sysGen.GET("/:id", sysGenControllers.GetByID)
@@ -331,16 +331,7 @@ func InitRoutes(engine *gin.Engine) {
 				codeGen.POST("/generate", codeGenControllers.GenerateCode)
 				// 预览代码
 				codeGen.GET("/preview", codeGenControllers.PreviewCode)
-				// 下载代码文件
-				codeGen.POST("/download", codeGenControllers.DownloadCode)
-				// 获取配置
-				codeGen.GET("/config", codeGenControllers.GetConfig)
-				// 更新配置
-				codeGen.PUT("/config", codeGenControllers.UpdateConfig)
-				// 获取模板列表
-				codeGen.GET("/templates", codeGenControllers.GetTemplates)
-				// 获取模板内容
-				codeGen.GET("/template", codeGenControllers.GetTemplateContent)
+
 			}
 		}
 	}

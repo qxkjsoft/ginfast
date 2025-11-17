@@ -96,6 +96,260 @@ const docTemplate = `{
                 }
             }
         },
+        "/codegen/columns": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "根据数据库名称和表名获取该表的所有字段信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "代码生成"
+                ],
+                "summary": "获取指定表的字段信息",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "数据库名称",
+                        "name": "database",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "表名",
+                        "name": "table",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功返回字段列表",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/codegen/databases": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "获取当前连接的数据库服务器中的所有数据库列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "代码生成"
+                ],
+                "summary": "获取数据库列表",
+                "responses": {
+                    "200": {
+                        "description": "成功返回数据库列表",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/codegen/generate": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "根据配置生成模型、控制器、服务代码",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "代码生成"
+                ],
+                "summary": "生成代码",
+                "parameters": [
+                    {
+                        "description": "生成代码请求参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功返回生成的代码",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/codegen/preview": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "预览根据配置生成的模型、控制器、服务代码",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "代码生成"
+                ],
+                "summary": "预览生成的代码",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "代码生成配置ID",
+                        "name": "genId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功返回预览的代码",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/codegen/tables": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "根据数据库名称获取该数据库中的所有表名",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "代码生成"
+                ],
+                "summary": "获取指定数据库中的所有表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "数据库名称",
+                        "name": "database",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功返回表列表",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/config/get": {
             "get": {
                 "description": "获取系统配置信息",
@@ -1861,6 +2115,339 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "字典项ID格式错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/sysGen/batchInsert": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "根据数据库名称和表名称集合批量创建代码生成配置和字段信息，避免重复创建",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "代码生成配置管理"
+                ],
+                "summary": "批量创建代码生成配置",
+                "parameters": [
+                    {
+                        "description": "批量创建请求参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.SysGenBatchInsertRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功返回创建结果",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/sysGen/list": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "获取代码生成配置列表，支持分页和过滤",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "代码生成配置管理"
+                ],
+                "summary": "代码生成配置列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "pageNum",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "表名",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "模块名称",
+                        "name": "moduleName",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功返回代码生成配置列表",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/sysGen/update": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "根据ID更新sys_gen表的module_name、describe字段，以及sys_gen_field表的data_name、data_comment字段",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "代码生成配置管理"
+                ],
+                "summary": "更新代码生成配置和字段信息",
+                "parameters": [
+                    {
+                        "description": "更新请求参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.SysGenUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功返回更新结果",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/sysGen/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "根据ID获取代码生成配置详情",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "代码生成配置管理"
+                ],
+                "summary": "获取代码生成配置详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "代码生成配置ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功返回代码生成配置详情",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "数据不存在",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "根据ID硬删除sys_gen表记录以及关联的sys_gen_field表记录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "代码生成配置管理"
+                ],
+                "summary": "删除代码生成配置和字段信息",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "代码生成配置ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功返回删除结果",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/sysGen/{id}/refresh": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "根据sys_gen的id刷新数据库表字段信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "代码生成配置管理"
+                ],
+                "summary": "刷新字段信息",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "代码生成配置ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功返回刷新结果",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4775,6 +5362,109 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "integer"
+                }
+            }
+        },
+        "models.SysGenBatchInsertRequest": {
+            "type": "object",
+            "required": [
+                "tables"
+            ],
+            "properties": {
+                "database": {
+                    "description": "数据库名称",
+                    "type": "string"
+                },
+                "tables": {
+                    "description": "表名称集合                                   // 是否覆盖",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "models.SysGenFieldUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "customName": {
+                    "description": "自定义字段名称",
+                    "type": "string"
+                },
+                "dataComment": {
+                    "description": "列注释",
+                    "type": "string"
+                },
+                "dictType": {
+                    "description": "关联的字典",
+                    "type": "string"
+                },
+                "formShow": {
+                    "description": "表单显示",
+                    "type": "integer"
+                },
+                "formType": {
+                    "description": "表单类型",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "listShow": {
+                    "description": "列表显示",
+                    "type": "integer"
+                },
+                "queryShow": {
+                    "description": "查询显示",
+                    "type": "integer"
+                },
+                "queryType": {
+                    "description": "查询方式",
+                    "type": "string"
+                },
+                "require": {
+                    "description": "是否必填",
+                    "type": "integer"
+                }
+            }
+        },
+        "models.SysGenUpdateRequest": {
+            "type": "object",
+            "required": [
+                "describe",
+                "fileName",
+                "id",
+                "moduleName",
+                "sysGenFields"
+            ],
+            "properties": {
+                "describe": {
+                    "description": "描述",
+                    "type": "string"
+                },
+                "fileName": {
+                    "description": "文件名",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isCover": {
+                    "type": "boolean"
+                },
+                "isMenu": {
+                    "type": "boolean"
+                },
+                "moduleName": {
+                    "description": "模块名称",
+                    "type": "string"
+                },
+                "sysGenFields": {
+                    "description": "字段更新列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.SysGenFieldUpdateRequest"
+                    }
                 }
             }
         },
