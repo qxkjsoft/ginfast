@@ -785,7 +785,7 @@ func (cgs *CodeGenService) generateModelParamCode(ctx *models.CodeGenContext) st
 		"TableName":    ctx.TableName,
 		"Columns":      ctx.Columns,
 		"PrimaryKey":   primaryKey,
-		"HasTimeField": ctx.HasTimeField,
+		"HasTimeField": ctx.HasTimeFieldInQuery || ctx.HasTimeFieldInForm, // 使用細粒度判断
 	}
 
 	for key, value := range ctx.ExtraParams {

@@ -70,3 +70,8 @@ __debug_bin.exe*
 /gin-fast-linux
 /resource/public/uploads
 /.qoder
+
+# plugins 目录配置 - 只提交 example 目录和 exampleinit.go
+/plugins/*
+!/plugins/example/
+!/plugins/exampleinit.go

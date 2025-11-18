@@ -28,25 +28,40 @@ type CodeGenContext struct {
 	HasCreatedBy bool               `json:"hasCreatedBy"` // 是否有created_by字段
 	HasTenantID  bool               `json:"hasTenantID"`  // 是否有tenant_id字段
 
+	// 参数模型中的时间字段判断
+	HasTimeFieldInQuery bool `json:"hasTimeFieldInQuery"` // 是否在查询中有时间字段
+	HasTimeFieldInForm  bool `json:"hasTimeFieldInForm"`  // 是否在表单中有时间字段
+
 	// 扩展参数
 	ExtraParams map[string]interface{} `json:"extraParams"` // 额外参数
 }
 
 // NewCodeGenContext 创建代码生成上下文
 func NewCodeGenContext(tableName, dirName, fileName, comment string, columns ColumnTemplateList) *CodeGenContext {
+	// 日光时间字段判断 - 筛选实际会被渲染的时间字段
+	hasTimeInQuery := len(columns.Filter(func(col ColumnTemplate) bool {
+		return col.QueryShow && col.GoType == "time.Time"
+	})) > 0
+
+	hasTimeInForm := len(columns.Filter(func(col ColumnTemplate) bool {
+		return col.FormShow && col.GoType == "time.Time"
+	})) > 0
+
 	ctx := &CodeGenContext{
-		TableName:       tableName,
-		DirName:         common.KeepLettersOnlyLower(dirName),
-		FileName:        common.KeepLettersOnlyLower(fileName),
-		Comment:         comment,
-		Columns:         columns,
-		PrimaryKey:      columns.GetPrimaryKey(),
-		StructName:      common.ToCamelCase(fileName),
-		StructNameLower: common.ToCamelCaseLower(fileName),
-		ExtraParams:     make(map[string]interface{}),
-		HasTimeField:    columns.HasTimeField(),
-		HasCreatedBy:    columns.HasCreatedBy(),
-		HasTenantID:     columns.HasTenantID(),
+		TableName:           tableName,
+		DirName:             common.KeepLettersOnlyLower(dirName),
+		FileName:            common.KeepLettersOnlyLower(fileName),
+		Comment:             comment,
+		Columns:             columns,
+		PrimaryKey:          columns.GetPrimaryKey(),
+		StructName:          common.ToCamelCase(fileName),
+		StructNameLower:     common.ToCamelCaseLower(fileName),
+		ExtraParams:         make(map[string]interface{}),
+		HasTimeField:        columns.HasTimeField(),
+		HasCreatedBy:        columns.HasCreatedBy(),
+		HasTenantID:         columns.HasTenantID(),
+		HasTimeFieldInQuery: hasTimeInQuery,
+		HasTimeFieldInForm:  hasTimeInForm,
 	}
 	return ctx
 }
@@ -349,6 +364,16 @@ type ColumnTemplate struct {
 }
 
 type ColumnTemplateList []ColumnTemplate
+
+func (c ColumnTemplateList) Filter(fn func(col ColumnTemplate) bool) ColumnTemplateList {
+	filtered := make(ColumnTemplateList, 0)
+	for _, col := range c {
+		if fn(col) {
+			filtered = append(filtered, col)
+		}
+	}
+	return filtered
+}
 
 func (c ColumnTemplateList) GetPrimaryKey() *ColumnTemplate {
 	for _, col := range c {
