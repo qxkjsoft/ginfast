@@ -694,9 +694,8 @@ func (sm *SysMenuController) Export(c *gin.Context) {
 	if menuList.IsEmpty() {
 		sm.FailAndAbort(c, "未找到指定的菜单数据", nil)
 	}
-	menuList = menuList.GetMenusWithParents(req.MenuIDs...)
-
-	menuTree := menuList.BuildTree()
+	menuList = menuList.GetMenusWithChildern(req.MenuIDs...)
+	menuTree := menuList.FixOrphanParentIDs().BuildTree()
 
 	content, err := menuTree.Json()
 	if err != nil {
@@ -756,6 +755,11 @@ func (sm *SysMenuController) Import(c *gin.Context) {
 	if menuList.IsEmpty() {
 		sm.FailAndAbort(c, "JSON数据为空", nil)
 	}
+	// 验证菜单数据合法性
+	validateTreeErr := menuList.ValidateTree()
+	if !validateTreeErr.IsEmpty() {
+		sm.FailAndAbort(c, "菜单数据合法性校验失败", validateTreeErr)
+	}
 
 	// 获取所有组件文件路径
 	componentPaths := menuList.GetAllComponentPaths()
@@ -765,6 +769,16 @@ func (sm *SysMenuController) Import(c *gin.Context) {
 		app.DB().WithContext(c).Model(&models.SysMenu{}).Where("component IN ?", componentPaths).Count(&componentCount)
 		if componentCount > 0 {
 			sm.FailAndAbort(c, "存在重复的组件路径", nil)
+		}
+	}
+
+	allPermission := menuList.GetAllPermission()
+	// 检查权限是否存在
+	if len(allPermission) > 0 {
+		var permissionCount int64
+		app.DB().WithContext(c).Model(&models.SysMenu{}).Where("permission IN ?", allPermission).Count(&permissionCount)
+		if permissionCount > 0 {
+			sm.FailAndAbort(c, "存在重复的权限标识", nil)
 		}
 	}
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gin-fast/app/global/app"
 	"sort"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -168,6 +169,56 @@ func (list SysMenuList) TreeSort() SysMenuList {
 	return list
 }
 
+func (list SysMenuList) GetMenusWithChildern(menuIds ...uint) SysMenuList {
+	if len(list) == 0 || len(menuIds) == 0 {
+		return nil
+	}
+
+	// 创建一个map便于快速查找
+	menuMap := make(map[uint]*SysMenu)
+	for _, menu := range list {
+		menuMap[menu.ID] = menu
+	}
+
+	// 构建子节点映射
+	childrenMap := make(map[uint]SysMenuList)
+	for _, menu := range list {
+		childrenMap[menu.ParentID] = append(childrenMap[menu.ParentID], menu)
+	}
+
+	// 存储结果
+	result := SysMenuList{}
+
+	// 用于避免重复添加
+	added := make(map[uint]bool)
+
+	// 定义递归函数，收集指定菜单及其所有子节点
+	var collectMenuAndChildren func(menuId uint)
+	collectMenuAndChildren = func(menuId uint) {
+		menu, exists := menuMap[menuId]
+		if !exists || added[menuId] {
+			return
+		}
+
+		// 标记为已添加
+		added[menuId] = true
+		// 添加到结果中
+		result = append(result, menu)
+
+		// 递归添加所有子节点
+		for _, child := range childrenMap[menuId] {
+			collectMenuAndChildren(child.ID)
+		}
+	}
+
+	// 遍历所有指定的菜单ID
+	for _, menuId := range menuIds {
+		collectMenuAndChildren(menuId)
+	}
+
+	return result
+}
+
 // GetMenusWithParents 根据多个菜单ID获取包含这些ID及所有父级元素的数据
 func (list SysMenuList) GetMenusWithParents(menuIds ...uint) SysMenuList {
 
@@ -252,11 +303,165 @@ func (list SysMenuList) Each(fn func(menu *SysMenu)) {
 	}
 }
 
+// FixOrphanParentIDs 修复孤立节点，将找不到父级元素的节点的ParentID设置为0
+func (list SysMenuList) FixOrphanParentIDs() SysMenuList {
+	if len(list) == 0 {
+		return list
+	}
+
+	// 创建一个map便于快速查找所有存在的ID
+	idMap := make(map[uint]bool)
+	for _, menu := range list {
+		idMap[menu.ID] = true
+	}
+
+	// 遍历所有菜单，修复孤立节点
+	for _, menu := range list {
+		// 如果ParentID不为0，且父级ID在列表中不存在，则设置为0
+		if menu.ParentID != 0 && !idMap[menu.ParentID] {
+			menu.ParentID = 0
+		}
+	}
+
+	return list
+}
+
+// ValidationError 树形数据验证错误信息
+type ValidationError struct {
+	MenuID   uint
+	MenuName string
+	Error    string
+}
+
+type ValidationErrors []ValidationError
+
+func (ve ValidationErrors) Error() string {
+	return strings.Join(ve.GetErrorMessages(), "\n")
+}
+
+func (ve ValidationErrors) GetErrorMessages() []string {
+	var messages []string
+	for _, err := range ve {
+		messages = append(messages, fmt.Sprintf("菜单ID %d 名称 %s：%s", err.MenuID, err.MenuName, err.Error))
+	}
+	return messages
+}
+
+func (ve ValidationErrors) IsEmpty() bool {
+	return len(ve) == 0
+}
+
+// ValidateTree 检查SysMenuList（树形数据）的合法性
+// 检查内容包括：循环引用、父级与子级之间id关系、类型层级关系、根级类型
+func (list SysMenuList) ValidateTree() ValidationErrors {
+	var errors []ValidationError
+
+	if len(list) == 0 {
+		return errors
+	}
+
+	// 创建ID映射，便于快速查找
+	idMap := make(map[uint]*SysMenu)
+	list.Each(func(menu *SysMenu) {
+		idMap[menu.ID] = menu
+	})
+
+	// 递归验证函数
+	var validateNode func(menu *SysMenu, parent *SysMenu)
+	validateNode = func(menu *SysMenu, parent *SysMenu) {
+		// 检查1: 循环引用（子节点ID不能等于节点ID或父节点ID）
+		if menu.ID == menu.ParentID {
+			errors = append(errors, ValidationError{
+				MenuID:   menu.ID,
+				MenuName: menu.Name,
+				Error:    fmt.Sprintf("循环引用：节点ID %d 等于 ParentID", menu.ID),
+			})
+			return
+		}
+
+		// 检查2: 父级与子级之间的ID关系是否正确
+		if parent != nil {
+			if menu.ParentID != parent.ID {
+				errors = append(errors, ValidationError{
+					MenuID:   menu.ID,
+					MenuName: menu.Name,
+					Error:    fmt.Sprintf("父级关系错误：子节点ParentID %d 与实际父级ID %d 不匹配", menu.ParentID, parent.ID),
+				})
+			}
+		}
+
+		// 检查3: 类型层级关系
+		if parent != nil {
+			switch parent.Type {
+			case 1: // 目录
+				// 目录下只能添加目录(1)或菜单(2)
+				if menu.Type != 1 && menu.Type != 2 {
+					errors = append(errors, ValidationError{
+						MenuID:   menu.ID,
+						MenuName: menu.Name,
+						Error:    fmt.Sprintf("类型层级错误：目录下只能添加目录或菜单，不能添加类型%d", menu.Type),
+					})
+				}
+			case 2: // 菜单
+				// 菜单下只能添加按钮(3)
+				if menu.Type != 3 {
+					errors = append(errors, ValidationError{
+						MenuID:   menu.ID,
+						MenuName: menu.Name,
+						Error:    fmt.Sprintf("类型层级错误：菜单下只能添加按钮，不能添加类型%d", menu.Type),
+					})
+				}
+			case 3: // 按钮
+				// 按钮下不能添加子项
+				errors = append(errors, ValidationError{
+					MenuID:   menu.ID,
+					MenuName: menu.Name,
+					Error:    "类型层级错误：按钮下不能添加子项",
+				})
+			}
+		}
+
+		// 递归验证子节点
+		if len(menu.Children) > 0 {
+			for _, child := range menu.Children {
+				validateNode(child, menu)
+			}
+		}
+	}
+
+	// 验证根级节点
+	for _, rootMenu := range list {
+		// 根级只能是目录(1)或菜单(2)
+		if rootMenu.Type != 1 && rootMenu.Type != 2 {
+			errors = append(errors, ValidationError{
+				MenuID:   rootMenu.ID,
+				MenuName: rootMenu.Name,
+				Error:    fmt.Sprintf("根级类型错误：根级只能是目录或菜单，不能是类型%d", rootMenu.Type),
+			})
+		}
+
+		// 从根级节点开始验证
+		validateNode(rootMenu, nil)
+	}
+
+	return errors
+}
+
 // GetAllComponentPaths 获取所有组件文件路径
 func (list SysMenuList) GetAllComponentPaths() (paths []string) {
 	list.Each(func(menu *SysMenu) {
 		if menu.Type == 2 && menu.Component != "" {
 			paths = append(paths, menu.Component)
+		}
+	})
+	return
+}
+
+// GetAllPermission 获取所有按钮权限标识
+func (list SysMenuList) GetAllPermission() (permissions []string) {
+	list.Each(func(menu *SysMenu) {
+		if menu.Type == 3 && menu.Permission != "" {
+			permissions = append(permissions, menu.Permission)
 		}
 	})
 	return
