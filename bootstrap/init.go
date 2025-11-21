@@ -193,6 +193,7 @@ func newTokenService(cache app.CacheInterf) app.TokenServiceInterface {
 		TokenExpire:    tokenExpire,
 		RefreshExpire:  refreshExpire,
 		CacheKeyPrefix: app.ConfigYml.GetString("token.cachekeyprefix"),
+		IsCache:        app.ConfigYml.GetBool("token.iscache"),
 	}
 }
 

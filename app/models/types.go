@@ -12,6 +12,14 @@ type JSONTime struct {
 	time.Time
 }
 
+func NewJSONTime(t time.Time) JSONTime {
+	return JSONTime{Time: t}
+}
+
+func (jt JSONTime) ToTime() time.Time {
+	return jt.Time
+}
+
 // UnmarshalJSON 实现 JSON 反序列化
 func (jt *JSONTime) UnmarshalJSON(b []byte) error {
 	var s string

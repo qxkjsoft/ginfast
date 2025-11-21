@@ -19,6 +19,7 @@ type TokenService struct {
 	TokenExpire    time.Duration
 	RefreshExpire  time.Duration
 	CacheKeyPrefix string
+	IsCache        bool
 }
 
 /**
@@ -60,7 +61,7 @@ func (s *TokenService) ValidateToken(tokenString string) (*app.Claims, error) {
 }
 
 /**
-	token管理（缓存模式）
+	token管理（缓存模式, 可配置是否开启缓存）
 **/
 // GenerateTokenWithCache 生成JWT令牌并存储到缓存
 func (s *TokenService) GenerateTokenWithCache(user *app.ClaimsUser) (string, error) {
@@ -69,24 +70,25 @@ func (s *TokenService) GenerateTokenWithCache(user *app.ClaimsUser) (string, err
 		return "", err
 	}
 
-	// 存储token到Redis
-	tokenInfo := &app.TokenInfo{
-		UserID:    user.UserID,
-		Token:     tokenString,
-		ExpiresAt: time.Now().Add(s.TokenExpire * time.Second),
-		CreatedAt: time.Now(),
-	}
-
-	err = s.StoreTokenWithCache(tokenInfo)
-	if err != nil {
-		return "", err
+	// 如果开启缓存，存储token到Redis
+	if s.IsCache {
+		tokenInfo := &app.TokenInfo{
+			UserID:    user.UserID,
+			Token:     tokenString,
+			ExpiresAt: time.Now().Add(s.TokenExpire * time.Second),
+			CreatedAt: time.Now(),
+		}
+		err = s.storeTokenWithCache(tokenInfo)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	return tokenString, nil
 }
 
 // StoreToken 存储Token到Redis
-func (s *TokenService) StoreTokenWithCache(info *app.TokenInfo) error {
+func (s *TokenService) storeTokenWithCache(info *app.TokenInfo) error {
 	key := s.getTokenKeyWithCache(info.UserID, info.Token)
 	return s.RedisHelper.Set(s.Ctx, key, "1", time.Until(info.ExpiresAt))
 }
@@ -98,14 +100,14 @@ func (s *TokenService) ValidateTokenWithCache(tokenString string) (*app.Claims, 
 	if err != nil {
 		return nil, err
 	}
-
 	// 检查缓存中是否存在该token（白名单模式）
-	key := s.getTokenKeyWithCache(claims.UserID, tokenString)
-	exists, err := s.RedisHelper.Exists(s.Ctx, key)
-	if err != nil || exists == 0 {
-		return nil, errors.New("token not found")
+	if s.IsCache {
+		key := s.getTokenKeyWithCache(claims.UserID, tokenString)
+		exists, err := s.RedisHelper.Exists(s.Ctx, key)
+		if err != nil || exists == 0 {
+			return nil, errors.New("token not found")
+		}
 	}
-
 	return claims, nil
 }
 
@@ -115,9 +117,12 @@ func (s *TokenService) RevokeTokenWithCache(tokenString string) error {
 	if err != nil {
 		return err
 	}
-
-	key := s.getTokenKeyWithCache(claims.UserID, tokenString)
-	return s.RedisHelper.Del(s.Ctx, key)
+	// 如果开启缓存，从Redis中删除该token
+	if s.IsCache {
+		key := s.getTokenKeyWithCache(claims.UserID, tokenString)
+		return s.RedisHelper.Del(s.Ctx, key)
+	}
+	return nil
 }
 
 // getTokenKey 获取Redis中存储Token的key
@@ -128,9 +133,7 @@ func (s *TokenService) getTokenKeyWithCache(userID uint, tokenString string) str
 	return fmt.Sprintf("%stoken:%d:%s", s.CacheKeyPrefix, userID, tokenHash)
 }
 
-/**
-	refreshToken管理
-**/
+/*****************************************refreshToken管理****************************************************/
 // GenerateRefreshToken 生成Refresh Token
 func (s *TokenService) GenerateRefreshToken(userID uint) (string, error) {
 	expirationTime := time.Now().Add(s.RefreshExpire * time.Second)
@@ -157,7 +160,7 @@ func (s *TokenService) GenerateRefreshToken(userID uint) (string, error) {
 		CreatedAt: time.Now(),
 	}
 
-	err = s.StoreRefreshToken(refreshTokenInfo)
+	err = s.storeRefreshToken(refreshTokenInfo)
 	if err != nil {
 		return "", err
 	}
@@ -166,7 +169,7 @@ func (s *TokenService) GenerateRefreshToken(userID uint) (string, error) {
 }
 
 // StoreRefreshToken 存储Refresh Token到Redis
-func (s *TokenService) StoreRefreshToken(info *app.RefreshTokenInfo) error {
+func (s *TokenService) storeRefreshToken(info *app.RefreshTokenInfo) error {
 	key := s.getRefreshTokenKey(info.UserID)
 	return s.RedisHelper.Set(s.Ctx, key, info.Token, time.Until(info.ExpiresAt))
 }
@@ -209,21 +212,6 @@ func (s *TokenService) ValidateRefreshToken(tokenString string) (*app.RefreshTok
 func (s *TokenService) RevokeRefreshToken(userID uint) error {
 	key := s.getRefreshTokenKey(userID)
 	return s.RedisHelper.Del(s.Ctx, key)
-}
-
-// RefreshAccessToken 使用Refresh Token刷新Access Token
-func (s *TokenService) RefreshAccessToken(refreshTokenString string, user *app.ClaimsUser) (string, error) {
-	// 验证refresh token
-	if _, err := s.ValidateRefreshToken(refreshTokenString); err != nil {
-		return "", err
-	}
-
-	newAccessToken, err := s.GenerateToken(user)
-	if err != nil {
-		return "", err
-	}
-
-	return newAccessToken, nil
 }
 
 // RefreshAccessTokenWithCache 使用Refresh Token刷新Access Token 并记录到缓存中
@@ -286,7 +274,7 @@ func (s *TokenService) RotateRefreshToken(oldRefreshToken string) (string, error
 		CreatedAt: now,
 	}
 
-	if err := s.StoreRefreshToken(newRefreshTokenInfo); err != nil {
+	if err := s.storeRefreshToken(newRefreshTokenInfo); err != nil {
 		return "", fmt.Errorf("failed to store new refresh token: %w", err)
 	}
 

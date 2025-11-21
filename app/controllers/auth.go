@@ -183,19 +183,13 @@ func (ac *AuthController) Login(c *gin.Context) {
 
 	// 生成token
 	user.Password = ""
-	// token 不记录缓存
-	token, err := app.TokenService.GenerateToken(&app.ClaimsUser{
+	token, err := app.TokenService.GenerateTokenWithCache(&app.ClaimsUser{
 		UserID:     user.ID,
 		Username:   user.Username,
 		TenantID:   tenantID,
 		TenantCode: tenantCode,
 	})
 
-	// // token 将记录缓存
-	// token, err := app.TokenService.GenerateTokenWithCache(&app.ClaimsUser{
-	// 	UserID:   user.ID,
-	// 	Username: user.Username,
-	// })
 	if err != nil {
 		ac.FailAndAbort(c, "生成token失败", err)
 	}
@@ -259,7 +253,7 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 
 	// 使用refresh token刷新access token
 	user.Password = ""
-	newAccessToken, err := app.TokenService.RefreshAccessToken(refreshToken, &app.ClaimsUser{
+	newAccessToken, err := app.TokenService.RefreshAccessTokenWithCache(refreshToken, &app.ClaimsUser{
 		UserID:   user.ID,
 		Username: user.Username,
 	})
@@ -308,7 +302,7 @@ func (ac *AuthController) Logout(c *gin.Context) {
 		return
 	}
 
-	// access token如果使用缓存模式，需要撤销 access token
+	// 撤销 access token
 	tokenString, err := common.GetAccessToken(c)
 	if err == nil && tokenString != "" {
 		// 尝试撤销access token，即使失败也继续执行

@@ -33,6 +33,12 @@ logs/
 resource/logs/
 resource/logs/*.log
 
+# resource 目录配置 - 只提交 database 文件夹下的内容，public 文件夹本身不提交
+/resource/*
+!/resource/database/
+!/resource/public/
+/resource/public/*
+
 # 临时文件
 tmp/
 temp/
@@ -59,6 +65,10 @@ go.work.sum
 *.backup
 config/*.local.yml
 config/config.yml
+
+# config 目录配置 - 只提交 config.example.yml
+/config/*
+!/config/config.example.yml
 
 # 调试生成的文件
 __debug_bin.exe*

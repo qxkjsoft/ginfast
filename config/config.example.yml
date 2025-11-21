@@ -50,6 +50,7 @@ token:
   jwttokenexpire:  43200    #设置token过期时间，单位秒 示例:43200=12小时
   jwttokenrefreshexpire:  2592000  #设置刷新token过期时间，单位秒 示例:2592000=30天
   cachekeyprefix: "gin-fast:"  # 缓存前缀
+  isCache: false  # 是否开启token缓存 (注意开启后会降低token验证的性能,但是注销token后token立即失效)
 redis:
   host: "127.0.0.1"
   port: 6379
