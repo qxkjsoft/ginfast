@@ -10,14 +10,9 @@
                     <a-range-picker v-model="searchForm.{{.JsonTag}}Range" style="width: 240px;" @change="handleSearch" />
                     {{- else if or (eq .FormType "radio") (eq .FormType "select") (eq .FormType "checkbox")}}
                     <!-- {{.Comment}}选择框查询（radio/select/checkbox统一使用select） -->
-                    <a-select v-model="searchForm.{{.JsonTag}}" placeholder="请选择{{.Comment}}" style="width: 240px;" {{- if ne .DictType ""}} :options="{{.JsonTag}}Option"{{- end}} allow-clear>
+                    <a-select v-model="searchForm.{{.JsonTag}}" placeholder="请选择{{.Comment}}" style="width: 240px;" allow-clear>
                         {{- if ne .DictType ""}}
-                        <template #label="{ data }">
-                            <div>{{`{{ data.name }}`}}</div>
-                        </template>
-                        <template #option="{ data }">
-                            <div>{{`{{ data.name }}`}}</div>
-                        </template>
+                        <a-option v-for="item in {{.JsonTag}}Option" :key="item.value" :value="{{if eq .FrontendType "number"}}Number(item.value){{else}}item.value{{end}}">{{`{{ item.name }}`}}</a-option>
                         {{- end}}
                     </a-select>
                     {{- else if and (eq .QueryType "LIKE") (ne .FrontendType "number")}}
@@ -92,69 +87,62 @@
 {{- if and (not .IsPrimary) (not .Exclude) .FormShow}}
                 <a-form-item field="{{.JsonTag}}" label="{{.Comment}}">
                     {{- if eq .FrontendType "number"}}
-                    {{- if or (eq .FormType "") (eq .FormType "number")}}<a-input-number v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />
+                    {{- if or (eq .FormType "") (eq .FormType "number")}}
+                    <a-input-number v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />
                     {{- else if eq .FormType "select"}}
-                    <a-select v-model="editingData.{{.JsonTag}}" placeholder="请选择{{.Comment}}" {{- if ne .DictType ""}} :options="{{.JsonTag}}Option"{{- end}}>
+                    <a-select v-model="editingData.{{.JsonTag}}" placeholder="请选择{{.Comment}}">
                         {{- if ne .DictType ""}}
-                        <template #label="{ data }">
-                            <div>{{`{{ data.name }}`}}</div>
-                        </template>
-                        <template #option="{ data }">
-                            <div>{{`{{ data.name }}`}}</div>
-                        </template>
+                        <a-option v-for="item in {{.JsonTag}}Option" :key="item.value" :value="{{if eq .FrontendType "number"}}Number(item.value){{else}}item.value{{end}}">{{`{{ item.name }}`}}</a-option>
                         {{- end}}
                     </a-select>
-                    {{- else if eq .FormType "radio"}}<a-radio-group v-model="editingData.{{.JsonTag}}" {{- if ne .DictType ""}} :options="{{.JsonTag}}Option"{{- end}}>
-                        {{- if ne .DictType ""}}<template #label="{ data }">
-                            <div>{{`{{ data.name }}`}}</div>
-                        </template>{{- end}}
-                    </a-radio-group>
-                    {{- else}}<a-input-number v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />{{- end}}
-                    {{- else if eq .GoType "time.Time"}}
-                    {{- if eq .FormType "input"}}<a-input v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />
-                    {{- else if eq .FormType "select"}}
-                    <a-select v-model="editingData.{{.JsonTag}}" placeholder="请选择{{.Comment}}" {{- if ne .DictType ""}} :options="{{.JsonTag}}Option"{{- end}}>
+                    {{- else if eq .FormType "radio"}}
+                    <a-radio-group v-model="editingData.{{.JsonTag}}">
                         {{- if ne .DictType ""}}
-                        <template #label="{ data }">
-                            <div>{{`{{ data.name }}`}}</div>
-                        </template>
-                        <template #option="{ data }">
-                            <div>{{`{{ data.name }}`}}</div>
-                        </template>
+                        <a-radio v-for="item in {{.JsonTag}}Option" :key="item.value" :value="{{if eq .FrontendType "number"}}Number(item.value){{else}}item.value{{end}}">{{`{{ item.name }}`}}</a-radio>
                         {{- end}}
-                    </a-select>
-                    {{- else if eq .FormType "radio"}}<a-radio-group v-model="editingData.{{.JsonTag}}" {{- if ne .DictType ""}} :options="{{.JsonTag}}Option"{{- end}}>
-                        {{- if ne .DictType ""}}<template #label="{ data }">
-                            <div>{{`{{ data.name }}`}}</div>
-                        </template>{{- end}}
                     </a-radio-group>
-                    {{- else}}<a-date-picker value-format="YYYY-MM-DDTHH:mm:ss[Z]" v-model="editingData.{{.JsonTag}}" placeholder="请选择{{.Comment}}" />{{- end}}
                     {{- else}}
-                    {{- if eq .FormType "textarea"}}<a-textarea v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />
-                    {{- else if eq .FormType "number"}}<a-input-number v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />
+                    <a-input-number v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />{{- end}}
+                    {{- else if eq .GoType "time.Time"}}
+                    {{- if eq .FormType "input"}}
+                    <a-input v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />
                     {{- else if eq .FormType "select"}}
-                    <a-select v-model="editingData.{{.JsonTag}}" placeholder="请选择{{.Comment}}" {{- if ne .DictType ""}} :options="{{.JsonTag}}Option"{{- end}}>
+                    <a-select v-model="editingData.{{.JsonTag}}" placeholder="请选择{{.Comment}}">
                         {{- if ne .DictType ""}}
-                        <template #label="{ data }">
-                            <div>{{`{{ data.name }}`}}</div>
-                        </template>
-                        <template #option="{ data }">
-                            <div>{{`{{ data.name }}`}}</div>
-                        </template>
+                        <a-option v-for="item in {{.JsonTag}}Option" :key="item.value" :value="{{if eq .FrontendType "number"}}Number(item.value){{else}}item.value{{end}}">{{`{{ item.name }}`}}</a-option>
                         {{- end}}
                     </a-select>
-                    {{- else if eq .FormType "radio"}}<a-radio-group v-model="editingData.{{.JsonTag}}" {{- if ne .DictType ""}} :options="{{.JsonTag}}Option"{{- end}}>
-                        {{- if ne .DictType ""}}<template #label="{ data }">
-                            <div>{{`{{ data.name }}`}}</div>
-                        </template>{{- end}}
+                    {{- else if eq .FormType "radio"}}
+                    <a-radio-group v-model="editingData.{{.JsonTag}}">
+                        {{- if ne .DictType ""}}
+                        <a-radio v-for="item in {{.JsonTag}}Option" :key="item.value" :value="{{if eq .FrontendType "number"}}Number(item.value){{else}}item.value{{end}}">{{`{{ item.name }}`}}</a-radio>
+                        {{- end}}
                     </a-radio-group>
-                    {{- else if eq .FormType "checkbox"}}<a-checkbox-group 
+                    {{- else}}
+                    <a-date-picker value-format="YYYY-MM-DDTHH:mm:ss[Z]" v-model="editingData.{{.JsonTag}}" placeholder="请选择{{.Comment}}" />{{- end}}
+                    {{- else}}
+                    {{- if eq .FormType "textarea"}}
+                    <a-textarea v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />
+                    {{- else if eq .FormType "number"}}
+                    <a-input-number v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />
+                    {{- else if eq .FormType "select"}}
+                    <a-select v-model="editingData.{{.JsonTag}}" placeholder="请选择{{.Comment}}">
+                        {{- if ne .DictType ""}}
+                        <a-option v-for="item in {{.JsonTag}}Option" :key="item.value" :value="{{if eq .FrontendType "number"}}Number(item.value){{else}}item.value{{end}}">{{`{{ item.name }}`}}</a-option>
+                        {{- end}}
+                    </a-select>
+                    {{- else if eq .FormType "radio"}}<a-radio-group v-model="editingData.{{.JsonTag}}">
+                        {{- if ne .DictType ""}}
+                        <a-radio v-for="item in {{.JsonTag}}Option" :key="item.value" :value="{{if eq .FrontendType "number"}}Number(item.value){{else}}item.value{{end}}">{{`{{ item.name }}`}}</a-radio>
+                        {{- end}}
+                    </a-radio-group>
+                    {{- else if eq .FormType "checkbox"}}
+                    <a-checkbox-group
                         :modelValue="editingData.{{.JsonTag}} ? JSON.parse(editingData.{{.JsonTag}}) : []"
-                        @update:modelValue="(val: any) => editingData.{{.JsonTag}} = val.length > 0 ? JSON.stringify(val) : undefined"
-                        {{- if ne .DictType ""}} :options="{{.JsonTag}}Option"{{- end}}>
-                        {{- if ne .DictType ""}}<template #label="{ data }">
-                            <div>{{`{{ data.name }}`}}</div>
-                        </template>{{- end}}
+                        @update:modelValue="(val: any) => editingData.{{.JsonTag}} = val.length > 0 ? JSON.stringify(val) : undefined">
+                        {{- if ne .DictType ""}}
+                        <a-checkbox v-for="item in {{.JsonTag}}Option" :key="item.value" :value="{{if eq .FrontendType "number"}}Number(item.value){{else}}item.value{{end}}">{{`{{ item.name }}`}}</a-checkbox>
+                        {{- end}}
                     </a-checkbox-group>
                     {{- else if eq .FormType "datetime"}}<a-date-picker value-format="YYYY-MM-DDTHH:mm:ss[Z]" v-model="editingData.{{.JsonTag}}" placeholder="请选择{{.Comment}}" />
                     {{- else}}<a-input v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />{{- end}}
@@ -331,15 +319,7 @@ const handleSave = async () => {
     const isValid = await formRef.value?.validate();
     if (isValid) return false;
     try {
-        // 类型转换：将FrontendType为number的字段转换为数字类型
         const dataToSave = JSON.parse(JSON.stringify(editingData));
-{{- range .Columns}}
-{{- if and (not .IsPrimary) (not .Exclude) (eq .FrontendType "number")}}
-        if (dataToSave.{{.JsonTag}} !== undefined && dataToSave.{{.JsonTag}} !== null && dataToSave.{{.JsonTag}} !== '') {
-            dataToSave.{{.JsonTag}} = Number(dataToSave.{{.JsonTag}});
-        }
-{{- end}}
-{{- end}}
         if (editingData.{{if .PrimaryKey}}{{.PrimaryKey.JsonTag}}{{else}}id{{end}}) {
             // 更新数据
             await updateData(dataToSave);
