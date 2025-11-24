@@ -23,6 +23,7 @@ import (
 type SysRoleController struct {
 	Common
 	CasbinService *service.PermissionService
+	RoleService   *service.SysRoleService
 }
 
 // NewSysRoleController 创建新的系统角色控制器实例
@@ -30,6 +31,7 @@ func NewSysRoleController() *SysRoleController {
 	return &SysRoleController{
 		Common:        Common{},
 		CasbinService: service.NewPermissionService(),
+		RoleService:   service.NewSysRoleService(),
 	}
 }
 
@@ -243,65 +245,13 @@ func (sc *SysRoleController) Update(c *gin.Context) {
 	if err := req.Validate(c); err != nil {
 		sc.FailAndAbort(c, err.Error(), err)
 	}
-
-	// 检查角色是否存在
-	role := models.NewSysRole()
-	err := role.Find(c, func(d *gorm.DB) *gorm.DB {
-		return d.Where("id = ?", req.ID)
-	})
-	if err != nil {
-		sc.FailAndAbort(c, "查询角色失败", err)
-	}
-	if role.IsEmpty() {
-		sc.FailAndAbort(c, "角色不存在", nil)
-	}
-
-	// 检查角色名称是否与其他角色冲突（排除当前角色）
-	existRole := models.NewSysRole()
-	err = existRole.Find(c, func(d *gorm.DB) *gorm.DB {
-		return d.Where("name = ? AND id != ?", req.Name, req.ID)
-	})
-	if err != nil {
-		sc.FailAndAbort(c, "检查角色名称失败", err)
-	}
-	if !existRole.IsEmpty() {
-		sc.FailAndAbort(c, "角色名称已被其他角色使用", nil)
-	}
-
-	// 如果指定了父级ID，检查父级角色是否存在且不能是自己
-	if req.ParentID > 0 {
-		if req.ParentID == req.ID {
-			sc.FailAndAbort(c, "不能将自己设置为父级角色", nil)
-		}
-		parentRole := models.NewSysRole()
-		err := parentRole.Find(c, func(d *gorm.DB) *gorm.DB {
-			return d.Where("id = ?", req.ParentID)
-		})
-		if err != nil {
-			sc.FailAndAbort(c, "检查父级角色失败", err)
-		}
-		if parentRole.IsEmpty() {
-			sc.FailAndAbort(c, "父级角色不存在", nil)
-		}
-	}
-
-	// 更新角色信息
-	role.Name = req.Name
-	role.Sort = req.Sort
-	role.Status = req.Status
-	role.Description = req.Description
-	role.ParentID = req.ParentID
-
-	err = app.DB().WithContext(c).Save(role).Error
+	// 更新角色
+	role, err := sc.RoleService.Update(c, req)
 	if err != nil {
 		sc.FailAndAbort(c, "更新角色失败", err)
 	}
-
-	// 编辑角色继承关系
-	if err := sc.CasbinService.EditRoleInheritance(c, role.ID, req.ParentID); err != nil {
-		sc.FailAndAbort(c, "编辑角色继承关系失败", err)
-	}
 	sc.SuccessWithMessage(c, "角色更新成功", role)
+
 }
 
 // Delete 删除角色

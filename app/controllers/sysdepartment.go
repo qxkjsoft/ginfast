@@ -3,6 +3,7 @@ package controllers
 import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
+	"gin-fast/app/service"
 	"gin-fast/app/utils/tenanthelper"
 
 	"github.com/gin-gonic/gin"
@@ -18,12 +19,14 @@ import (
 // @Router /sysDepartment [get]
 type SysDepartmentController struct {
 	Common
+	SysDepartmentService *service.SysDepartmentService
 }
 
 // NewSysDepartmentController 创建系统部门控制器
 func NewSysDepartmentController() *SysDepartmentController {
 	return &SysDepartmentController{
-		Common: Common{},
+		Common:               Common{},
+		SysDepartmentService: service.NewSysDepartmentService(),
 	}
 }
 
@@ -133,63 +136,10 @@ func (sc *SysDepartmentController) Update(c *gin.Context) {
 	if err := req.Validate(c); err != nil {
 		sc.FailAndAbort(c, err.Error(), err)
 	}
-
-	// 检查部门是否存在
-	dept := models.NewSysDepartment()
-	err := dept.Find(c, func(d *gorm.DB) *gorm.DB {
-		return d.Where("id = ?", req.ID)
-	})
+	dept, err := sc.SysDepartmentService.Update(c, &req)
 	if err != nil {
-		sc.FailAndAbort(c, "查询部门失败", err)
+		sc.FailAndAbort(c, err.Error(), err)
 	}
-	if dept.IsEmpty() {
-		sc.FailAndAbort(c, "部门不存在", nil)
-	}
-
-	// 检查部门名称是否与其他部门冲突（排除当前部门）
-	existDept := models.NewSysDepartment()
-	err = existDept.Find(c, func(d *gorm.DB) *gorm.DB {
-		return d.Where("name = ? AND id != ?", req.Name, req.ID)
-	})
-	if err != nil {
-		sc.FailAndAbort(c, "检查部门名称失败", err)
-	}
-	if !existDept.IsEmpty() {
-		sc.FailAndAbort(c, "部门名称已被其他部门使用", nil)
-	}
-
-	// 如果指定了父级ID，检查父级部门是否存在且不能是自己
-	if req.ParentID != nil && *req.ParentID > 0 {
-		if *req.ParentID == req.ID {
-			sc.FailAndAbort(c, "不能将自己设置为父级部门", nil)
-		}
-		parentDept := models.NewSysDepartment()
-		err := parentDept.Find(c, func(d *gorm.DB) *gorm.DB {
-			return d.Where("id = ?", *req.ParentID)
-		})
-		if err != nil {
-			sc.FailAndAbort(c, "检查父级部门失败", err)
-		}
-		if parentDept.IsEmpty() {
-			sc.FailAndAbort(c, "父级部门不存在", nil)
-		}
-	}
-
-	// 更新部门信息
-	dept.ParentID = req.ParentID
-	dept.Name = req.Name
-	dept.Status = req.Status
-	dept.Leader = req.Leader
-	dept.Phone = req.Phone
-	dept.Email = req.Email
-	dept.Sort = req.Sort
-	dept.Describe = req.Describe
-
-	err = dept.Update(c)
-	if err != nil {
-		sc.FailAndAbort(c, "更新部门失败", err)
-	}
-
 	sc.SuccessWithMessage(c, "部门更新成功", dept)
 }
 
