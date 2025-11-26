@@ -16,6 +16,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		tokenString, err := common.GetAccessToken(c)
 		if err != nil {
 			app.ZapLog.Error("Get access token failed", zap.Error(err))
+			// 401 未认证
 			c.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
 			c.Abort()
 			return
@@ -25,6 +26,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		claims, err := app.TokenService.ValidateTokenWithCache(tokenString)
 		if err != nil {
 			app.ZapLog.Error("Invalid token", zap.Error(err))
+			// 401 未认证
 			c.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
 			c.Abort()
 			return

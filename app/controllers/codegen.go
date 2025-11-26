@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gin-fast/app/models"
 	"gin-fast/app/service"
+	"gin-fast/app/utils/common"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -148,7 +149,7 @@ func (cgc *CodeGenController) GenerateCode(ctx *gin.Context) {
 		cgc.FailAndAbort(ctx, "生成前端代码失败", err)
 	}
 
-	cgc.Success(ctx, gin.H{})
+	cgc.SuccessWithMessage(ctx, "代码生成成功")
 }
 
 // PreviewCode 预览生成的代码
@@ -184,4 +185,57 @@ func (cgc *CodeGenController) PreviewCode(ctx *gin.Context) {
 	cgc.Success(ctx, gin.H{
 		"preview": result,
 	})
+}
+
+// InsertMenuAndApiData 插入菜单和API数据
+// @Summary 插入菜单和API数据
+// @Description 根据代码生成配置ID插入对应的菜单和API数据
+// @Tags 代码生成
+// @Accept json
+// @Produce json
+// @Param request body map[string]interface{} true "插入数据请求参数"
+// @Success 200 {object} map[string]interface{} "成功插入菜单和API数据"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /codegen/insertmenuandapi [post]
+// @Security ApiKeyAuth
+func (cgc *CodeGenController) InsertMenuAndApiData(ctx *gin.Context) {
+	var request map[string]interface{}
+	if err := ctx.ShouldBindJSON(&request); err != nil {
+		cgc.FailAndAbort(ctx, "请求参数解析失败", err)
+	}
+
+	genID, _ := request["genId"].(float64)
+	if genID == 0 {
+		cgc.FailAndAbort(ctx, "代码生成配置ID不能为空", nil)
+	}
+
+	// 使用service层获取代码生成配置详情
+	sysGen := models.NewSysGen()
+	err := sysGen.Find(ctx, func(db *gorm.DB) *gorm.DB {
+		return db.Where("id = ?", uint(genID)).Preload("SysGenFields")
+	})
+	if err != nil {
+		cgc.FailAndAbort(ctx, "获取代码生成配置详情失败", err)
+	}
+
+	if sysGen.IsEmpty() {
+		cgc.FailAndAbort(ctx, "代码生成配置不存在", nil)
+	}
+
+	// 构建菜单API上下文
+	menuApiCtx := &models.MenuApiContext{
+		TableName: sysGen.Name,
+		FileName:  common.KeepLettersOnlyLower(sysGen.FileName),
+		DirName:   common.KeepLettersOnlyLower(sysGen.ModuleName),
+		Comment:   sysGen.Describe,
+	}
+
+	// 调用service层的InsertMenuAndApiData方法
+	err = cgc.service.InsertMenuAndApiData(ctx, menuApiCtx)
+	if err != nil {
+		cgc.FailAndAbort(ctx, "插入菜单和API数据失败", err)
+	}
+
+	cgc.SuccessWithMessage(ctx, "菜单和API数据插入成功")
 }

@@ -331,7 +331,8 @@ func InitRoutes(engine *gin.Engine) {
 				codeGen.POST("/generate", codeGenControllers.GenerateCode)
 				// 预览代码
 				codeGen.GET("/preview", codeGenControllers.PreviewCode)
-
+				// 生成菜单
+				codeGen.POST("/insertmenuandapi", codeGenControllers.InsertMenuAndApiData)
 			}
 		}
 	}

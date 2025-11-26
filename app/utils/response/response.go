@@ -36,6 +36,12 @@ func (r *DefaultResponseConfig) GetSystemErrorCode() int {
 	return consts.ServerOccurredErrorCode
 }
 
+// ReturnJson 自定义返回JSON格式
+// Context *gin.Context 上下文对象
+// httpCode int HTTP状态码
+// dataCode int 业务逻辑状态码
+// msg string 业务逻辑消息
+// data interface{} 业务逻辑数据
 func (r *DefaultResponseHandler) ReturnJson(Context *gin.Context, httpCode int, dataCode int, msg string, data interface{}) {
 
 	//Context.Header("key2020","value2020")  	//可以根据实际情况在头部添加额外的其他信息
@@ -64,23 +70,35 @@ func (r *DefaultResponseHandler) Success(c *gin.Context, data ...interface{}) {
 }
 
 // Fail 失败的业务逻辑
+// data第一个元素为HTTP状态码(可选，默认为http.StatusBadRequest, 其他常用如:参数验证失败 → 422, 权限不足 → 403 ,资源不存在 → 404， 服务器内部错误 → 500)
+// data第二个元素为业务逻辑状态码
+// data第三个元素为业务逻辑的数据
 func (r *DefaultResponseHandler) Fail(c *gin.Context, msg string, data ...interface{}) {
+	httpCode := http.StatusBadRequest // 请求参数格式错误
 	dataCode := 1
+	var dataValue interface{} = nil
+
 	if len(data) > 0 {
 		if code, ok := data[0].(int); ok {
+			httpCode = code
+		}
+	}
+
+	if len(data) > 1 {
+		if code, ok := data[1].(int); ok {
 			dataCode = code
 		}
 	}
 
-	var dataValue interface{} = nil
-	if len(data) > 1 {
-		dataValue = data[1]
+	if len(data) > 2 {
+		dataValue = data[2]
 	}
 
-	r.ReturnJson(c, http.StatusBadRequest, dataCode, msg, dataValue)
+	r.ReturnJson(c, httpCode, dataCode, msg, dataValue)
 	c.Abort()
 }
 
+// ErrorSystem 系统错误
 func (r *DefaultResponseHandler) ErrorSystem(c *gin.Context, msg string, data interface{}) {
 	r.ReturnJson(c, http.StatusInternalServerError, consts.ServerOccurredErrorCode, consts.ServerOccurredErrorMsg+msg, data)
 	c.Abort()
