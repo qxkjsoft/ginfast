@@ -91,15 +91,15 @@
                     <a-input-number v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />
                     {{- else if eq .FormType "select"}}
                     <a-select v-model="editingData.{{.JsonTag}}" placeholder="请选择{{.Comment}}">
-                        {{- if ne .DictType ""}}
+                    {{- if ne .DictType ""}}
                         <a-option v-for="item in {{.JsonTag}}Option" :key="item.value" :value="{{if eq .FrontendType "number"}}Number(item.value){{else}}item.value{{end}}">{{`{{ item.name }}`}}</a-option>
-                        {{- end}}
+                    {{- end}}
                     </a-select>
                     {{- else if eq .FormType "radio"}}
                     <a-radio-group v-model="editingData.{{.JsonTag}}">
-                        {{- if ne .DictType ""}}
+                    {{- if ne .DictType ""}}
                         <a-radio v-for="item in {{.JsonTag}}Option" :key="item.value" :value="{{if eq .FrontendType "number"}}Number(item.value){{else}}item.value{{end}}">{{`{{ item.name }}`}}</a-radio>
-                        {{- end}}
+                    {{- end}}
                     </a-radio-group>
                     {{- else}}
                     <a-input-number v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />{{- end}}
@@ -145,6 +145,12 @@
                         {{- end}}
                     </a-checkbox-group>
                     {{- else if eq .FormType "datetime"}}<a-date-picker value-format="YYYY-MM-DDTHH:mm:ss[Z]" v-model="editingData.{{.JsonTag}}" placeholder="请选择{{.Comment}}" />
+                    {{- else if eq .FormType "image"}}
+                    <ImageUpload v-model="editingData.{{.JsonTag}}" title="{{.Comment}}" />
+                    {{- else if eq .FormType "images"}}
+                    <MultiImageUpload v-model="{{.JsonTag}}List" title="{{.Comment}}" />
+                    {{- else if eq .FormType "richtext"}}
+                    <WangEditor v-model="editingData.{{.JsonTag}}" />
                     {{- else}}<a-input v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />{{- end}}
                     {{- end}}
                 </a-form-item>
@@ -157,10 +163,30 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue';
-import { use{{.StructName}}PluginStore } from '../store/{{.FileName}}';
+import { use{{.StructName}}PluginHook } from '../hooks/{{.FileName}}';
 import type { {{.StructName}}Data } from '../api/{{.FileName}}';
-import { storeToRefs } from 'pinia';
 import { formatTime } from '@/globals';
+{{- $hasImageUpload := false}}
+{{- $hasMultiImageUpload := false}}
+{{- $hasWangEditor := false}}
+{{- range .Columns}}
+{{- if and (eq .GoType "string") (eq .FormType "image")}}
+{{- if not $hasImageUpload}}
+{{- $hasImageUpload = true}}
+import ImageUpload from '@/components/upload/image-upload.vue';
+{{- end}}
+{{- else if and (eq .GoType "string") (eq .FormType "images")}}
+{{- if not $hasMultiImageUpload}}
+{{- $hasMultiImageUpload = true}}
+import MultiImageUpload from '@/components/upload/multi-image-upload.vue';
+{{- end}}
+{{- else if and (eq .GoType "string") (eq .FormType "richtext")}}
+{{- if not $hasWangEditor}}
+{{- $hasWangEditor = true}}
+import WangEditor from '@/components/wang-editor/index.vue';
+{{- end}}
+{{- end}}
+{{- end}}
 {{- range .Columns}}
 {{- if and (not .IsPrimary) (not .Exclude) (ne .DictType "")}}
     {{- if or .FormShow .QueryShow}}
@@ -168,16 +194,19 @@ const {{.JsonTag}}Option = ref(dictFilter("{{.DictType}}"));
     {{- end}}
 {{- end}}
 {{- end}}
-const {{.StructNameLower}}Store = use{{.StructName}}PluginStore();
 const {
+    dataList,
+    loading,
+    total,
+    currentPage,
+    pageSize,
     fetchDataList,
     createData,
     updateData,
     deleteData,
     getDetail,
     resetSearchParams
-} = {{.StructNameLower}}Store;
-const { dataList, loading, total, currentPage, pageSize } = storeToRefs({{.StructNameLower}}Store);
+} = use{{.StructName}}PluginHook();
 
 const modalVisible = ref(false);
 const formRef = ref();
@@ -204,6 +233,28 @@ const editingData = reactive<Partial<{{.StructName}}Data>>({
 {{- end}}
 {{- end}}
 });
+
+{{- range .Columns}}
+{{- if and (eq .GoType "string") (eq .FormType "images")}}
+// 计算属性：处理 {{.JsonTag}} JSON 字符串与数组的双向转换
+const {{.JsonTag}}List = computed({
+    get(): string[] {
+        if (!editingData.{{.JsonTag}} || typeof editingData.{{.JsonTag}} !== 'string') {
+            return [];
+        }
+        try {
+            const parsed = JSON.parse(editingData.{{.JsonTag}});
+            return Array.isArray(parsed) ? parsed : [];
+        } catch {
+            return [];
+        }
+    },
+    set(value: string[]) {
+        editingData.{{.JsonTag}} = JSON.stringify(value);
+    }
+});
+{{- end}}
+{{- end}}
 
 const rules = {
 {{- range .Columns}}

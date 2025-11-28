@@ -1,4 +1,3 @@
-import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { {{.StructName}}Data, {{.StructName}}ListParams, {{.StructName}}ListResult, {{.StructName}}Result } from '../api/{{.FileName}}';
 import {
@@ -9,21 +8,16 @@ import {
     get{{.StructName}}
 } from '../api/{{.FileName}}';
 
-
-export const use{{.StructName}}PluginStore = defineStore('{{.DirName}}-{{.FileName}}-plugin', () => {
+export const use{{.StructName}}PluginHook = () => {
     // State
     const dataList = ref<{{.StructName}}Data[]>([]);
     const loading = ref<boolean>(false);
     const total = ref<number>(0);
     const currentPage = ref<number>(1);
     const pageSize = ref<number>(10);
-    const searchParams = ref<{
-{{- range .Columns}}
-        {{.JsonTag}}?: {{.FrontendType}};{{if .Comment}} // {{.Comment}}{{end}}
-{{- end}}
-    }>({});
+    const searchParams = ref<Partial<{{.StructName}}ListParams>>({});
 
-    // Getters
+    // Computed
     const getDataList = computed(() => dataList.value);
     const isLoading = computed(() => loading.value);
     const getTotal = computed(() => total.value);
@@ -35,26 +29,24 @@ export const use{{.StructName}}PluginStore = defineStore('{{.DirName}}-{{.FileNa
     const fetchDataList = async (params?: Partial<{{.StructName}}ListParams>) => {
         loading.value = true;
         try {
-            // 更新分页参数
+            // 更新分页参数和搜索条件
             if (params?.pageNum !== undefined) {
                 currentPage.value = params.pageNum;
             }
             if (params?.pageSize !== undefined) {
                 pageSize.value = params.pageSize;
             }
-{{- range .Columns}}
-            if (params?.{{.JsonTag}} !== undefined) {
-                searchParams.value.{{.JsonTag}} = params.{{.JsonTag}};
+            
+            // 更新搜索参数
+            if (params) {
+                searchParams.value = { ...searchParams.value, ...params };
             }
-{{- end}}
 
             // 构造请求参数
             const requestParams: {{.StructName}}ListParams = {
                 pageNum: currentPage.value,
                 pageSize: pageSize.value,
-{{- range .Columns}}
-                ...(searchParams.value.{{.JsonTag}} ? { {{.JsonTag}}: searchParams.value.{{.JsonTag}} } : {}),
-{{- end}}
+                ...searchParams.value
             };
 
             const response: {{.StructName}}ListResult = await get{{.StructName}}List(requestParams);
@@ -124,7 +116,7 @@ export const use{{.StructName}}PluginStore = defineStore('{{.DirName}}-{{.FileNa
         pageSize,
         searchParams,
 
-        // Getters
+        // Computed
         getDataList,
         isLoading,
         getTotal,
@@ -140,4 +132,4 @@ export const use{{.StructName}}PluginStore = defineStore('{{.DirName}}-{{.FileNa
         resetSearchParams,
         getDetail
     };
-});
+};

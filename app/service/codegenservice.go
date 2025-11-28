@@ -566,7 +566,7 @@ func (cgs *CodeGenService) GenerateFrontendCodeFiles(sysGen *models.SysGen) erro
 	dirs := []string{
 		pluginsDir,
 		filepath.Join(pluginsDir, "api"),
-		filepath.Join(pluginsDir, "store"),
+		filepath.Join(pluginsDir, "hooks"),
 		filepath.Join(pluginsDir, "views"),
 	}
 
@@ -584,11 +584,11 @@ func (cgs *CodeGenService) GenerateFrontendCodeFiles(sysGen *models.SysGen) erro
 		return fmt.Errorf("生成API文件失败: %v", err)
 	}
 
-	// 生成Store代码
-	storeCode := cgs.generateFrontendStoreCode(frontendCtx)
-	storeFilePath := filepath.Join(pluginsDir, "store", fileName+".ts")
-	if err := cgs.writeCodeToFileWithCover(storeFilePath, storeCode, sysGen.IsCover); err != nil {
-		return fmt.Errorf("生成Store文件失败: %v", err)
+	// 生成Hooks代码
+	hooksCode := cgs.generateFrontendHooksCode(frontendCtx)
+	hooksFilePath := filepath.Join(pluginsDir, "hooks", fileName+".ts")
+	if err := cgs.writeCodeToFileWithCover(hooksFilePath, hooksCode, sysGen.IsCover); err != nil {
+		return fmt.Errorf("生成Hooks文件失败: %v", err)
 	}
 
 	// 生成视图代码
@@ -642,8 +642,8 @@ func (cgs *CodeGenService) generateFrontendAPICode(ctx *models.FrontendGenContex
 	return cgs.executeTemplate("frontend/api.tpl", templateData)
 }
 
-// generateFrontendStoreCode 生成前端Store代码
-func (cgs *CodeGenService) generateFrontendStoreCode(ctx *models.FrontendGenContext) string {
+// generateFrontendHooksCode 生成前端Hooks代码
+func (cgs *CodeGenService) generateFrontendHooksCode(ctx *models.FrontendGenContext) string {
 	// 创建模板数据
 	templateData := map[string]interface{}{
 		"StructName":      ctx.StructName,
@@ -660,7 +660,7 @@ func (cgs *CodeGenService) generateFrontendStoreCode(ctx *models.FrontendGenCont
 	}
 
 	// 解析模板并生成代码
-	return cgs.executeTemplate("frontend/store.tpl", templateData)
+	return cgs.executeTemplate("frontend/hooks.tpl", templateData)
 }
 
 // generateFrontendViewCode 生成前端视图代码
@@ -738,7 +738,7 @@ func (cgs *CodeGenService) PreviewCode(ctx context.Context, genID uint) (map[str
 	// 生成前端代码
 	frontendCtx := models.NewFrontendGenContext(tableName, sysGen.ModuleName, sysGen.FileName, columnTemplates)
 	frontendApiCode := cgs.generateFrontendAPICode(frontendCtx)
-	frontendStoreCode := cgs.generateFrontendStoreCode(frontendCtx)
+	frontendHooksCode := cgs.generateFrontendHooksCode(frontendCtx)
 	frontendViewCode := cgs.generateFrontendViewCode(frontendCtx)
 
 	return map[string]string{
@@ -749,7 +749,7 @@ func (cgs *CodeGenService) PreviewCode(ctx context.Context, genID uint) (map[str
 		"routes":        routesCode,
 		"init":          initCode,
 		"frontendApi":   frontendApiCode,
-		"frontendStore": frontendStoreCode,
+		"frontendHooks": frontendHooksCode,
 		"frontendView":  frontendViewCode,
 	}, nil
 }
