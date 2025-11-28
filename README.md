@@ -2,7 +2,7 @@
 
 开源、免费、轻量级 Gin 前后分离快速开发基础框架，基于主流技术，集成了 JWT 认证、权限控制、数据库操作等功能，帮助开发者快速搭建一个支持多租户的后台管理系统。
 
-本项目由[Gfast](https://github.com/tiger1103/gfast)团队（[奇讯科技](https://www.qjit.cn)）开发
+本项目由[Gfast](https://github.com/tiger1103/gfast)团队（[奇讯科技](https://www.qjit.cn)）开发，如果您愿意为GinFast贡献代码或提供建议以及商业合作，请加微信：qixun007(备注：ginfast)
 
 项目为前后端分离，前端地址：
 
