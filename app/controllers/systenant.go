@@ -113,7 +113,7 @@ func (tc *TenantController) Add(c *gin.Context) {
 		tc.FailAndAbort(c, err.Error(), err)
 	}
 
-	// 检查租户编码是否已存在
+	// 检查租户编码(二级域名)是否已存在 - Code必须全局唯一
 	existTenant := models.NewTenant()
 	err := existTenant.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("code = ?", req.Code)
@@ -137,6 +137,20 @@ func (tc *TenantController) Add(c *gin.Context) {
 		tc.FailAndAbort(c, "租户名称已存在", nil)
 	}
 
+	// 检查Domain唯一性（当Domain非空时）
+	if req.Domain != "" {
+		existTenant = models.NewTenant()
+		err = existTenant.Find(c, func(d *gorm.DB) *gorm.DB {
+			return d.Where("domain = ?", req.Domain)
+		})
+		if err != nil {
+			tc.FailAndAbort(c, "检查域名失败", err)
+		}
+		if !existTenant.IsEmpty() {
+			tc.FailAndAbort(c, "域名已被其他租户使用", nil)
+		}
+	}
+
 	// 创建租户
 	tenant := models.NewTenant()
 	tenant.Name = req.Name
@@ -144,6 +158,7 @@ func (tc *TenantController) Add(c *gin.Context) {
 	tenant.Description = req.Description
 	tenant.Status = req.Status
 	tenant.Domain = req.Domain
+	tenant.PlatformDomain = req.PlatformDomain
 
 	err = app.DB().WithContext(c).Create(tenant).Error
 	if err != nil {
@@ -183,7 +198,7 @@ func (tc *TenantController) Update(c *gin.Context) {
 		tc.FailAndAbort(c, "租户不存在", nil)
 	}
 
-	// 检查租户编码是否与其他租户冲突（排除当前租户）
+	// 检查租户编码(二级域名)是否与其他租户冲突（排除当前租户）
 	existTenant := models.NewTenant()
 	err = existTenant.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("code = ? AND id != ?", req.Code, req.ID)
@@ -207,12 +222,27 @@ func (tc *TenantController) Update(c *gin.Context) {
 		tc.FailAndAbort(c, "租户名称已被其他租户使用", nil)
 	}
 
+	// 检查Domain唯一性（当Domain非空时，排除当前租户）
+	if req.Domain != "" {
+		existTenant = models.NewTenant()
+		err = existTenant.Find(c, func(d *gorm.DB) *gorm.DB {
+			return d.Where("domain = ? AND id != ?", req.Domain, req.ID)
+		})
+		if err != nil {
+			tc.FailAndAbort(c, "检查域名失败", err)
+		}
+		if !existTenant.IsEmpty() {
+			tc.FailAndAbort(c, "域名已被其他租户使用", nil)
+		}
+	}
+
 	// 更新租户信息
 	tenant.Name = req.Name
 	tenant.Code = req.Code
 	tenant.Description = req.Description
 	tenant.Status = req.Status
 	tenant.Domain = req.Domain
+	tenant.PlatformDomain = req.PlatformDomain
 
 	err = app.DB().WithContext(c).Save(tenant).Error
 	if err != nil {

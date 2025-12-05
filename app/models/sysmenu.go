@@ -169,6 +169,7 @@ func (list SysMenuList) TreeSort() SysMenuList {
 	return list
 }
 
+// GetMenusWithChildern 根据多个菜单ID获取包含这些ID及所有子级元素的数据
 func (list SysMenuList) GetMenusWithChildern(menuIds ...uint) SysMenuList {
 	if len(list) == 0 || len(menuIds) == 0 {
 		return nil

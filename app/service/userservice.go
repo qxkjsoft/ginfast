@@ -21,7 +21,7 @@ func (u *User) GetUserProfile(c *gin.Context, userID uint) (profile *models.User
 
 	user := models.NewUser()
 	err = user.Find(c, func(d *gorm.DB) *gorm.DB {
-		return d.Preload("Department").Preload("Roles").Where("id = ?", userID)
+		return d.Preload("Department").Preload("Roles").Preload("Tenant").Where("id = ?", userID)
 	})
 	if err != nil {
 		return

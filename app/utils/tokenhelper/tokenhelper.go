@@ -90,7 +90,7 @@ func (s *TokenService) GenerateTokenWithCache(user *app.ClaimsUser) (string, err
 // StoreToken 存储Token到Redis
 func (s *TokenService) storeTokenWithCache(info *app.TokenInfo) error {
 	key := s.getTokenKeyWithCache(info.UserID, info.Token)
-	return s.RedisHelper.Set(s.Ctx, key, "1", time.Until(info.ExpiresAt))
+	return s.RedisHelper.Set(s.Ctx, key, info.Token, time.Until(info.ExpiresAt))
 }
 
 // ValidateTokenWithCache 验证JWT令牌（带缓存检查）

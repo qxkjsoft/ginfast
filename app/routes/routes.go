@@ -28,6 +28,7 @@ var sysTenantControllers = controllers.NewTenantController()                // �
 var sysUserTenantControllers = controllers.NewSysUserTenantController()     // 用户租户关联控制器
 var codeGenControllers = controllers.NewCodeGenController()                 // 代码生成控制器
 var sysGenControllers = controllers.NewSysGenController()                   // 代码生成配置控制器
+var pluginsManagerControllers = controllers.NewPluginsManagerController()   // 插件管理控制器
 
 // InitRoutes 初始化路由
 func InitRoutes(engine *gin.Engine) {
@@ -126,6 +127,8 @@ func InitRoutes(engine *gin.Engine) {
 				sysMenu.PUT("/edit", sysMenuControllers.Update)
 				// 删除菜单
 				sysMenu.DELETE("/delete", sysMenuControllers.Delete)
+				// 批量删除菜单
+				sysMenu.DELETE("/batchDelete", sysMenuControllers.BatchDelete)
 				// 根据菜单ID获取API ID集合
 				sysMenu.GET("/apis/:id", sysMenuControllers.GetMenuApiIds)
 				// 为菜单分配API权限
@@ -333,6 +336,17 @@ func InitRoutes(engine *gin.Engine) {
 				codeGen.GET("/preview", codeGenControllers.PreviewCode)
 				// 生成菜单
 				codeGen.POST("/insertmenuandapi", codeGenControllers.InsertMenuAndApiData)
+			}
+
+			// 插件管理路由组
+			pluginsManager := protected.Group("/pluginsmanager")
+			{
+				// 获取所有插件导出配置
+				pluginsManager.GET("/exports", pluginsManagerControllers.GetPluginsExport)
+				// 导出插件为压缩包
+				pluginsManager.GET("/export", pluginsManagerControllers.ExportPlugin)
+				// 导入插件
+				pluginsManager.POST("/import", pluginsManagerControllers.ImportPlugin)
 			}
 		}
 	}

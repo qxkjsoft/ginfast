@@ -177,7 +177,7 @@ upload:
   max_size: 10
   
   # 允许的文件类型
-  allowed_types: [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".txt", ".zip", ".rar", ".svg", ".ico", ".mp4", ".avi"]
+  allowed_types: [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".txt", ".zip", ".rar", ".svg", ".ico", ".mp4", ".avi", ".webp"]
   
   # 本地上传路径
   local_path: "./resource/public/uploads"
@@ -193,4 +193,4 @@ upload:
 #代码生成
 gen:
   # 前端代码生成路径
-  dir: "../ginfast-tenant-ui/src/plugins"
+  dir: "../ginfast-tenant-ui"

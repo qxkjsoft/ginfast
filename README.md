@@ -691,7 +691,9 @@ docker run -p 8080:8080 gin-fast
 ## 交流群
 
 ### 微信群
-
+```
+如果二维码过期，请添加微信 qixun007 邀请您进群(备注：ginfast)
+```
 ![微信群](docs/mdFile/wx2.jpg)
 
 ### QQ群

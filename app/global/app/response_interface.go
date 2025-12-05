@@ -15,7 +15,7 @@ type ResponseHandler interface {
 
 	// Success 返回成功响应
 	// c: gin上下文
-	// data: 可选参数，第一个参数为响应数据，第二个参数为消息
+	// data: 支持可变参数：第一个参数为响应数据，第二个参数为消息, 第三个参数为业务逻辑状态码
 	Success(c *gin.Context, data ...interface{})
 
 	// Fail 返回失败响应

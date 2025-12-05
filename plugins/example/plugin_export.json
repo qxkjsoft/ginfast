@@ -1,0 +1,29 @@
+{
+    "name": "ginfastexample",
+    "version": "1.0.0",
+    "description": "ginfast示例插件",
+    "author": "ginfast",
+    "email": "ginfast@example.com",
+    "url": "https://example.com",
+    "dependencies": {
+        "ginfast-tenant": "^1.0.0",
+        "ginfast-tenant-ui": "^1.0.0"
+    },
+    "exportDirs": [    
+        "plugins/example/",
+        "plugins/exampleinit.go"
+    ],
+    "exportDirsFrontend": [
+        "src/plugins/example/"
+    ],
+    "menus" :[
+        {
+            "path" :  "/demo",
+            "type" : 1
+        }
+    ],
+    "databaseTable" : [
+        "example"
+    ]
+
+}

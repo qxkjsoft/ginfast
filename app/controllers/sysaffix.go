@@ -52,7 +52,7 @@ func (ac *SysAffixController) Upload(c *gin.Context) {
 	// 处理文件上传
 	response, err := app.UploadService.HandleUpload(c, "file")
 	if err != nil {
-		ac.FailAndAbort(c, "文件上传失败", err)
+		ac.FailAndAbort(c, err.Error(), err)
 	}
 
 	// 创建文件记录

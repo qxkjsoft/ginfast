@@ -613,7 +613,7 @@ func (cgs *CodeGenService) getFrontendGenDir() string {
 				// 路径不存在，返回空字符串触发错误处理
 				return ""
 			}
-			return frontendDir
+			return filepath.Join(frontendDir, "src", "plugins")
 		}
 	}
 

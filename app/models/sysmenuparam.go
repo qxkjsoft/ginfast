@@ -89,3 +89,13 @@ type SysMenuExportRequest struct {
 func (r *SysMenuExportRequest) Validate(c *gin.Context) error {
 	return r.Check(c, r)
 }
+
+// SysMenuBatchDeleteRequest 批量删除菜单请求结构
+type SysMenuBatchDeleteRequest struct {
+	Validator
+	MenuIDs []uint `form:"menuIds" json:"menuIds" validate:"required" message:"菜单ID列表不能为空"`
+}
+
+func (r *SysMenuBatchDeleteRequest) Validate(c *gin.Context) error {
+	return r.Check(c, r)
+}

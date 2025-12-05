@@ -10,12 +10,13 @@ import (
 // Tenant 租户模型
 type Tenant struct {
 	BaseModel
-	Name        string `gorm:"column:name;size:255;not null;comment:租户名称" json:"name"`
-	Code        string `gorm:"column:code;size:100;uniqueIndex;not null;comment:租户编码" json:"code"`
-	Description string `gorm:"column:description;size:500;comment:租户描述" json:"description"`
-	Status      int8   `gorm:"column:status;default:1;comment:状态 0停用 1启用" json:"status"`
-	Domain      string `gorm:"column:domain;size:255;comment:绑定域名" json:"domain"`
-	CreatedBy   uint   `gorm:"column:created_by;comment:创建人" json:"createdBy"`
+	Name           string `gorm:"column:name;size:255;not null;comment:租户名称" json:"name"`
+	Code           string `gorm:"column:code;size:100;uniqueIndex;not null;comment:租户编码(子域名标识)" json:"code"`
+	Description    string `gorm:"column:description;size:500;comment:租户描述" json:"description"`
+	Status         int8   `gorm:"column:status;default:1;comment:状态 0停用 1启用" json:"status"`
+	Domain         string `gorm:"column:domain;size:255;comment:绑定域名(完整域名，非空时应唯一)" json:"domain"`
+	PlatformDomain string `gorm:"column:platform_domain;size:255;comment:平台基础域名(如:yourplatform.com)" json:"platformDomain"`
+	CreatedBy      uint   `gorm:"column:created_by;comment:创建人" json:"createdBy"`
 }
 
 // TableName 设置表名
@@ -83,4 +84,38 @@ func (list *TenantList) GetTotal(c context.Context, query ...func(*gorm.DB) *gor
 		return 0, err
 	}
 	return total, nil
+}
+
+// FindByCode 按Code(二级域名)查找租户
+func (t *Tenant) FindByCode(c context.Context, code string) (err error) {
+	err = app.DB().WithContext(c).Where("code = ? AND status = 1", code).First(t).Error
+	if err == gorm.ErrRecordNotFound {
+		err = nil
+	}
+	return
+}
+
+// FindByDomain 按Domain(主域名)查找租户 - Domain可以被多个租户共用
+func (t *Tenant) FindByDomain(c context.Context, domain string) (err error) {
+	err = app.DB().WithContext(c).Where("domain = ? AND status = 1", domain).First(t).Error
+	if err == gorm.ErrRecordNotFound {
+		err = nil
+	}
+	return
+}
+
+// FindByCodeOrDomain 按Code或Domain查找租户(优先级: Code > Domain)
+func (t *Tenant) FindByCodeOrDomain(c context.Context, code, domain string) (err error) {
+	// 优先按Code查询
+	if code != "" {
+		err = t.FindByCode(c, code)
+		if err != nil || !t.IsEmpty() {
+			return
+		}
+	}
+	// 如果Code未找到，则按Domain查询
+	if domain != "" {
+		err = t.FindByDomain(c, domain)
+	}
+	return
 }

@@ -390,6 +390,33 @@ func (sm *SysMenuController) Delete(c *gin.Context) {
 	sm.SuccessWithMessage(c, "菜单删除成功", nil)
 }
 
+// BatchDelete 批量删除菜单
+// @Summary 批量删除菜单
+// @Description 批量删除菜单及其子孙菜单，需要先检查是否和角色有关联
+// @Tags 菜单管理
+// @Accept json
+// @Produce json
+// @Param menu body models.SysMenuBatchDeleteRequest true "菜单ID列表"
+// @Success 200 {object} map[string]interface{} "菜单批量删除成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysMenu/batchDelete [delete]
+// @Security ApiKeyAuth
+func (sm *SysMenuController) BatchDelete(c *gin.Context) {
+	var req models.SysMenuBatchDeleteRequest
+	if err := req.Validate(c); err != nil {
+		sm.FailAndAbort(c, err.Error(), err)
+	}
+
+	// 调用service层的BatchDelete方法
+	err := sm.menuService.BatchDelete(c, req.MenuIDs)
+	if err != nil {
+		sm.FailAndAbort(c, err.Error(), err)
+	}
+
+	sm.SuccessWithMessage(c, "菜单批量删除成功", nil)
+}
+
 // GetByID 根据ID获取菜单信息
 // @Summary 根据ID获取菜单信息
 // @Description 根据菜单ID获取菜单详细信息
@@ -585,7 +612,7 @@ func (sm *SysMenuController) Export(c *gin.Context) {
 		sm.FailAndAbort(c, "查询菜单数据失败", err)
 	}
 	if menuList.IsEmpty() {
-		sm.FailAndAbort(c, "未找到指定的菜单数据", nil)
+		sm.FailAndAbort(c, "未找到菜单数据", nil)
 	}
 	menuList = menuList.GetMenusWithChildern(req.MenuIDs...)
 	menuTree := menuList.FixOrphanParentIDs().BuildTree()
@@ -648,32 +675,6 @@ func (sm *SysMenuController) Import(c *gin.Context) {
 	if menuList.IsEmpty() {
 		sm.FailAndAbort(c, "JSON数据为空", nil)
 	}
-	// 验证菜单数据合法性
-	validateTreeErr := menuList.ValidateTree()
-	if !validateTreeErr.IsEmpty() {
-		sm.FailAndAbort(c, "菜单数据合法性校验失败", validateTreeErr)
-	}
-
-	// 获取所有组件文件路径
-	componentPaths := menuList.GetAllComponentPaths()
-	// 检查组件文件是否存在
-	if len(componentPaths) > 0 {
-		var componentCount int64
-		app.DB().WithContext(c).Model(&models.SysMenu{}).Where("component IN ?", componentPaths).Count(&componentCount)
-		if componentCount > 0 {
-			sm.FailAndAbort(c, "存在重复的组件路径", nil)
-		}
-	}
-
-	allPermission := menuList.GetAllPermission()
-	// 检查权限是否存在
-	if len(allPermission) > 0 {
-		var permissionCount int64
-		app.DB().WithContext(c).Model(&models.SysMenu{}).Where("permission IN ?", allPermission).Count(&permissionCount)
-		if permissionCount > 0 {
-			sm.FailAndAbort(c, "存在重复的权限标识", nil)
-		}
-	}
 
 	// 获取当前用户ID
 	currentUserID := common.GetCurrentUserID(c)
@@ -681,26 +682,8 @@ func (sm *SysMenuController) Import(c *gin.Context) {
 		sm.FailAndAbort(c, "获取当前用户ID失败", nil)
 	}
 
-	// 使用事务处理导入
-	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
-		// 创建ID映射，用于处理父子关系
-		idMap := make(map[uint]uint) // oldID -> newID
-
-		// 递归处理菜单数据
-		err := sm.menuService.ProcessMenuImport(tx, menuList, 0, idMap, currentUserID)
-		if err != nil {
-			return err
-		}
-
-		// 创建菜单API关联
-		err = sm.menuService.CreateMenuApis(tx, menuList, idMap, currentUserID)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
+	// 调用service层的Import方法
+	err = sm.menuService.Import(c, menuList, currentUserID)
 	if err != nil {
 		sm.FailAndAbort(c, "导入菜单数据失败", err)
 	}

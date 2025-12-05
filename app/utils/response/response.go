@@ -52,7 +52,7 @@ func (r *DefaultResponseHandler) ReturnJson(Context *gin.Context, httpCode int, 
 	})
 }
 
-// Success 直接返回成功
+// Success 直接返回成功 ，支持可变参数：第一个参数为响应数据，第二个参数为消息, 第三个参数为业务逻辑状态码
 func (r *DefaultResponseHandler) Success(c *gin.Context, data ...interface{}) {
 	var dataValue interface{} = nil
 	if len(data) > 0 {
@@ -65,8 +65,13 @@ func (r *DefaultResponseHandler) Success(c *gin.Context, data ...interface{}) {
 			msg = msgValue
 		}
 	}
-
-	r.ReturnJson(c, http.StatusOK, 0, msg, dataValue)
+	code := 0
+	if len(data) > 2 {
+		if codeValue, ok := data[2].(int); ok {
+			code = codeValue
+		}
+	}
+	r.ReturnJson(c, http.StatusOK, code, msg, dataValue)
 }
 
 // Fail 失败的业务逻辑

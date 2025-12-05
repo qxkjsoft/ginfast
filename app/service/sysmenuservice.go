@@ -214,6 +214,58 @@ func (s *SysMenuService) CreateMenuApis(tx *gorm.DB, menuList models.SysMenuList
 	return nil
 }
 
+// Import 导入菜单数据
+func (s *SysMenuService) Import(c *gin.Context, menuList models.SysMenuList, userID uint) error {
+	// 验证菜单数据合法性
+	validateTreeErr := menuList.ValidateTree()
+	if !validateTreeErr.IsEmpty() {
+		return validateTreeErr
+	}
+
+	// 获取所有组件文件路径
+	componentPaths := menuList.GetAllComponentPaths()
+	// 检查组件文件是否存在
+	if len(componentPaths) > 0 {
+		var componentCount int64
+		app.DB().WithContext(c).Model(&models.SysMenu{}).Where("component IN ?", componentPaths).Count(&componentCount)
+		if componentCount > 0 {
+			return fmt.Errorf("存在重复的组件路径")
+		}
+	}
+
+	allPermission := menuList.GetAllPermission()
+	// 检查权限是否存在
+	if len(allPermission) > 0 {
+		var permissionCount int64
+		app.DB().WithContext(c).Model(&models.SysMenu{}).Where("permission IN ?", allPermission).Count(&permissionCount)
+		if permissionCount > 0 {
+			return fmt.Errorf("存在重复的权限标识")
+		}
+	}
+
+	// 使用事务处理导入
+	err := app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
+		// 创建ID映射，用于处理父子关系
+		idMap := make(map[uint]uint) // oldID -> newID
+
+		// 递归处理菜单数据
+		err := s.ProcessMenuImport(tx, menuList, 0, idMap, userID)
+		if err != nil {
+			return err
+		}
+
+		// 创建菜单API关联
+		err = s.CreateMenuApis(tx, menuList, idMap, userID)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return err
+}
+
 func (s *SysMenuService) Update(c *gin.Context, req models.SysMenuUpdateRequest) (*models.SysMenu, error) {
 	// 检查菜单是否存在
 	menu := models.NewSysMenu()
@@ -335,4 +387,148 @@ func (s *SysMenuService) Update(c *gin.Context, req models.SysMenuUpdateRequest)
 		return nil, err
 	}
 	return menu, nil
+}
+
+// GetAllDescendantIDs 获取菜单的所有子孙ID（包括指定的ID本身）
+func (s *SysMenuService) GetAllDescendantIDs(c *gin.Context, menuIDs []uint) ([]uint, error) {
+	if len(menuIDs) == 0 {
+		return []uint{}, nil
+	}
+
+	// 获取所有菜单
+	allMenus := models.NewSysMenuList()
+	err := allMenus.Find(c, func(db *gorm.DB) *gorm.DB {
+		return db
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// 构建菜单树映射
+	childrenMap := make(map[uint][]uint)
+	for _, menu := range allMenus {
+		childrenMap[menu.ParentID] = append(childrenMap[menu.ParentID], menu.ID)
+	}
+
+	// 使用map存储所有要删除的ID，避免重复
+	allIDs := make(map[uint]bool)
+
+	// 递归函数：收集指定菜单及其所有子孙ID
+	var collectDescendants func(uint)
+	collectDescendants = func(menuID uint) {
+		if allIDs[menuID] {
+			return // 已经处理过
+		}
+		allIDs[menuID] = true
+
+		// 递归处理所有子菜单
+		for _, childID := range childrenMap[menuID] {
+			collectDescendants(childID)
+		}
+	}
+
+	// 收集所有指定菜单的子孙ID
+	for _, menuID := range menuIDs {
+		collectDescendants(menuID)
+	}
+
+	// 将map转换为slice
+	result := make([]uint, 0, len(allIDs))
+	for id := range allIDs {
+		result = append(result, id)
+	}
+
+	return result, nil
+}
+
+// BatchDelete 批量删除菜单及其关联数据，包含了删除api
+func (s *SysMenuService) BatchDelete(c *gin.Context, menuIDs []uint) error {
+	if len(menuIDs) == 0 {
+		return fmt.Errorf("菜单ID列表不能为空")
+	}
+
+	// 获取所有子孙ID（包括原始ID）
+	allMenuIDs, err := s.GetAllDescendantIDs(c, menuIDs)
+	if err != nil {
+		return fmt.Errorf("获取菜单子孙ID失败: %w", err)
+	}
+
+	if len(allMenuIDs) == 0 {
+		return fmt.Errorf("菜单不存在")
+	}
+
+	// 检查是否有角色关联这些菜单， 如果有，不能删除
+	var roleMenuCount int64
+	err = app.DB().WithContext(c).Model(&models.SysRoleMenu{}).Where("menu_id IN ?", allMenuIDs).Count(&roleMenuCount).Error
+	if err != nil {
+		return fmt.Errorf("检查角色菜单关联失败: %w", err)
+	}
+
+	if roleMenuCount > 0 {
+		return fmt.Errorf("存在角色关联这些菜单，无法删除")
+	}
+
+	// 使用事务处理批量删除
+	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
+		// 1. 删除菜单与角色的关联（虽然检查时已经无关联，但保险起见）
+		if err := tx.Where("menu_id IN ?", allMenuIDs).Delete(&models.SysRoleMenu{}).Error; err != nil {
+			return fmt.Errorf("删除菜单角色关联失败: %w", err)
+		}
+
+		// 2. 获取所有与菜单关联的API ID
+		var relatedApiIds []uint
+		if err := tx.Model(&models.SysMenuApi{}).
+			Where("menu_id IN ?", allMenuIDs).
+			Distinct("api_id").
+			Pluck("api_id", &relatedApiIds).Error; err != nil {
+			return fmt.Errorf("查询菜单关联的API失败: %w", err)
+		}
+
+		// 3. 在删除菜单API关联之前，先检查这些API是否还有其他菜单关联
+		apiIdsToDelete := make([]uint, 0)
+		if len(relatedApiIds) > 0 {
+			// 查询这些API中，还有其他菜单关联的API ID
+			var apiIdsWithRelations []uint
+			err := tx.Model(&models.SysMenuApi{}).
+				Where("api_id IN ?", relatedApiIds).
+				Where("menu_id NOT IN ?", allMenuIDs).
+				Distinct("api_id").
+				Pluck("api_id", &apiIdsWithRelations).Error
+			if err != nil {
+				return fmt.Errorf("检查API关联失败: %w", err)
+			}
+
+			// 找出没有其他菜单关联的API ID
+			relationsMap := make(map[uint]bool)
+			for _, id := range apiIdsWithRelations {
+				relationsMap[id] = true
+			}
+			for _, apiId := range relatedApiIds {
+				if !relationsMap[apiId] {
+					apiIdsToDelete = append(apiIdsToDelete, apiId)
+				}
+			}
+		}
+		// 开始删除相关数据
+		// 4. 删除菜单与API的关联
+		if err := tx.Where("menu_id IN ?", allMenuIDs).Delete(&models.SysMenuApi{}).Error; err != nil {
+			return fmt.Errorf("删除菜单API关联失败: %w", err)
+		}
+
+		// 5. 批量删除没有其他菜单关联的API
+		if len(apiIdsToDelete) > 0 {
+			if err := tx.Unscoped().Where("id IN ?", apiIdsToDelete).Delete(&models.SysApi{}).Error; err != nil {
+				return fmt.Errorf("删除API失败: %w", err)
+			}
+		}
+
+		// 6. 硬删除菜单
+		if err := tx.Unscoped().Where("id IN ?", allMenuIDs).Delete(&models.SysMenu{}).Error; err != nil {
+			return fmt.Errorf("删除菜单失败: %w", err)
+		}
+
+		return nil
+	})
+
+	return err
 }
