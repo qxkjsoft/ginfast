@@ -1056,8 +1056,16 @@ func (pms *PluginsManagerService) importDatabase(zipReader *zip.Reader) error {
 	}
 
 	// 执行SQL语句
-	if err := db.Exec(sqlContent).Error; err != nil {
-		return fmt.Errorf("执行SQL失败: %v", err)
+	// 按分号分割SQL语句并逐个执行
+	statements := strings.Split(sqlContent, ";")
+	for _, stmt := range statements {
+		trimmedStmt := strings.TrimSpace(stmt)
+		if trimmedStmt == "" {
+			continue
+		}
+		if err := db.Exec(trimmedStmt).Error; err != nil {
+			return fmt.Errorf("执行SQL失败: %v", err)
+		}
 	}
 
 	return nil
