@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50726
 File Encoding         : 65001
 
-Date: 2025-12-05 17:56:23
+Date: 2025-12-05 18:00:43
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -715,7 +715,7 @@ CREATE TABLE `sys_menu` (
   KEY `idx_parent_id` (`parent_id`) USING BTREE,
   KEY `idx_sort` (`sort`) USING BTREE,
   KEY `idx_type` (`type`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=140336 DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='系统菜单路由表';
+) ENGINE=InnoDB AUTO_INCREMENT=140337 DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='系统菜单路由表';
 
 -- ----------------------------
 -- Records of sys_menu
@@ -787,6 +787,7 @@ INSERT INTO `sys_menu` VALUES ('140332', '140265', '', '', '', '', '生成代码
 INSERT INTO `sys_menu` VALUES ('140333', '140265', '', '', '', '', '同步数据库', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:codegen:refreshFields', '2025-11-17 15:35:51', '2025-11-17 15:35:51', null, '1');
 INSERT INTO `sys_menu` VALUES ('140334', '140265', '', '', '', '', '删除', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:codegen:delete', '2025-11-17 15:36:50', '2025-11-17 15:36:50', null, '1');
 INSERT INTO `sys_menu` VALUES ('140335', '140265', '', '', '', '', '生成菜单', '0', '0', '0', '1', '0', '', '0', '', '', '0', '3', '0', 'system:codegen:insertmenuandapi', '2025-11-26 15:16:32', '2025-11-26 15:16:32', null, '1');
+INSERT INTO `sys_menu` VALUES ('140336', '10', '/system/pluginsmanager', 'SystemPluginsmanager', '', 'system/pluginsmanager/pluginsmanager', 'plugins-manager', '0', '0', '0', '1', '0', '', '0', '', 'IconApps', '0', '2', '0', '', '2025-12-05 17:59:34', '2025-12-05 17:59:34', null, '1');
 
 -- ----------------------------
 -- Table structure for sys_menu_api
