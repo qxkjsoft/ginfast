@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
@@ -97,7 +98,7 @@ func (pms *PluginsManagerService) ExportPluginToWriter(pluginName string, writer
 
 	// 解析JSON到结构体
 	var pluginExport models.PluginExport
-	if err := json.Unmarshal(fileContent, &pluginExport); err != nil {
+	if err = json.Unmarshal(fileContent, &pluginExport); err != nil {
 		return "", err
 	}
 
@@ -112,7 +113,7 @@ func (pms *PluginsManagerService) ExportPluginToWriter(pluginName string, writer
 
 		// 检查文件或文件夹是否存在
 		fullPath := exportPath
-		if _, err := os.Stat(fullPath); errors.Is(err, os.ErrNotExist) {
+		if _, err = os.Stat(fullPath); errors.Is(err, os.ErrNotExist) {
 			return "", errors.New("导出路径不存在: " + exportPath)
 		}
 
@@ -622,6 +623,10 @@ func (pms *PluginsManagerService) formatSQLValue(value interface{}) string {
 			return "1"
 		}
 		return "0"
+	case time.Time:
+		// 对时间类型进行格式化，转为标准SQL时间格式
+		timeStr := v.Format("2006-01-02 15:04:05")
+		return fmt.Sprintf("'%s'", timeStr)
 	default:
 		return fmt.Sprintf("%v", v)
 	}
@@ -762,13 +767,6 @@ func (pms *PluginsManagerService) processPluginImport(c *gin.Context, zipReader 
 		return nil, err
 	}
 
-	// 解压并覆盖文件
-	if params.OverwriteFiles {
-		if err := pms.extractAndOverwriteFiles(zipReader); err != nil {
-			return nil, fmt.Errorf("覆盖文件失败: %v", err)
-		}
-	}
-
 	// 导入数据库
 	if params.OverwriteDB {
 		if err := pms.importDatabase(zipReader); err != nil {
@@ -780,6 +778,13 @@ func (pms *PluginsManagerService) processPluginImport(c *gin.Context, zipReader 
 	if params.ImportMenu {
 		if err := pms.importMenus(c, zipReader, params.UserID); err != nil {
 			return nil, fmt.Errorf("导入菜单失败: %v", err)
+		}
+	}
+
+	// 解压并覆盖文件
+	if params.OverwriteFiles {
+		if err := pms.extractAndOverwriteFiles(zipReader); err != nil {
+			return nil, fmt.Errorf("覆盖文件失败: %v", err)
 		}
 	}
 
