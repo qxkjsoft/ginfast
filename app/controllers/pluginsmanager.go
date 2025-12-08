@@ -12,11 +12,6 @@ import (
 )
 
 // PluginsManagerController 插件管理控制器
-// @Summary 插件管理API
-// @Description 插件管理相关接口
-// @Tags 插件管理
-// @Accept json
-// @Produce json
 type PluginsManagerController struct {
 	Common
 	service *service.PluginsManagerService
@@ -58,14 +53,19 @@ func (pmc *PluginsManagerController) GetPluginsExport(c *gin.Context) {
 // @Tags 插件管理
 // @Accept json
 // @Produce application/zip
-// @Param pluginName query string true "插件文件夹名称"
+// @Param body body map[string]string true "请求体 {folderName: 插件文件夹名称}"
 // @Success 200 "返回压缩包文件"
 // @Failure 400 {object} map[string]interface{} "请求参数错误"
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"
-// @Router /pluginsmanager/export [get]
+// @Router /pluginsmanager/export [post]
 // @Security ApiKeyAuth
 func (pmc *PluginsManagerController) ExportPlugin(c *gin.Context) {
-	folderName := c.Query("folderName")
+	var req map[string]string
+	if err := c.ShouldBindJSON(&req); err != nil {
+		pmc.FailAndAbort(c, "请求参数错误", err, 400)
+		return
+	}
+	folderName := req["folderName"]
 	if folderName == "" {
 		pmc.FailAndAbort(c, "插件名称不能为空", errors.New("folderName is required"), 400)
 	}

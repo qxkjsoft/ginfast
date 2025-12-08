@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50726
 File Encoding         : 65001
 
-Date: 2025-12-05 18:00:43
+Date: 2025-12-08 17:59:52
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -35,7 +35,7 @@ CREATE TABLE `demo_students` (
   `created_by` int(11) unsigned DEFAULT '0' COMMENT '创建人',
   `tenant_id` int(11) unsigned DEFAULT '0' COMMENT '租户ID字段',
   PRIMARY KEY (`student_id`) USING BTREE
-) ENGINE=MyISAM AUTO_INCREMENT=23 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='学员管理';
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='学员管理';
 
 -- ----------------------------
 -- Records of demo_students
@@ -142,7 +142,7 @@ CREATE TABLE `sys_api` (
   `deleted_at` datetime DEFAULT NULL,
   `created_by` int(11) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=198 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=202 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_api
@@ -249,6 +249,10 @@ INSERT INTO `sys_api` VALUES ('194', '删除代码生成配置和字段信息', 
 INSERT INTO `sys_api` VALUES ('195', '刷新代码生成配置的字段信息', '/api/sysGen/refreshFields', 'PUT', '代码生成', '2025-11-17 15:27:33', '2025-11-17 15:27:33', null, '1');
 INSERT INTO `sys_api` VALUES ('196', '生成菜单', '/api/codegen/insertmenuandapi', 'POST', '代码生成', '2025-11-26 15:12:56', '2025-11-26 15:12:56', null, '1');
 INSERT INTO `sys_api` VALUES ('197', '批量删除', '/api/sysMenu/batchDelete', 'DELETE', '菜单管理', '2025-12-05 17:48:52', '2025-12-05 17:48:52', null, '1');
+INSERT INTO `sys_api` VALUES ('198', '获取插件列表', '/api/pluginsmanager/exports', 'GET', '插件管理', '2025-12-08 16:38:26', '2025-12-08 16:38:26', null, '1');
+INSERT INTO `sys_api` VALUES ('199', '导出插件', '/api/pluginsmanager/export', 'POST', '插件管理', '2025-12-08 16:39:19', '2025-12-08 16:44:36', null, '1');
+INSERT INTO `sys_api` VALUES ('200', '导入插件', '/api/pluginsmanager/import', 'POST', '插件管理', '2025-12-08 16:47:11', '2025-12-08 16:47:11', null, '1');
+INSERT INTO `sys_api` VALUES ('201', '卸载插件', '/api/pluginsmanager/uninstall', 'DELETE', '插件管理', '2025-12-08 16:48:07', '2025-12-08 16:48:07', null, '1');
 
 -- ----------------------------
 -- Table structure for sys_casbin_rule
@@ -715,7 +719,7 @@ CREATE TABLE `sys_menu` (
   KEY `idx_parent_id` (`parent_id`) USING BTREE,
   KEY `idx_sort` (`sort`) USING BTREE,
   KEY `idx_type` (`type`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=140337 DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='系统菜单路由表';
+) ENGINE=InnoDB AUTO_INCREMENT=140341 DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='系统菜单路由表';
 
 -- ----------------------------
 -- Records of sys_menu
@@ -788,6 +792,10 @@ INSERT INTO `sys_menu` VALUES ('140333', '140265', '', '', '', '', '同步数据
 INSERT INTO `sys_menu` VALUES ('140334', '140265', '', '', '', '', '删除', '0', '0', '0', '1', '0', '', '0', '', '', '1', '3', '0', 'system:codegen:delete', '2025-11-17 15:36:50', '2025-11-17 15:36:50', null, '1');
 INSERT INTO `sys_menu` VALUES ('140335', '140265', '', '', '', '', '生成菜单', '0', '0', '0', '1', '0', '', '0', '', '', '0', '3', '0', 'system:codegen:insertmenuandapi', '2025-11-26 15:16:32', '2025-11-26 15:16:32', null, '1');
 INSERT INTO `sys_menu` VALUES ('140336', '10', '/system/pluginsmanager', 'SystemPluginsmanager', '', 'system/pluginsmanager/pluginsmanager', 'plugins-manager', '0', '0', '0', '1', '0', '', '0', '', 'IconApps', '0', '2', '0', '', '2025-12-05 17:59:34', '2025-12-05 17:59:34', null, '1');
+INSERT INTO `sys_menu` VALUES ('140337', '140336', '', '', '', '', '获取插件列表', '0', '0', '0', '1', '0', '', '0', '', '', '0', '3', '0', 'system:pluginsmanager:exports', '2025-12-08 16:33:07', '2025-12-08 16:33:07', null, '1');
+INSERT INTO `sys_menu` VALUES ('140338', '140336', '', '', '', '', '导出插件', '0', '0', '0', '1', '0', '', '0', '', '', '0', '3', '0', 'system:pluginsmanager:export', '2025-12-08 16:33:32', '2025-12-08 16:33:32', null, '1');
+INSERT INTO `sys_menu` VALUES ('140339', '140336', '', '', '', '', '导入插件', '0', '0', '0', '1', '0', '', '0', '', '', '0', '3', '0', 'system:pluginsmanager:import', '2025-12-08 16:33:51', '2025-12-08 16:33:51', null, '1');
+INSERT INTO `sys_menu` VALUES ('140340', '140336', '', '', '', '', '插件卸载', '0', '0', '0', '1', '0', '', '0', '', '', '0', '3', '0', 'system:pluginsmanager:uninstall', '2025-12-08 16:34:53', '2025-12-08 16:34:53', null, '1');
 
 -- ----------------------------
 -- Table structure for sys_menu_api
@@ -892,6 +900,11 @@ INSERT INTO `sys_menu_api` VALUES ('140332', '105');
 INSERT INTO `sys_menu_api` VALUES ('140333', '195');
 INSERT INTO `sys_menu_api` VALUES ('140334', '194');
 INSERT INTO `sys_menu_api` VALUES ('140335', '196');
+INSERT INTO `sys_menu_api` VALUES ('140336', '198');
+INSERT INTO `sys_menu_api` VALUES ('140337', '198');
+INSERT INTO `sys_menu_api` VALUES ('140338', '199');
+INSERT INTO `sys_menu_api` VALUES ('140339', '200');
+INSERT INTO `sys_menu_api` VALUES ('140340', '201');
 
 -- ----------------------------
 -- Table structure for sys_operation_logs

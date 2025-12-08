@@ -344,7 +344,7 @@ func InitRoutes(engine *gin.Engine) {
 				// 获取所有插件导出配置
 				pluginsManager.GET("/exports", pluginsManagerControllers.GetPluginsExport)
 				// 导出插件为压缩包
-				pluginsManager.GET("/export", pluginsManagerControllers.ExportPlugin)
+				pluginsManager.POST("/export", pluginsManagerControllers.ExportPlugin)
 				// 导入插件
 				pluginsManager.POST("/import", pluginsManagerControllers.ImportPlugin)
 				// 卸载插件

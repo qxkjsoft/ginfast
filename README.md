@@ -41,6 +41,7 @@ github地址：[https://github.com/qxkjsoft/ginfast-ui](https://github.com/qxkjs
 - 🔒 **数据隔离**：基于GORM钩子函数实现自动租户数据隔离，确保各租户数据安全
 - 👥 **租户用户管理**：支持用户与租户的灵活关联，一个用户可关联多个租户
 - 🤖 **代码生成**：强大的代码生成器，支持根据数据库表一键生成完整的后端和前端代码，包括模型、控制器、服务和视图层
+- 🔌 **插件管理**：完整的插件管理系统，支持插件打包、导入、导出、卸载等功能，支持版本管理和依赖检查
 
 ## 技术栈
 
@@ -77,7 +78,8 @@ ginfast-tenant/
 │   │   ├── sysmenu.go      # 菜单管理控制器
 │   │   ├── sysrole.go      # 角色管理控制器
 │   │   ├── systenant.go    # 租户管理控制器
-│   │   └── sysusertenant.go # 用户租户关联控制器
+│   │   ├── sysusertenant.go # 用户租户关联控制器
+│   │   └── pluginsmanager.go # 插件管理控制器
 │   ├── global/             # 全局变量和接口
 │   │   ├── app/            # 全局应用接口
 │   │   ├── consts/         # 常量定义
@@ -104,6 +106,7 @@ ginfast-tenant/
 │   │   ├── sysrole.go      # 角色模型
 │   │   ├── systenants.go   # 租户模型
 │   │   ├── sysusertenant.go # 用户租户关联模型
+│   │   ├── pluginexport.go # 插件导出配置模型
 │   │   └── *param.go       # 各种参数模型
 │   ├── routes/             # 路由配置
 │   │   └── routes.go       # 路由定义
@@ -113,6 +116,7 @@ ginfast-tenant/
 │   │   ├── sysgenservice.go # 代码生成配置服务
 │   │   ├── sysmenu.go      # 菜单服务
 │   │   ├── userservice.go  # 用户服务
+│   │   ├── pluginsmanagerservice.go # 插件管理服务
 │   │   └── zaphooks.go     # 日志钩子
 │   └── utils/              # 工具类
 │       ├── cachehelper/    # 缓存助手
@@ -490,6 +494,206 @@ type LoginRequest struct {
 Authorization: Bearer <access_token>
 ```
 
+## 插件管理系统
+
+本项目提供完整的插件管理系统，支持插件的上传、下载、安装和卸载，同时集成了强大的插件导出功能，允许开发者将插件打包为可重新分发的压缩包。
+
+### 插件管理API接口
+
+所有插件管理接口需要JWT认证，路由前缀为 `/api/pluginsmanager`
+
+#### 获取插件列表
+```
+GET /api/pluginsmanager/exports
+```
+获取plugins文件夹下所有插件的导出配置信息（plugin_export.json）。
+
+**响应示例：**
+```json
+{
+  "code": 0,
+  "msg": "ok",
+  "data": {
+    "list": [
+      {
+        "name": "example",
+        "version": "1.0.0",
+        "description": "示例插件",
+        "author": "author_name",
+        "email": "author@example.com",
+        "url": "https://example.com",
+        "folderName": "example",
+        "dependencies": {},
+        "exportDirs": [],
+        "exportDirsFrontend": [],
+        "menus": [],
+        "databaseTable": []
+      }
+    ]
+  }
+}
+```
+
+#### 导出插件
+```
+POST /api/pluginsmanager/export
+```
+将指定插件打包成压缩包进行下载。压缩包包含：
+- 后端代码文件（ginfastback目录）
+- 前端代码文件（ginfastfront目录）
+- plugin.json 插件配置文件
+- menus.json 菜单数据（如果有）
+- database.sql 数据库脚本（如果有）
+
+**请求体：**
+```json
+{
+  "folderName": "example"
+}
+```
+
+**响应：** 返回压缩包文件（Content-Type: application/zip）
+
+#### 导入插件
+```
+POST /api/pluginsmanager/import
+```
+从上传的压缩包导入插件。支持以下功能：
+- 检查导入的插件文件和数据库是否存在
+- 导入菜单配置
+- 导入数据库脚本
+- 覆盖现有文件
+
+**请求参数（multipart/form-data）：**
+| 参数 | 类型 | 必需 | 说明 |
+|------|------|------|------|
+| file | file | 是 | 插件压缩包文件 |
+| checkExist | int | 否 | 仅检查文件和数据库是否存在 (0:否, 1:是) |
+| overwriteDB | int | 否 | 是否覆盖数据库 (0:否, 1:是) |
+| importMenu | int | 否 | 是否导入菜单 (0:否, 1:是) |
+| overwriteFiles | int | 否 | 是否覆盖文件 (0:否, 1:是) |
+| userId | int | 否 | 用户ID（默认使用当前登录用户） |
+
+**响应示例（检查存在）：**
+```json
+{
+  "code": 1,
+  "msg": "以下项已存在，请核查",
+  "data": {
+    "existingPaths": [
+      "plugins/example"
+    ],
+    "existingTables": [
+      "plugin_example"
+    ]
+  }
+}
+```
+
+#### 卸载插件
+```
+DELETE /api/pluginsmanager/uninstall?folderName=example
+```
+卸载指定插件，包括：
+- 删除菜单
+- 删除文件
+- 删除数据库表
+
+**参数：**
+| 参数 | 类型 | 必需 | 说明 |
+|------|------|------|------|
+| folderName | string | 是 | 插件文件夹名称 |
+
+### 插件配置文件格式
+
+每个插件必须在根目录包含 `plugin_export.json` 文件，定义插件的导出配置。
+
+**plugin_export.json 格式示例：**
+```json
+{
+  "name": "example",
+  "version": "1.0.0",
+  "description": "示例插件说明",
+  "author": "插件作者",
+  "email": "author@example.com",
+  "url": "https://github.com/example",
+  "dependencies": {
+    "ginfast": ">=1.0.0"
+  },
+  "exportDirs": [
+    "plugins/example/controllers",
+    "plugins/example/models",
+    "plugins/example/service",
+    "plugins/example/routes"
+  ],
+  "exportDirsFrontend": [
+    "src/modules/example"
+  ],
+  "menus": [
+    {
+      "path": "/example",
+      "type": 0
+    }
+  ],
+  "databaseTable": [
+    "plugin_example",
+    "plugin_example_detail"
+  ]
+}
+```
+
+**配置项说明：**
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| name | string | 插件唯一标识名称 |
+| version | string | 插件版本号（支持语义化版本） |
+| description | string | 插件描述 |
+| author | string | 插件作者名称 |
+| email | string | 作者邮箱 |
+| url | string | 插件主页或代码仓库URL |
+| dependencies | object | 插件依赖（键为插件名，值为版本要求） |
+| exportDirs | array | 后端代码目录列表（相对路径） |
+| exportDirsFrontend | array | 前端代码目录列表（相对于gen.dir） |
+| menus | array | 菜单配置列表 |
+| databaseTable | array | 数据库表名列表 |
+
+### 插件导出流程
+
+1. **读取配置** - 系统读取插件的 plugin_export.json 配置
+2. **验证路径** - 验证exportDirs和exportDirsFrontend中指定的所有路径是否存在
+3. **收集文件** - 收集所有需要导出的后端和前端文件
+4. **生成菜单数据** - 如果配置了menus，从sys_menu表查询相关菜单并生成树形结构的menus.json
+5. **生成数据库脚本** - 如果配置了databaseTable，导出这些表的CREATE和INSERT语句为database.sql
+6. **创建压缩包** - 将所有文件和数据打包成ZIP文件
+7. **流式传输** - 使用流式传输直接返回压缩包，无需保存到磁盘
+
+### 插件导入流程
+
+1. **解析压缩包** - 从上传的压缩包中读取plugin.json配置
+2. **版本检查** - 验证插件版本和依赖是否兼容
+3. **存在性检查** - 如果checkExist=true，检查文件和数据库是否已存在
+4. **导入数据库** - 如果overwriteDB=true，执行database.sql脚本
+5. **导入菜单** - 如果importMenu=true，导入menus.json中的菜单数据
+6. **提取文件** - 如果overwriteFiles=true，解压并覆盖文件
+7. **返回结果** - 返回导入是否成功或列出已存在的冲突项
+
+### 插件版本兼容性
+
+系统支持以下版本表示法：
+- `1.0.0` - 精确版本
+- `>=1.0.0` - 大于等于指定版本
+- `>1.0.0` - 大于指定版本
+- `^1.0.0` - 兼容版本（与1.0.0兼容）
+- `~1.0.0` - 大约版本
+
+### 后端配置说明
+
+在config.yml中配置前端项目路径：
+```yaml
+gen:
+  dir: "../ginfast-ui"  # 前端项目根目录相对路径
+```
+
 ## 插件开发规范
 
 本项目支持插件化开发，允许开发者在不影响核心代码的情况下扩展功能。插件遵循与主应用相同的架构模式和规范。
@@ -630,6 +834,17 @@ plugins/
    }
    ```
 
+### 插件导出json配置建议
+
+为了充分利用插件管理系统的功能，编写plugin_export.json时的建议：
+
+1. **version字段** - 使用语义化版本号（如1.0.0），便于版本管理和兼容性检查
+2. **dependencies字段** - 明确声明插件依赖的其他插件及最低版本要求
+3. **exportDirs字段** - 列举所有需要导出的后端目录，确保完整性
+4. **exportDirsFrontend字段** - 列举所有需要导出的前端目录（相对于gen.dir配置）
+5. **menus字段** - 如果插件有菜单，配置相关菜单的path和type便于自动导出
+6. **databaseTable字段** - 列举所有插件相关的数据库表名，便于导出和导入
+
 ### 插件规范要求
 
 1. **命名规范**
@@ -656,6 +871,11 @@ plugins/
    - 遵循 GORM 的操作规范
    - 注意处理数据库错误
    - 添加TenantID字段以支持多租户数据隔离
+
+6. **导出配置**
+   - 在插件根目录创建plugin_export.json文件
+   - 完整列举所有需要导出的目录和数据库表
+   - 配置菜单和依赖信息便于自动化导入导出
 
 ## 部署说明
 
@@ -694,7 +914,7 @@ docker run -p 8080:8080 gin-fast
 ```
 如果二维码过期，请添加微信 qixun007 邀请您进群(备注：ginfast)
 ```
-![微信群](docs/mdFile/wx2.jpg)
+![微信群](docs/mdFile/wx3.png)
 
 ### QQ群
 

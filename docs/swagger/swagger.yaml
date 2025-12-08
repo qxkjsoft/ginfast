@@ -7,6 +7,18 @@ definitions:
     required:
     - id
     type: object
+  gin-fast_app_models.LoginRequest:
+    properties:
+      password:
+        type: string
+      tenantCode:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
   gin-fast_app_models.UpdateRequest:
     properties:
       deptId:
@@ -78,18 +90,6 @@ definitions:
         type: integer
     required:
     - id
-    type: object
-  models.LoginRequest:
-    properties:
-      password:
-        type: string
-      tenantCode:
-        type: string
-      username:
-        type: string
-    required:
-    - password
-    - username
     type: object
   models.RefreshRequest:
     properties:
@@ -400,6 +400,15 @@ definitions:
     required:
     - menuId
     type: object
+  models.SysMenuBatchDeleteRequest:
+    properties:
+      menuIds:
+        items:
+          type: integer
+        type: array
+    required:
+    - menuIds
+    type: object
   models.SysMenuDeleteRequest:
     properties:
       id:
@@ -519,6 +528,8 @@ definitions:
         type: string
       name:
         type: string
+      platformDomain:
+        type: string
       status:
         type: integer
     required:
@@ -536,6 +547,8 @@ definitions:
       id:
         type: integer
       name:
+        type: string
+      platformDomain:
         type: string
       status:
         type: integer
@@ -779,6 +792,42 @@ paths:
       summary: 生成代码
       tags:
       - 代码生成
+  /codegen/insertmenuandapi:
+    post:
+      consumes:
+      - application/json
+      description: 根据代码生成配置ID插入对应的菜单和API数据
+      parameters:
+      - description: 插入数据请求参数
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功插入菜单和API数据
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 插入菜单和API数据
+      tags:
+      - 代码生成
   /codegen/preview:
     get:
       consumes:
@@ -915,7 +964,7 @@ paths:
         name: loginReq
         required: true
         schema:
-          $ref: '#/definitions/models.LoginRequest'
+          $ref: '#/definitions/gin-fast_app_models.LoginRequest'
       produces:
       - application/json
       responses:
@@ -937,6 +986,146 @@ paths:
       summary: 用户登录
       tags:
       - 认证
+  /pluginsmanager/export:
+    post:
+      consumes:
+      - application/json
+      description: 根据plugin_export中的导出配置，将指定插件打包成压缩文件
+      parameters:
+      - description: '请求体 {folderName: 插件文件夹名称}'
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/zip
+      responses:
+        "200":
+          description: 返回压缩包文件
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 导出插件
+      tags:
+      - 插件管理
+  /pluginsmanager/exports:
+    get:
+      consumes:
+      - application/json
+      description: 获取plugins文件夹下所有子文件夹中的plugin_export.json文件内容
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回插件导出配置列表
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取插件导出配置列表
+      tags:
+      - 插件管理
+  /pluginsmanager/import:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 从上传的压缩包导入插件
+      parameters:
+      - description: 插件压缩包文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      - default: 0
+        description: 是否覆盖数据库 (0:否, 1:是)
+        in: formData
+        name: overwriteDB
+        type: integer
+      - default: 0
+        description: 是否导入菜单 (0:否, 1:是)
+        in: formData
+        name: importMenu
+        type: integer
+      - default: 0
+        description: 是否覆盖文件 (0:否, 1:是)
+        in: formData
+        name: overwriteFiles
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 导入成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 导入插件
+      tags:
+      - 插件管理
+  /pluginsmanager/uninstall:
+    delete:
+      consumes:
+      - application/json
+      description: 根据plugin_export.json配置，卸载指定插件（移除菜单、文件和数据库表）
+      parameters:
+      - description: 插件文件夹名称
+        in: query
+        name: folderName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 卸载成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 卸载插件
+      tags:
+      - 插件管理
   /refreshToken:
     post:
       consumes:
@@ -2327,6 +2516,41 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 根据菜单ID获取API ID集合
+      tags:
+      - 菜单管理
+  /sysMenu/batchDelete:
+    delete:
+      consumes:
+      - application/json
+      description: 批量删除菜单及其子孙菜单，需要先检查是否和角色有关联
+      parameters:
+      - description: 菜单ID列表
+        in: body
+        name: menu
+        required: true
+        schema:
+          $ref: '#/definitions/models.SysMenuBatchDeleteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 菜单批量删除成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 批量删除菜单
       tags:
       - 菜单管理
   /sysMenu/delete:
