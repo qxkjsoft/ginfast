@@ -150,3 +150,31 @@ func (pmc *PluginsManagerController) ImportPlugin(c *gin.Context) {
 	// 返回成功响应
 	pmc.SuccessWithMessage(c, "插件导入成功")
 }
+
+// UninstallPlugin 卸载插件
+// @Summary 卸载插件
+// @Description 根据plugin_export.json配置，卸载指定插件（移除菜单、文件和数据库表）
+// @Tags 插件管理
+// @Accept json
+// @Produce json
+// @Param folderName query string true "插件文件夹名称"
+// @Success 200 {object} map[string]interface{} "卸载成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /pluginsmanager/uninstall [delete]
+// @Security ApiKeyAuth
+func (pmc *PluginsManagerController) UninstallPlugin(c *gin.Context) {
+	folderName := c.Query("folderName")
+	if folderName == "" {
+		pmc.FailAndAbort(c, "插件名称不能为空", errors.New("folderName is required"), 400)
+	}
+
+	// 调用服务层卸载插件
+	err := pmc.service.UninstallPlugin(c, folderName)
+	if err != nil {
+		pmc.FailAndAbort(c, err.Error(), err, 500)
+	}
+
+	// 返回成功响应
+	pmc.SuccessWithMessage(c, "插件卸载成功")
+}

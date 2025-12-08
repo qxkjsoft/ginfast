@@ -739,8 +739,15 @@ func (pms *PluginsManagerService) processPluginImport(c *gin.Context, zipReader 
 		return nil, errors.New("压缩包中不存在plugin.json文件")
 	}
 
-	// 检查是否需要检验文件及数据库
+	// 检查文件、数据库及插件依赖
 	if params.CheckExist {
+
+		// 验证版本兼容性
+		if err := pms.checkVersionCompatibility(&pluginConfig); err != nil {
+			return nil, err
+		}
+
+		// 检查文件是否存在
 		existingPaths, err := pms.checkFilesExist(&pluginConfig)
 		if err != nil {
 			return nil, err
@@ -760,11 +767,6 @@ func (pms *PluginsManagerService) processPluginImport(c *gin.Context, zipReader 
 				IsWarning:      true,
 			}, nil
 		}
-	}
-
-	// 验证版本兼容性
-	if err := pms.checkVersionCompatibility(&pluginConfig); err != nil {
-		return nil, err
 	}
 
 	// 导入数据库
@@ -793,7 +795,19 @@ func (pms *PluginsManagerService) processPluginImport(c *gin.Context, zipReader 
 
 // checkVersionCompatibility 检查版本兼容性
 func (pms *PluginsManagerService) checkVersionCompatibility(pluginConfig *models.PluginExport) error {
-	// 读取后端version.json
+	// 1. 获取当前系统中已安装的所有插件
+	installedPlugins, err := pms.GetPluginsExportList()
+	if err != nil {
+		return fmt.Errorf("获取已安装插件列表失败: %v", err)
+	}
+
+	// 构建已安装插件的映射表，便于快速查询
+	installedPluginMap := make(map[string]*models.PluginExport)
+	for i, plugin := range installedPlugins {
+		installedPluginMap[plugin.Name] = &installedPlugins[i]
+	}
+
+	// 2. 读取后端version.json
 	backendVersionData, err := os.ReadFile("./version.json")
 	if err != nil {
 		return fmt.Errorf("读取后端version.json失败: %v", err)
@@ -804,27 +818,51 @@ func (pms *PluginsManagerService) checkVersionCompatibility(pluginConfig *models
 		return fmt.Errorf("解析后端version.json失败: %v", err)
 	}
 
-	// 检查后端依赖
-	if requiredVersion, ok := pluginConfig.Dependencies[backendVersion.Name]; ok {
-		if !pms.isVersionCompatible(backendVersion.Version, requiredVersion) {
-			return fmt.Errorf("后端版本不兼容: 需要 %s %s, 当前版本 %s", backendVersion.Name, requiredVersion, backendVersion.Version)
+	// 将后端和前端信息添加到已安装插件映射表中
+	installedPluginMap[backendVersion.Name] = &backendVersion
+
+	// 3. 读取前端version.json
+	frontendRootDir := app.ConfigYml.GetString("gen.dir")
+	var frontendVersion models.PluginExport
+	if frontendRootDir != "" {
+		// 检查前端目录是否存在
+		if _, err := os.Stat(frontendRootDir); errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("前端项目根目录不存在: %s", frontendRootDir)
 		}
+
+		frontendVersionPath := filepath.Join(frontendRootDir, "version.json")
+
+		// 检查version.json文件是否存在
+		if _, err := os.Stat(frontendVersionPath); errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("前端version.json文件不存在: %s", frontendVersionPath)
+		}
+
+		frontendVersionData, err := os.ReadFile(frontendVersionPath)
+		if err != nil {
+			return fmt.Errorf("读取前端version.json失败: %v", err)
+		}
+
+		if err := json.Unmarshal(frontendVersionData, &frontendVersion); err != nil {
+			return fmt.Errorf("解析前端version.json失败: %v", err)
+		}
+
+		installedPluginMap[frontendVersion.Name] = &frontendVersion
+	} else {
+		return fmt.Errorf("前端项目根目录未配置")
 	}
 
-	// 读取前端version.json
-	frontendRootDir := app.ConfigYml.GetString("gen.dir")
-	if frontendRootDir != "" {
-		frontendVersionPath := filepath.Join(frontendRootDir, "version.json")
-		frontendVersionData, err := os.ReadFile(frontendVersionPath)
-		if err == nil {
-			var frontendVersion models.PluginExport
-			if err := json.Unmarshal(frontendVersionData, &frontendVersion); err == nil {
-				// 检查前端依赖
-				if requiredVersion, ok := pluginConfig.Dependencies[frontendVersion.Name]; ok {
-					if !pms.isVersionCompatible(frontendVersion.Version, requiredVersion) {
-						return fmt.Errorf("前端版本不兼容: 需要 %s %s, 当前版本 %s", frontendVersion.Name, requiredVersion, frontendVersion.Version)
-					}
-				}
+	// 4. 检查插件的所有依赖
+	if len(pluginConfig.Dependencies) > 0 {
+		for depName, requiredVersion := range pluginConfig.Dependencies {
+			// 检查依赖插件是否存在
+			installedPlugin, exists := installedPluginMap[depName]
+			if !exists {
+				return fmt.Errorf("依赖插件不存在: %s (版本需求: %s)", depName, requiredVersion)
+			}
+
+			// 检查依赖插件的版本是否兼容
+			if !pms.isVersionCompatible(installedPlugin.Version, requiredVersion) {
+				return fmt.Errorf("依赖插件版本不兼容: %s 需要版本 %s, 当前版本 %s", depName, requiredVersion, installedPlugin.Version)
 			}
 		}
 	}
@@ -1061,14 +1099,13 @@ func (pms *PluginsManagerService) importDatabase(zipReader *zip.Reader) error {
 	}
 
 	// 执行SQL语句
-	// 按分号分割SQL语句并逐个执行
-	statements := strings.Split(sqlContent, ";")
+	// 使用更智能的SQL语句分割，避免字符串内容中的分号造成的问题
+	statements := splitSQLStatements(sqlContent)
 	for _, stmt := range statements {
-		trimmedStmt := strings.TrimSpace(stmt)
-		if trimmedStmt == "" {
+		if stmt == "" {
 			continue
 		}
-		if err := db.Exec(trimmedStmt).Error; err != nil {
+		if err := db.Exec(stmt).Error; err != nil {
 			return fmt.Errorf("执行SQL失败: %v", err)
 		}
 	}
@@ -1111,6 +1148,384 @@ func (pms *PluginsManagerService) importMenus(c *gin.Context, zipReader *zip.Rea
 	menuService := NewSysMenuService()
 	if err := menuService.Import(c, menuList, userID); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// splitSQLStatements 智能分割SQL语句，处理字符串和注释中的分号
+// 避免字符串内容中的分号造成的SQL语句分割错误
+func splitSQLStatements(sqlContent string) []string {
+	var statements []string         // 存储拆分后的SQL语句
+	var currentStmt strings.Builder // 当前正在构建的语句
+	inSingleQuote := false          // 是否在单引号内
+	inDoubleQuote := false          // 是否在双引号内
+	inBacktick := false             // 是否在反引号内
+	i := 0
+
+	for i < len(sqlContent) {
+		ch := sqlContent[i]
+
+		// 处理字符转义
+		if i > 0 && sqlContent[i-1] == '\\' {
+			currentStmt.WriteByte(ch)
+			i++
+			continue
+		}
+
+		// 处理单引号
+		if ch == '\'' && !inDoubleQuote && !inBacktick {
+			inSingleQuote = !inSingleQuote
+			currentStmt.WriteByte(ch)
+			i++
+			continue
+		}
+
+		// 处理双引号
+		if ch == '"' && !inSingleQuote && !inBacktick {
+			inDoubleQuote = !inDoubleQuote
+			currentStmt.WriteByte(ch)
+			i++
+			continue
+		}
+
+		// 处理反引号（MySQL的标识符引号）
+		if ch == '`' && !inSingleQuote && !inDoubleQuote {
+			inBacktick = !inBacktick
+			currentStmt.WriteByte(ch)
+			i++
+			continue
+		}
+
+		// 当不在任何字符串内时，分号是语句分隔符
+		if ch == ';' && !inSingleQuote && !inDoubleQuote && !inBacktick {
+			stmt := strings.TrimSpace(currentStmt.String())
+			if stmt != "" {
+				statements = append(statements, stmt)
+			}
+			currentStmt.Reset()
+			i++
+			continue
+		}
+
+		currentStmt.WriteByte(ch)
+		i++
+	}
+
+	// 处理最后一条语句（如果没有以分号结尾）
+	stmt := strings.TrimSpace(currentStmt.String())
+	if stmt != "" {
+		statements = append(statements, stmt)
+	}
+
+	return statements
+}
+
+// UninstallPlugin 卸载插件
+func (pms *PluginsManagerService) UninstallPlugin(c *gin.Context, folderName string) error {
+	if folderName == "" {
+		return errors.New("插件名称不能为空")
+	}
+
+	// 获取plugin_export.json文件路径
+	pluginExportPath := filepath.Join("./plugins", folderName, "plugin_export.json")
+
+	// 检查文件是否存在
+	if _, err := os.Stat(pluginExportPath); errors.Is(err, os.ErrNotExist) {
+		return errors.New("插件不存在或plugin_export.json文件不存在")
+	}
+
+	// 读取plugin_export.json文件内容
+	fileContent, err := os.ReadFile(pluginExportPath)
+	if err != nil {
+		return fmt.Errorf("读取plugin_export.json失败: %v", err)
+	}
+
+	// 解析JSON到结构体
+	var pluginExport models.PluginExport
+	if err = json.Unmarshal(fileContent, &pluginExport); err != nil {
+		return fmt.Errorf("解析plugin_export.json失败: %v", err)
+	}
+
+	// 1. 卸载菜单和API
+	if len(pluginExport.Menus) > 0 {
+		if err := pms.uninstallMenus(c, pluginExport.Menus); err != nil {
+			return err
+		}
+	}
+
+	// 3. 删除前端文件和文件夹
+	if len(pluginExport.ExportDirsFrontend) > 0 {
+		if err := pms.deleteFrontendFiles(pluginExport.ExportDirsFrontend); err != nil {
+			return err
+		}
+	}
+
+	// 2. 删除文件和文件夹
+	if len(pluginExport.ExportDirs) > 0 {
+		if err := pms.deleteFiles(pluginExport.ExportDirs); err != nil {
+			return err
+		}
+	}
+
+	// 4. 删除数据库表
+	if len(pluginExport.DatabaseTable) > 0 {
+		if err := pms.dropDatabaseTables(pluginExport.DatabaseTable); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// uninstallMenus 卸载菜单和关联的API
+func (pms *PluginsManagerService) uninstallMenus(c *gin.Context, pluginMenus []models.PluginMenu) error {
+	if len(pluginMenus) == 0 {
+		return nil
+	}
+
+	db := app.DB()
+	if db == nil {
+		return errors.New("数据库连接失败")
+	}
+
+	// 根据Path和Type查询菜单ID
+	var menuIds []uint
+	for _, pluginMenu := range pluginMenus {
+		var menu models.SysMenu
+		err := db.Where("path = ? AND type = ?", pluginMenu.Path, pluginMenu.Type).Select("id").First(&menu).Error
+		if err != nil && err != gorm.ErrRecordNotFound {
+			return fmt.Errorf("查询菜单数据失败: %v", err)
+		}
+		if menu.ID > 0 {
+			menuIds = append(menuIds, menu.ID)
+		}
+	}
+
+	if len(menuIds) == 0 {
+		return nil // 没有找到菜单，不需要删除
+	}
+
+	// 获取所有菜单数据
+	menuList := models.NewSysMenuList()
+	err := menuList.Find(c.Request.Context())
+	if err != nil {
+		return fmt.Errorf("查询菜单失败: %v", err)
+	}
+
+	// 获取完整的菜单（包括子菜单）
+	menuTree := menuList.GetMenusWithChildern(menuIds...)
+	if !menuTree.IsEmpty() {
+		allMenuIds := menuTree.Map(func(menu *models.SysMenu) uint {
+			return menu.ID
+		})
+		// 检查菜单是否与角色有关联
+		var roleMenuCount int64
+		err := db.Model(&models.SysRoleMenu{}).
+			Where("menu_id IN ?", allMenuIds).
+			Count(&roleMenuCount).Error
+		if err != nil {
+			return fmt.Errorf("检查菜单角色关联失败: %v", err)
+		}
+
+		if roleMenuCount > 0 {
+			return fmt.Errorf("菜单仍与角色有关联(%d条记录)，无法删除。请先解除关联", roleMenuCount)
+		}
+
+		// 再次检查所有菜单（包括子菜单）是否与角色有关联
+		var totalRoleMenuCount int64
+		err = db.Model(&models.SysRoleMenu{}).
+			Where("menu_id IN ?", allMenuIds).
+			Count(&totalRoleMenuCount).Error
+		if err != nil {
+			return fmt.Errorf("检查菜单角色关联失败: %v", err)
+		}
+
+		if totalRoleMenuCount > 0 {
+			return fmt.Errorf("菜单(含子菜单)仍与角色有关联(%d条记录)，无法删除。请先解除关联", totalRoleMenuCount)
+		}
+
+		// 使用事务处理菜单及API的删除操作
+		err = db.WithContext(c.Request.Context()).Transaction(func(tx *gorm.DB) error {
+			// 获取所有关联的API ID（需要删除的API）
+			var apiIds []uint
+			err := tx.Model(&models.SysMenuApi{}).
+				Where("menu_id IN ?", allMenuIds).
+				Distinct("api_id").
+				Pluck("api_id", &apiIds).Error
+			if err != nil {
+				return fmt.Errorf("查询菜单关联API失败: %v", err)
+			}
+
+			// 删除菜单的关联API
+			if err := tx.Where("menu_id IN ?", allMenuIds).Delete(&models.SysMenuApi{}).Error; err != nil {
+				return fmt.Errorf("删除菜单API关联失败: %v", err)
+			}
+
+			// 删除菜单
+			if err := tx.Where("id IN ?", allMenuIds).Delete(&models.SysMenu{}).Error; err != nil {
+				return fmt.Errorf("删除菜单失败: %v", err)
+			}
+
+			// 删除孤立的API（不被其他菜单使用的API）
+			if len(apiIds) > 0 {
+				if err := pms.deleteOrphanedAPIsInTx(tx, apiIds); err != nil {
+					return err
+				}
+			}
+
+			return nil
+		})
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// deleteOrphanedAPIsInTx 在事务中删除孤立的API（不被任何菜单使用的API）
+func (pms *PluginsManagerService) deleteOrphanedAPIsInTx(tx *gorm.DB, apiIds []uint) error {
+	if len(apiIds) == 0 {
+		return nil
+	}
+
+	// 找出这些API中，不再被其他菜单关联的API
+	var orphanedApiIds []uint
+	for _, apiId := range apiIds {
+		var count int64
+		err := tx.Model(&models.SysMenuApi{}).
+			Where("api_id = ?", apiId).
+			Count(&count).Error
+		if err != nil {
+			return fmt.Errorf("检查API关联失败: %v", err)
+		}
+
+		// 如果该API不再被任何菜单关联，则标记为孤立
+		if count == 0 {
+			orphanedApiIds = append(orphanedApiIds, apiId)
+		}
+	}
+
+	// 删除孤立的API
+	if len(orphanedApiIds) > 0 {
+		if err := tx.Where("id IN ?", orphanedApiIds).Delete(&models.SysApi{}).Error; err != nil {
+			return fmt.Errorf("删除孤立API失败: %v", err)
+		}
+	}
+
+	return nil
+}
+
+// deleteFiles 删除后端文件和文件夹
+func (pms *PluginsManagerService) deleteFiles(exportDirs []string) error {
+	for _, exportPath := range exportDirs {
+		// 规范化路径，移除前导斜杠
+		exportPath = strings.TrimPrefix(exportPath, "/")
+		exportPath = strings.TrimPrefix(exportPath, "\\")
+
+		// 检查文件或文件夹是否存在
+		if _, err := os.Stat(exportPath); errors.Is(err, os.ErrNotExist) {
+			// 文件不存在，跳过
+			continue
+		}
+
+		// 删除文件或文件夹
+		if err := os.RemoveAll(exportPath); err != nil {
+			return fmt.Errorf("删除文件/文件夹失败 %s: %v", exportPath, err)
+		}
+	}
+
+	return nil
+}
+
+// deleteFrontendFiles 删除前端文件和文件夹
+func (pms *PluginsManagerService) deleteFrontendFiles(exportDirsFrontend []string) error {
+	if len(exportDirsFrontend) == 0 {
+		return nil
+	}
+
+	// 获取前端项目根目录
+	frontendRootDir := app.ConfigYml.GetString("gen.dir")
+	if frontendRootDir == "" {
+		return errors.New("前端项目根目录未配置")
+	}
+
+	// 检查前端项目根目录是否存在
+	if _, err := os.Stat(frontendRootDir); errors.Is(err, os.ErrNotExist) {
+		return errors.New("前端项目根目录不存在: " + frontendRootDir)
+	}
+
+	for _, exportPath := range exportDirsFrontend {
+		// 规范化路径，移除前导斜杠
+		exportPath = strings.TrimPrefix(exportPath, "/")
+		exportPath = strings.TrimPrefix(exportPath, "\\")
+
+		// 构建完整路径
+		fullPath := filepath.Join(frontendRootDir, exportPath)
+
+		// 检查文件或文件夹是否存在
+		if _, err := os.Stat(fullPath); errors.Is(err, os.ErrNotExist) {
+			// 文件不存在，跳过
+			continue
+		}
+
+		// 删除文件或文件夹
+		if err := os.RemoveAll(fullPath); err != nil {
+			return fmt.Errorf("删除前端文件/文件夹失败 %s: %v", exportPath, err)
+		}
+	}
+
+	return nil
+}
+
+// dropDatabaseTables 删除数据库表
+func (pms *PluginsManagerService) dropDatabaseTables(tableNames []string) error {
+	if len(tableNames) == 0 {
+		return nil
+	}
+
+	// 获取数据库连接
+	dbType := app.ConfigYml.GetString("gormv2.usedbtype")
+	var db *gorm.DB
+	var err error
+
+	switch dbType {
+	case "mysql":
+		db, err = gormhelper.GetOneMysqlClient()
+	case "postgresql":
+		db, err = gormhelper.GetOnePostgreSqlClient()
+	case "sqlserver":
+		db, err = gormhelper.GetOneSqlserverClient()
+	default:
+		db, err = gormhelper.GetOneMysqlClient()
+	}
+
+	if err != nil {
+		return fmt.Errorf("获取数据库连接失败: %v", err)
+	}
+
+	// 删除每个表
+	for _, tableName := range tableNames {
+		switch dbType {
+		case "mysql":
+			if err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS `%s`", tableName)).Error; err != nil {
+				return fmt.Errorf("删除MySQL表失败 %s: %v", tableName, err)
+			}
+		case "postgresql":
+			if err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s CASCADE", tableName)).Error; err != nil {
+				return fmt.Errorf("删除PostgreSQL表失败 %s: %v", tableName, err)
+			}
+		case "sqlserver":
+			if err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS [%s]", tableName)).Error; err != nil {
+				return fmt.Errorf("删除SQL Server表失败 %s: %v", tableName, err)
+			}
+		default:
+			if err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS `%s`", tableName)).Error; err != nil {
+				return fmt.Errorf("删除表失败 %s: %v", tableName, err)
+			}
+		}
 	}
 
 	return nil

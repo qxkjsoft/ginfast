@@ -347,6 +347,8 @@ func InitRoutes(engine *gin.Engine) {
 				pluginsManager.GET("/export", pluginsManagerControllers.ExportPlugin)
 				// 导入插件
 				pluginsManager.POST("/import", pluginsManagerControllers.ImportPlugin)
+				// 卸载插件
+				pluginsManager.DELETE("/uninstall", pluginsManagerControllers.UninstallPlugin)
 			}
 		}
 	}

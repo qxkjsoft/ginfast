@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -229,7 +230,7 @@ func (s *SysMenuService) Import(c *gin.Context, menuList models.SysMenuList, use
 		var componentCount int64
 		app.DB().WithContext(c).Model(&models.SysMenu{}).Where("component IN ?", componentPaths).Count(&componentCount)
 		if componentCount > 0 {
-			return fmt.Errorf("存在重复的组件路径")
+			return fmt.Errorf("存在重复的组件路径:%s", strings.Join(componentPaths, ","))
 		}
 	}
 
@@ -239,7 +240,7 @@ func (s *SysMenuService) Import(c *gin.Context, menuList models.SysMenuList, use
 		var permissionCount int64
 		app.DB().WithContext(c).Model(&models.SysMenu{}).Where("permission IN ?", allPermission).Count(&permissionCount)
 		if permissionCount > 0 {
-			return fmt.Errorf("存在重复的权限标识")
+			return fmt.Errorf("存在重复的权限标识:%s", strings.Join(allPermission, ","))
 		}
 	}
 

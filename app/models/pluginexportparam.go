@@ -17,5 +17,8 @@ type PluginImportResponse struct {
 }
 
 func (r *PluginImportResponse) IsEmpty() bool {
+	if r == nil {
+		return true
+	}
 	return len(r.ExistingPaths) == 0 && len(r.ExistingTables) == 0
 }
