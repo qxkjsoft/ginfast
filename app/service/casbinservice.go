@@ -67,9 +67,18 @@ func (ps *PermissionService) AddPoliciesForRole(c context.Context, roleID uint, 
 			policy := []string{path, api.Method}
 			policies = append(policies, policy)
 		}
-
+		// 对policies进行去重处理（按obj和act）
+		policyMap := make(map[string]bool)
+		var deduplicatedPolicies [][]string
+		for _, policy := range policies {
+			key := policy[0] + "|" + policy[1]
+			if !policyMap[key] {
+				policyMap[key] = true
+				deduplicatedPolicies = append(deduplicatedPolicies, policy)
+			}
+		}
 		// 批量添加权限策略
-		if err = app.CasbinV2.AddPoliciesForRole(roleID, policies, domain...); err != nil {
+		if err = app.CasbinV2.AddPoliciesForRole(roleID, deduplicatedPolicies, domain...); err != nil {
 			return
 		}
 	}
