@@ -395,9 +395,9 @@ func (sm *SysRoleController) AddRoleMenu(c *gin.Context) {
 		}
 
 		// 批量插入新的角色菜单权限 - 优化为批量操作
-		var roleMenus []models.SysRoleMenu
+		var roleMenus []*models.SysRoleMenu
 		for _, menuID := range req.MenuID {
-			roleMenus = append(roleMenus, models.SysRoleMenu{
+			roleMenus = append(roleMenus, &models.SysRoleMenu{
 				RoleID: req.RoleID,
 				MenuID: menuID,
 			})
@@ -417,7 +417,7 @@ func (sm *SysRoleController) AddRoleMenu(c *gin.Context) {
 		sm.FailAndAbort(c, "分配角色菜单权限失败", err)
 	}
 
-	// 调整casbin权限
+	// // 调整casbin权限
 	apis := menuList.GetApis().Unique()
 	if err := sm.CasbinService.AddPoliciesForRole(c, req.RoleID, apis); err != nil {
 		sm.FailAndAbort(c, "添加角色权限策略失败", err)

@@ -66,6 +66,8 @@ func (s *CasbinHelper) InitCasbin(db *gorm.DB, config string) error {
 	// 创建Casbin适配器
 	tablePrefix := app.ConfigYml.GetString("casbin.tableprefix")
 	tableName := app.ConfigYml.GetString("casbin.tablename")
+	// 禁用自动迁移，避免SQL Server因索引导致ALTER失败
+	//gormadapter.TurnOffAutoMigrate(db)
 	adapter, err := gormadapter.NewAdapterByDBUseTableName(db, tablePrefix, tableName)
 	if err != nil {
 		return fmt.Errorf("failed to create Casbin adapter: %v\nTable: %s%s", err, tablePrefix, tableName)

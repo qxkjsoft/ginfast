@@ -217,7 +217,7 @@ func (cgs *CodeGenService) GetTables(dbType, database string) ([]models.TableInf
 				ON ep.major_id = OBJECT_ID(t.TABLE_SCHEMA + '.' + t.TABLE_NAME)
 				AND ep.minor_id = 0
 				AND ep.name = 'MS_Description'
-			WHERE t.TABLE_CATALOG = ? AND t.TABLE_TYPE = 'BASE TABLE'`, database)
+			WHERE t.TABLE_CATALOG = @p1 AND t.TABLE_TYPE = 'BASE TABLE'`, database)
 		if err != nil {
 			return nil, err
 		}
@@ -425,7 +425,7 @@ func (cgs *CodeGenService) GetTableColumns(database, table string) (models.Table
 				ON ep.major_id = OBJECT_ID(c.TABLE_SCHEMA + '.' + c.TABLE_NAME)
 				AND ep.minor_id = COLUMNPROPERTY(ep.major_id, c.COLUMN_NAME, 'ColumnId')
 				AND ep.name = 'MS_Description'
-			WHERE c.TABLE_CATALOG = ? AND c.TABLE_NAME = ?
+			WHERE c.TABLE_CATALOG = @p1 AND c.TABLE_NAME = @p2
 			ORDER BY c.ORDINAL_POSITION`, database, table)
 		if err != nil {
 			return nil, err
@@ -1318,7 +1318,7 @@ func (cgs *CodeGenService) GetTableComment(database, table string) (tableComment
 			FROM sys.tables t 
 			LEFT JOIN sys.schemas s ON t.schema_id = s.schema_id 
 			LEFT JOIN sys.extended_properties ep ON ep.major_id = t.object_id AND ep.minor_id = 0 AND ep.name = 'MS_Description'
-			WHERE s.name = 'dbo' AND t.name = ?`, table)
+			WHERE s.name = 'dbo' AND t.name = @p1`, table)
 		err = row.Scan(&tableComment)
 		if err != nil {
 			if err == sql.ErrNoRows {

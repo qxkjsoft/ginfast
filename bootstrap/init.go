@@ -35,6 +35,7 @@ func init() {
 	app.ZapLog = createZapFactory(service.ZapLogHandler)
 	// 初始化数据库
 	initDB()
+
 	// 初始化casbin
 	app.CasbinV2 = casbinhelper.NewCasbinHelper()
 	err := app.CasbinV2.InitCasbin(app.DB(), app.ConfigYml.GetString("casbin.modelconfig"))

@@ -6,6 +6,7 @@ import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
 	"gin-fast/app/utils/common"
+	"strings"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -66,7 +67,18 @@ func (sgs *SysGenService) BatchInsert(ctx context.Context, req *models.SysGenBat
 		moduleName := common.KeepLettersOnly(tableName)
 		// 检查是否已存在相同的记录
 		var existingGen models.SysGen
-		err = tx.Where("`db_type` = ? AND `database` = ? AND `name` = ?", dbType, database, tableName).First(&existingGen).Error
+		var query string
+		switch strings.ToLower(dbType) {
+		case "mysql":
+			query = "SELECT * FROM sys_gen WHERE db_type = ? AND `database` = ? AND name = ? LIMIT 1"
+		case "postgresql":
+			query = "SELECT * FROM sys_gen WHERE db_type = ? AND \"database\" = ? AND name = ? LIMIT 1"
+		case "sqlserver":
+			query = "SELECT TOP 1 * FROM sys_gen WHERE db_type = ? AND [database] = ? AND name = ?"
+		default:
+			query = "SELECT * FROM sys_gen WHERE db_type = ? AND `database` = ? AND name = ? LIMIT 1"
+		}
+		err = tx.Raw(query, dbType, database, tableName).Scan(&existingGen).Error
 		if err != nil && err != gorm.ErrRecordNotFound {
 			failedTables[tableName] = fmt.Sprintf("查询记录失败: %v", err)
 			continue
