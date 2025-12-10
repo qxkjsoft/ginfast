@@ -36,6 +36,17 @@ func (api *SysApi) IsEmpty() bool {
 // Find 查找单个API
 func (api *SysApi) Find(ctx context.Context, funcs ...func(*gorm.DB) *gorm.DB) (err error) {
 	err = app.DB().WithContext(ctx).Scopes(funcs...).First(api).Error
+
+	if err == gorm.ErrRecordNotFound {
+		err = nil // 将记录未找到的错误转换为nil，通过IsEmpty()方法判断
+	}
+	return
+}
+
+// FindByPathAndMethod 根据path和method查找API（处理SQLServer的兼容性问题）
+func (api *SysApi) FindByPathAndMethod(tx *gorm.DB, path string, method string) (err error) {
+	err = tx.Raw("SELECT * FROM sys_api WHERE path = ? AND method = ?", path, method).Scan(api).Error
+
 	if err == gorm.ErrRecordNotFound {
 		err = nil // 将记录未找到的错误转换为nil，通过IsEmpty()方法判断
 	}

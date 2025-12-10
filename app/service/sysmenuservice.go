@@ -163,10 +163,12 @@ func (s *SysMenuService) CreateMenuApis(tx *gorm.DB, menuList models.SysMenuList
 			for _, api := range menu.Apis {
 				// 检查API是否已存在（根据path和method）
 				existingAPI := models.NewSysApi()
-				err := existingAPI.Find(tx.Statement.Context, func(d *gorm.DB) *gorm.DB {
-					return d.Where("path = ? AND method = ?", api.Path, api.Method)
-				})
-
+				var err error
+				//err = existingAPI.Find(tx.Statement.Context, func(d *gorm.DB) *gorm.DB {
+				//	return d.Where("path = ? AND method = ?", api.Path, api.Method)
+				//})
+				//处理SQLServer的兼容性问题
+				err = existingAPI.FindByPathAndMethod(tx, api.Path, api.Method)
 				if err != nil {
 					return fmt.Errorf("查询API失败: %w", err)
 				}

@@ -535,9 +535,12 @@ func (pms *PluginsManagerService) generateSQLServerTableSQL(sqlDB *sql.DB, table
 	err := sqlDB.QueryRow(`
 		SELECT 
 			'CREATE TABLE [' + TABLE_NAME + '] (' + 
-			STRING_AGG('[' + COLUMN_NAME + '] ' + DATA_TYPE, ', ') + 
+			STUFF((SELECT ', ' + '[' + COLUMN_NAME + '] ' + DATA_TYPE
+			      FROM INFORMATION_SCHEMA.COLUMNS AS c2
+			      WHERE c2.TABLE_NAME = c.TABLE_NAME
+			      FOR XML PATH('')), 1, 2, '') + 
 			');' as create_table
-		FROM INFORMATION_SCHEMA.COLUMNS
+		FROM INFORMATION_SCHEMA.COLUMNS AS c
 		WHERE TABLE_NAME = @tableName
 		GROUP BY TABLE_NAME
 	`, sql.Named("tableName", tableName)).Scan(&createTableSQL)
@@ -1518,7 +1521,7 @@ func (pms *PluginsManagerService) dropDatabaseTables(tableNames []string) error 
 				return fmt.Errorf("删除PostgreSQL表失败 %s: %v", tableName, err)
 			}
 		case "sqlserver":
-			if err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS [%s]", tableName)).Error; err != nil {
+			if err := db.Exec(fmt.Sprintf("IF OBJECT_ID('[%s]') IS NOT NULL DROP TABLE [%s]", tableName, tableName)).Error; err != nil {
 				return fmt.Errorf("删除SQL Server表失败 %s: %v", tableName, err)
 			}
 		default:
