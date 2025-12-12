@@ -3,9 +3,9 @@ package service
 import (
 	"gin-fast/plugins/{{.DirName}}/models"
 	"github.com/gin-gonic/gin"
+    "gorm.io/gorm"
 {{- if or .HasCreatedBy .HasTenantID}}
 	"gin-fast/app/utils/datascope"
-	"gorm.io/gorm"
 {{- end}}
 {{- if .HasTenantID}}
 	"gin-fast/app/utils/tenanthelper"
