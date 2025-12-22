@@ -1,6 +1,7 @@
 <template>
-    <div class="snow-fill">
-        <a-card :loading="loading">
+ <div class="snow-page">
+    <div class="snow-inner">
+        <a-card :loading="loading" :bordered="false">
                 <a-space wrap>
                     <!-- 查询表单-->
 {{- range .Columns}}
@@ -159,6 +160,7 @@
             </a-form>
         </a-modal>
     </div>
+</div>  
 </template>
 
 <script setup lang="ts">
