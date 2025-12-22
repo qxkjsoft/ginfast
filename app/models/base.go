@@ -21,7 +21,15 @@ func (r *BaseRequest) Bind(c *gin.Context, obj interface{}) (err error) {
 	// 获取Content-Type
 	contentType := c.GetHeader("Content-Type")
 
-	// 根据Content-Type决定绑定策略
+	// GET请求：只处理数组参数、query和uri参数，不处理body
+	if c.Request.Method == "GET" {
+		r.parseArrayParams(c, obj)
+		c.ShouldBindQuery(obj)
+		c.ShouldBindUri(obj)
+		return nil // GET请求通常没有body
+	}
+
+	// 非GET请求：根据Content-Type决定绑定策略
 	if strings.Contains(contentType, "application/json") {
 		// JSON请求：只处理路径参数，body由ShouldBindBodyWith处理 避免消耗request body
 		c.ShouldBindUri(obj)
@@ -34,11 +42,11 @@ func (r *BaseRequest) Bind(c *gin.Context, obj interface{}) (err error) {
 		c.ShouldBindUri(obj)
 		return c.ShouldBind(obj)
 	} else {
-		// GET请求：处理数组参数、query和uri参数
+		// 其他类型的请求：处理数组参数、query和uri参数
 		r.parseArrayParams(c, obj)
 		c.ShouldBindQuery(obj)
 		c.ShouldBindUri(obj)
-		return nil // GET请求通常没有body
+		return nil
 	}
 
 }
@@ -106,6 +114,10 @@ func (r *BaseRequest) parseArrayParams(c *gin.Context, obj interface{}) {
 								if err != nil {
 									// 再尝试完整格式 2006-01-02 15:04:05
 									t, err = time.Parse("2006-01-02 15:04:05", val)
+									if err != nil {
+										// 最后尝试 RFC3339 格式
+										t, err = time.Parse(time.RFC3339, val) // 添加更多格式
+									}
 								}
 								if err == nil {
 									timeSlice[j] = t
@@ -126,6 +138,10 @@ func (r *BaseRequest) parseArrayParams(c *gin.Context, obj interface{}) {
 								if err != nil {
 									// 再尝试完整格式 2006-01-02 15:04:05
 									t, err = time.Parse("2006-01-02 15:04:05", val)
+									if err != nil {
+										// 最后尝试 RFC3339 格式
+										t, err = time.Parse(time.RFC3339, val) // 添加更多格式
+									}
 								}
 								if err == nil {
 									timeSlice[j] = JSONTime{Time: t}

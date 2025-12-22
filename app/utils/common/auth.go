@@ -12,15 +12,28 @@ import (
 
 // 获取access token
 func GetAccessToken(c *gin.Context) (string, error) {
+	// 首先尝试从 Authorization header 获取 token
 	authHeader := c.GetHeader("Authorization")
-	if authHeader == "" {
-		return "", errors.New("authorization header is required")
+	if authHeader != "" {
+		headerParts := strings.Split(authHeader, " ")
+		if len(headerParts) == 2 && headerParts[0] == "Bearer" {
+			return headerParts[1], nil
+		}
 	}
-	headerParts := strings.Split(authHeader, " ")
-	if len(headerParts) != 2 || headerParts[0] != "Bearer" {
+
+	// 如果 header 中没有找到有效的 token，尝试从 URL 参数中获取
+	token := c.Query("token")
+	if token != "" {
+		return token, nil
+	}
+
+	// 如果 header 格式不正确但没有 token 参数，返回格式错误
+	if authHeader != "" {
 		return "", errors.New("authorization header format must be Bearer {token}")
 	}
-	return headerParts[1], nil
+
+	// 都没有找到 token
+	return "", errors.New("token is required, either in Authorization header (Bearer {token}) or as URL parameter (?token={token})")
 }
 
 // GetClaims 从上下文获取 Claims
