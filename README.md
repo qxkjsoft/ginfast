@@ -704,11 +704,11 @@ gen:
 
 ```
 plugins/
-└── {plugin_name}/
-    ├── controllers/     # 插件控制器
-    ├── models/          # 插件数据模型和参数验证
-    ├── routes/          # 插件路由注册
-    └── {plugin_name}init.go  # 插件初始化文件
+├── {plugin_name}/
+│   ├── controllers/     # 插件控制器
+│   ├── models/          # 插件数据模型和参数验证
+│   ├── routes/          # 插件路由注册
+└── {plugin_name}init.go  # 插件初始化文件
 ```
 
 ### 插件开发步骤

@@ -593,7 +593,7 @@ func (cgs *CodeGenService) GenerateFrontendCodeFiles(sysGen *models.SysGen) erro
 
 	// 生成视图代码
 	viewCode := cgs.generateFrontendViewCode(frontendCtx)
-	viewFilePath := filepath.Join(pluginsDir, "views", fileName+"list.vue")
+	viewFilePath := filepath.Join(pluginsDir, "views", fileName, fileName+"list.vue")
 	if err := cgs.writeCodeToFileWithCover(viewFilePath, viewCode, sysGen.IsCover); err != nil {
 		return fmt.Errorf("生成视图文件失败: %v", err)
 	}
@@ -1070,9 +1070,9 @@ func (cgs *CodeGenService) generateMenuAndApiData(fileName, dirName, comment str
 	// 生成主菜单项
 	mainMenu := models.SysMenu{
 		ParentID:   parentMenuID,
-		Path:       "/plugins/" + dirName + "/" + fileName + "list",
+		Path:       "/plugins/" + dirName + "/" + fileName + "/" + fileName + "list",
 		Name:       "Plugins" + routerPath,
-		Component:  "plugins/" + dirName + "/views/" + fileName + "list",
+		Component:  "plugins/" + dirName + "/views/" + fileName + "/" + fileName + "list",
 		Title:      comment, // 使用表注释作为菜单标题
 		IsFull:     false,
 		Hide:       false,

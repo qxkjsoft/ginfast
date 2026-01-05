@@ -63,6 +63,18 @@ func (uc *UserController) GetProfile(c *gin.Context) {
 	if err != nil {
 		uc.FailAndAbort(c, "获取用户信息失败", err)
 	}
+
+	// 通过 claims.TenantID 查询租户信息
+	tenant := models.NewTenant()
+	tenantName := ""
+	tenantDomain := ""
+	if claims.TenantID > 0 {
+		if err := tenant.FindByID(c, claims.TenantID); err == nil && !tenant.IsEmpty() {
+			tenantName = tenant.Name
+			tenantDomain = tenant.Domain
+		}
+	}
+
 	uc.Success(c, gin.H{
 		"id":           user.ID,
 		"avatar":       user.Avatar,
@@ -80,8 +92,8 @@ func (uc *UserController) GetProfile(c *gin.Context) {
 		"department":   user.Department,
 		"tenantID":     claims.TenantID,
 		"tenantCode":   claims.TenantCode,
-		"tenantName":   user.Tenant.Name,
-		"tenantDomain": user.Tenant.Domain,
+		"tenantName":   tenantName,
+		"tenantDomain": tenantDomain,
 	})
 }
 

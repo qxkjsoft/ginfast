@@ -3,8 +3,13 @@ module gin-fast
 go 1.25
 
 require (
+	github.com/alibabacloud-go/darabonba-openapi/v2 v2.1.13
+	github.com/alibabacloud-go/dysmsapi-20170525/v4 v4.1.3
+	github.com/alibabacloud-go/tea v1.3.14
+	github.com/alibabacloud-go/tea-utils/v2 v2.0.9
 	github.com/casbin/casbin/v2 v2.120.0
 	github.com/casbin/gorm-adapter/v3 v3.36.0
+	github.com/flosch/pongo2/v6 v6.0.0
 	github.com/gin-contrib/pprof v1.5.3
 	github.com/gin-gonic/gin v1.11.0
 	github.com/go-redis/redis/v8 v8.11.5
@@ -25,9 +30,14 @@ require (
 require (
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
+	github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.5 // indirect
+	github.com/alibabacloud-go/debug v1.0.1 // indirect
+	github.com/alibabacloud-go/endpoint-util v1.1.0 // indirect
+	github.com/alibabacloud-go/openapi-util v0.1.1 // indirect
+	github.com/aliyun/credentials-go v1.4.5 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
+	github.com/clbanning/mxj/v2 v2.7.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/flosch/pongo2/v6 v6.0.0 // indirect
 	github.com/go-openapi/jsonpointer v0.22.1 // indirect
 	github.com/go-openapi/jsonreference v0.21.2 // indirect
 	github.com/go-openapi/spec v0.22.0 // indirect
@@ -51,11 +61,13 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
+	github.com/tjfoc/gmsm v1.4.1 // indirect
 	go.uber.org/mock v0.6.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/mod v0.29.0 // indirect
 	golang.org/x/tools v0.38.0 // indirect
+	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 )
 

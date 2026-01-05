@@ -165,8 +165,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue';
-import { use{{.StructName}}PluginHook } from '../hooks/{{.FileName}}';
-import type { {{.StructName}}Data } from '../api/{{.FileName}}';
+import { use{{.StructName}}PluginHook } from '../../hooks/{{.FileName}}';
+import type { {{.StructName}}Data } from '../../api/{{.FileName}}';
 import { formatTime } from '@/globals';
 {{- $hasImageUpload := false}}
 {{- $hasMultiImageUpload := false}}

@@ -86,6 +86,15 @@ func (list *TenantList) GetTotal(c context.Context, query ...func(*gorm.DB) *gor
 	return total, nil
 }
 
+// FindByID 按ID查找租户
+func (t *Tenant) FindByID(c context.Context, id uint) (err error) {
+	err = app.DB().WithContext(c).Where("id = ?", id).First(t).Error
+	if err == gorm.ErrRecordNotFound {
+		err = nil
+	}
+	return
+}
+
 // FindByCode 按Code(二级域名)查找租户
 func (t *Tenant) FindByCode(c context.Context, code string) (err error) {
 	err = app.DB().WithContext(c).Where("code = ? AND status = 1", code).First(t).Error

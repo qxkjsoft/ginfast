@@ -8,7 +8,7 @@ import (
 )
 
 // getTenantIDFromContext 从上下文中获取租户ID
-func getTenantIDFromContext(ctx interface{}) uint {
+func GetTenantIDFromContext(ctx interface{}) uint {
 	// 检查context是否为gin.Context类型
 	if gc, ok := ctx.(*gin.Context); ok {
 		// 从gin.Context中获取Claims
@@ -35,7 +35,7 @@ func getTenantIDFromContext(ctx interface{}) uint {
 }
 
 // getCurrentUserIDFromContext 从上下文中获取当前用户ID
-func getCurrentUserIDFromContext(ctx interface{}) uint {
+func GetCurrentUserIDFromContext(ctx interface{}) uint {
 	// 检查context是否为gin.Context类型
 	if gc, ok := ctx.(*gin.Context); ok {
 		// 从gin.Context中获取Claims
