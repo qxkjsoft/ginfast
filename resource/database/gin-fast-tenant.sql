@@ -700,7 +700,7 @@ INSERT INTO `sys_gen_field` VALUES ('213', '24', 'created_by', 'int', '创建人
 DROP TABLE IF EXISTS `sys_menu`;
 CREATE TABLE `sys_menu` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '路由ID',
-  `parent_id` varchar(32) NOT NULL DEFAULT '0' COMMENT '父级路由ID，顶层为0',
+  `parent_id` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '父级路由ID，顶层为0',
   `path` varchar(255) NOT NULL COMMENT '路由路径',
   `name` varchar(100) NOT NULL COMMENT '路由名称',
   `redirect` varchar(255) DEFAULT NULL COMMENT '重定向',

@@ -18,8 +18,6 @@ Date: 2025-12-10 10:52:00
 -- ----------------------------
 -- Table structure for demo_students
 -- ----------------------------
-DROP TABLE [dbo].[demo_students]
-GO
 CREATE TABLE [dbo].[demo_students] (
 [student_id] int NOT NULL IDENTITY(1,1) ,
 [student_name] nvarchar(50) NOT NULL ,
@@ -245,8 +243,6 @@ GO
 -- ----------------------------
 -- Table structure for demo_teacher
 -- ----------------------------
-DROP TABLE [dbo].[demo_teacher]
-GO
 CREATE TABLE [dbo].[demo_teacher] (
 [id] int NOT NULL IDENTITY(1,1) ,
 [name] nvarchar(50) NOT NULL ,
@@ -501,8 +497,6 @@ GO
 -- ----------------------------
 -- Table structure for example
 -- ----------------------------
-DROP TABLE [dbo].[example]
-GO
 CREATE TABLE [dbo].[example] (
 [id] int NOT NULL IDENTITY(1,1) ,
 [name] nvarchar(255) NOT NULL ,
@@ -570,8 +564,6 @@ GO
 -- ----------------------------
 -- Table structure for sys_affix
 -- ----------------------------
-DROP TABLE [dbo].[sys_affix]
-GO
 CREATE TABLE [dbo].[sys_affix] (
 [id] int NOT NULL IDENTITY(1,1) ,
 [name] nvarchar(255) NULL ,
@@ -713,8 +705,6 @@ GO
 -- ----------------------------
 -- Table structure for sys_api
 -- ----------------------------
-DROP TABLE [dbo].[sys_api]
-GO
 CREATE TABLE [dbo].[sys_api] (
 [id] int NOT NULL IDENTITY(1,1) ,
 [title] nvarchar(255) NULL ,
@@ -1132,8 +1122,6 @@ GO
 -- ----------------------------
 -- Table structure for sys_casbin_rule
 -- ----------------------------
-DROP TABLE [dbo].[sys_casbin_rule]
-GO
 CREATE TABLE [dbo].[sys_casbin_rule] (
 [id] int NOT NULL IDENTITY(1,1) ,
 [ptype] nvarchar(100) NULL ,
@@ -1428,8 +1416,6 @@ GO
 -- ----------------------------
 -- Table structure for sys_department
 -- ----------------------------
-DROP TABLE [dbo].[sys_department]
-GO
 CREATE TABLE [dbo].[sys_department] (
 [id] int NOT NULL IDENTITY(1,1) ,
 [parent_id] int NULL DEFAULT ((0)) ,
@@ -1587,8 +1573,6 @@ GO
 -- ----------------------------
 -- Table structure for sys_dict
 -- ----------------------------
-DROP TABLE [dbo].[sys_dict]
-GO
 CREATE TABLE [dbo].[sys_dict] (
 [id] int NOT NULL IDENTITY(1,1) ,
 [name] nvarchar(255) NULL ,
@@ -1671,8 +1655,7 @@ GO
 -- ----------------------------
 -- Table structure for sys_dict_item
 -- ----------------------------
-DROP TABLE [dbo].[sys_dict_item]
-GO
+
 CREATE TABLE [dbo].[sys_dict_item] (
 [id] int NOT NULL IDENTITY(1,1) ,
 [name] nvarchar(255) NULL ,
@@ -1709,8 +1692,7 @@ GO
 -- ----------------------------
 -- Table structure for sys_gen
 -- ----------------------------
-DROP TABLE [dbo].[sys_gen]
-GO
+
 CREATE TABLE [dbo].[sys_gen] (
 [id] int NOT NULL IDENTITY(1,1) ,
 [db_type] nvarchar(255) NULL ,
@@ -1931,8 +1913,7 @@ GO
 -- ----------------------------
 -- Table structure for sys_gen_field
 -- ----------------------------
-DROP TABLE [dbo].[sys_gen_field]
-GO
+
 CREATE TABLE [dbo].[sys_gen_field] (
 [id] int NOT NULL IDENTITY(1,1) ,
 [gen_id] int NULL ,
@@ -2311,11 +2292,10 @@ GO
 -- ----------------------------
 -- Table structure for sys_menu
 -- ----------------------------
-DROP TABLE [dbo].[sys_menu]
-GO
+
 CREATE TABLE [dbo].[sys_menu] (
 [id] int NOT NULL IDENTITY(1,1) ,
-[parent_id] nvarchar(32) NOT NULL DEFAULT ('0') ,
+[parent_id] int  NOT NULL DEFAULT (0) ,
 [path] nvarchar(255) NOT NULL ,
 [name] nvarchar(100) NOT NULL ,
 [redirect] nvarchar(255) NULL ,
@@ -2901,8 +2881,7 @@ GO
 -- ----------------------------
 -- Table structure for sys_menu_api
 -- ----------------------------
-DROP TABLE [dbo].[sys_menu_api]
-GO
+
 CREATE TABLE [dbo].[sys_menu_api] (
 [menu_id] int NOT NULL ,
 [api_id] int NOT NULL 
@@ -3215,8 +3194,7 @@ GO
 -- ----------------------------
 -- Table structure for sys_operation_logs
 -- ----------------------------
-DROP TABLE [dbo].[sys_operation_logs]
-GO
+
 CREATE TABLE [dbo].[sys_operation_logs] (
 [id] bigint NOT NULL IDENTITY(1,1) ,
 [created_at] datetime NULL ,
@@ -3475,8 +3453,7 @@ GO
 -- ----------------------------
 -- Table structure for sys_role
 -- ----------------------------
-DROP TABLE [dbo].[sys_role]
-GO
+
 CREATE TABLE [dbo].[sys_role] (
 [id] int NOT NULL IDENTITY(1,1) ,
 [name] nvarchar(255) NULL DEFAULT '' ,
@@ -3608,8 +3585,7 @@ GO
 -- ----------------------------
 -- Table structure for sys_role_menu
 -- ----------------------------
-DROP TABLE [dbo].[sys_role_menu]
-GO
+
 CREATE TABLE [dbo].[sys_role_menu] (
 [role_id] int NOT NULL ,
 [menu_id] int NOT NULL 
@@ -3838,8 +3814,7 @@ GO
 -- ----------------------------
 -- Table structure for sys_tenants
 -- ----------------------------
-DROP TABLE [dbo].[sys_tenants]
-GO
+
 CREATE TABLE [dbo].[sys_tenants] (
 [id] int NOT NULL IDENTITY(1,1) ,
 [created_at] datetime NULL ,
@@ -3966,8 +3941,7 @@ GO
 -- ----------------------------
 -- Table structure for sys_user_role
 -- ----------------------------
-DROP TABLE [dbo].[sys_user_role]
-GO
+
 CREATE TABLE [dbo].[sys_user_role] (
 [user_id] int NOT NULL DEFAULT ((0)) ,
 [role_id] int NOT NULL DEFAULT ((0)) 
@@ -4014,8 +3988,7 @@ GO
 -- ----------------------------
 -- Table structure for sys_user_tenant
 -- ----------------------------
-DROP TABLE [dbo].[sys_user_tenant]
-GO
+
 CREATE TABLE [dbo].[sys_user_tenant] (
 [user_id] int NOT NULL DEFAULT ((0)) ,
 [tenant_id] int NOT NULL DEFAULT ((0)) ,
@@ -4087,8 +4060,7 @@ GO
 -- ----------------------------
 -- Table structure for sys_users
 -- ----------------------------
-DROP TABLE [dbo].[sys_users]
-GO
+
 CREATE TABLE [dbo].[sys_users] (
 [id] int NOT NULL IDENTITY(1,1) ,
 [username] nvarchar(50) NOT NULL DEFAULT '' ,

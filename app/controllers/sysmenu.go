@@ -153,7 +153,7 @@ func (sm *SysMenuController) GetRouters(c *gin.Context) {
 func (sm *SysMenuController) GetMenuList(c *gin.Context) {
 	menuList := models.NewSysMenuList()
 	err := menuList.Find(c, func(db *gorm.DB) *gorm.DB {
-		return db.Preload("Apis").Where("disable = ?", 0)
+		return db.Preload("Apis")
 	})
 	if err != nil {
 		sm.FailAndAbort(c, "获取菜单失败", err)

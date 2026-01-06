@@ -19,15 +19,15 @@ type SysMenu struct {
 	Name       string      `gorm:"column:name;not null;size:100;comment:路由名称" json:"name"`
 	Component  string      `gorm:"column:component;size:255;comment:组件文件路径" json:"component"`
 	Title      string      `gorm:"column:title;size:100;comment:菜单标题，国际化key" json:"title"`
-	IsFull     bool        `gorm:"column:is_full;default:false;comment:是否全屏显示" json:"isFull"`
-	Hide       bool        `gorm:"column:hide;default:false;comment:是否隐藏" json:"hide"`
-	Disable    bool        `gorm:"column:disable;default:false;comment:是否停用" json:"disable"`
-	KeepAlive  bool        `gorm:"column:keep_alive;default:false;comment:是否缓存" json:"keepAlive"`
-	Affix      bool        `gorm:"column:affix;default:false;comment:是否固定" json:"affix"`
+	IsFull     int8        `gorm:"column:is_full;default:0;comment:是否全屏显示" json:"isFull"`
+	Hide       int8        `gorm:"column:hide;default:0;comment:是否隐藏" json:"hide"`
+	Disable    int8        `gorm:"column:disable;default:0;comment:是否停用" json:"disable"`
+	KeepAlive  int8        `gorm:"column:keep_alive;default:0;comment:是否缓存" json:"keepAlive"`
+	Affix      int8        `gorm:"column:affix;default:0;comment:是否固定" json:"affix"`
 	Redirect   string      `gorm:"column:redirect;size:255;comment:跳转地址" json:"redirect"`
-	IsLink     bool        `gorm:"column:is_link;default:false;comment:是否外链" json:"isLink"`
+	IsLink     int8        `gorm:"column:is_link;default:0;comment:是否外链" json:"isLink"`
 	Link       string      `gorm:"column:link;default:'';size:500;comment:外链地址" json:"link"`
-	Iframe     bool        `gorm:"column:iframe;default:false;comment:是否内嵌" json:"iframe"`
+	Iframe     int8        `gorm:"column:iframe;default:0;comment:是否内嵌" json:"iframe"`
 	SvgIcon    string      `gorm:"column:svg_icon;default:'';size:100;comment:svg图标名称" json:"svgIcon"`
 	Icon       string      `gorm:"column:icon;default:'';size:100;comment:普通图标名称" json:"icon"`
 	Sort       int         `gorm:"column:sort;default:0;comment:排序字段" json:"sort"`

@@ -10,15 +10,15 @@ type SysMenuAddRequest struct {
 	Name       string `form:"name" json:"name"`
 	Component  string `form:"component" json:"component"`
 	Title      string `form:"title" json:"title" validate:"required" message:"标题不能为空"`
-	IsFull     bool   `form:"isFull" json:"isFull"`
-	Hide       bool   `form:"hide" json:"hide"`
-	Disable    bool   `form:"disable" json:"disable"`
-	KeepAlive  bool   `form:"keepAlive" json:"keepAlive"`
-	Affix      bool   `form:"affix" json:"affix"`
+	IsFull     int8   `form:"isFull" json:"isFull"`
+	Hide       int8   `form:"hide" json:"hide"`
+	Disable    int8   `form:"disable" json:"disable"`
+	KeepAlive  int8   `form:"keepAlive" json:"keepAlive"`
+	Affix      int8   `form:"affix" json:"affix"`
 	Redirect   string `form:"redirect" json:"redirect"`
-	IsLink     bool   `form:"isLink" json:"isLink"`
+	IsLink     int8   `form:"isLink" json:"isLink"`
 	Link       string `form:"link" json:"link"`
-	Iframe     bool   `form:"iframe" json:"iframe"`
+	Iframe     int8   `form:"iframe" json:"iframe"`
 	SvgIcon    string `form:"svgIcon" json:"svgIcon"`
 	Icon       string `form:"icon" json:"icon"`
 	Sort       int    `form:"sort" json:"sort" validate:"gte:0" message:"排序值不能为负数"`
@@ -39,15 +39,15 @@ type SysMenuUpdateRequest struct {
 	Name       string `form:"name" json:"name"`
 	Component  string `form:"component" json:"component"`
 	Title      string `form:"title" json:"title" validate:"required" message:"菜单标题不能为空"`
-	IsFull     bool   `form:"isFull" json:"isFull"`
-	Hide       bool   `form:"hide" json:"hide"`
-	Disable    bool   `form:"disable" json:"disable"`
-	KeepAlive  bool   `form:"keepAlive" json:"keepAlive"`
-	Affix      bool   `form:"affix" json:"affix"`
+	IsFull     int8   `form:"isFull" json:"isFull"`
+	Hide       int8   `form:"hide" json:"hide"`
+	Disable    int8   `form:"disable" json:"disable"`
+	KeepAlive  int8   `form:"keepAlive" json:"keepAlive"`
+	Affix      int8   `form:"affix" json:"affix"`
 	Redirect   string `form:"redirect" json:"redirect"`
-	IsLink     bool   `form:"isLink" json:"isLink"`
+	IsLink     int8   `form:"isLink" json:"isLink"`
 	Link       string `form:"link" json:"link"`
-	Iframe     bool   `form:"iframe" json:"iframe"`
+	Iframe     int8   `form:"iframe" json:"iframe"`
 	SvgIcon    string `form:"svgIcon" json:"svgIcon"`
 	Icon       string `form:"icon" json:"icon"`
 	Sort       int    `form:"sort" json:"sort" validate:"gte:0" message:"排序值不能为负数"`

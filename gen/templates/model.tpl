@@ -14,6 +14,8 @@ type {{.StructName}} struct {
 {{- range .Columns}}
 	{{- if eq .FieldName "DeletedAt"}}
 	{{.FieldName}} gorm.DeletedAt `gorm:"{{.GormTag}}" json:"{{.JsonTag}}"`{{if .Comment}} // {{.Comment}}{{end}}
+	{{- else if eq .GoType "time.Time"}}
+	{{.FieldName}} *{{.GoType}} `gorm:"{{.GormTag}}" json:"{{.JsonTag}}"`{{if .Comment}} // {{.Comment}}{{end}}
 	{{- else}}
 	{{.FieldName}} {{.GoType}} `gorm:"{{.GormTag}}" json:"{{.JsonTag}}"`{{if .Comment}} // {{.Comment}}{{end}}
 	{{- end}}

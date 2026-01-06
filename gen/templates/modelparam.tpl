@@ -80,7 +80,11 @@ type {{.StructName}}CreateRequest struct {
 	models.Validator
 {{- range .Columns}}
     {{- if and (not .Exclude) (not .IsPrimary) .FormShow}}
-	{{.FieldName}} {{.GoType}} `form:"{{.JsonTag}}"{{if .Required}} validate:"required" message:"{{.Comment}}不能为空"{{end}}`{{if .Comment}} // {{.Comment}}{{end}}
+	{{- if eq .GoType "time.Time"}}
+	{{.FieldName}} *{{.GoType}} `form:"{{.JsonTag}}"{{if and .Required (ne .FrontendType "number")}} validate:"required" message:"{{.Comment}}不能为空"{{end}}`{{if .Comment}} // {{.Comment}}{{end}}
+	{{- else}}
+	{{.FieldName}} {{.GoType}} `form:"{{.JsonTag}}"{{if and .Required (ne .FrontendType "number")}} validate:"required" message:"{{.Comment}}不能为空"{{end}}`{{if .Comment}} // {{.Comment}}{{end}}
+	{{- end}}
     {{- end}}
 {{- end}}
 }
@@ -94,11 +98,19 @@ func (r *{{.StructName}}CreateRequest) Validate(c *gin.Context) error {
 type {{.StructName}}UpdateRequest struct {
 	models.Validator
 {{- if .PrimaryKey}}
+	{{- if eq .PrimaryKey.GoType "time.Time"}}
+	{{.PrimaryKey.FieldName}} *{{.PrimaryKey.GoType}} `form:"{{.PrimaryKey.JsonTag}}" validate:"required" message:"{{.PrimaryKey.Comment}}不能为空"`{{if .PrimaryKey.Comment}} // {{.PrimaryKey.Comment}}{{end}}
+	{{- else}}
 	{{.PrimaryKey.FieldName}} {{.PrimaryKey.GoType}} `form:"{{.PrimaryKey.JsonTag}}" validate:"required" message:"{{.PrimaryKey.Comment}}不能为空"`{{if .PrimaryKey.Comment}} // {{.PrimaryKey.Comment}}{{end}}
+	{{- end}}
 {{- end}}
 {{- range .Columns}}
     {{- if and (not .Exclude) (not .IsPrimary) .FormShow}}
-	{{.FieldName}} {{.GoType}} `form:"{{.JsonTag}}"{{if .Required}} validate:"required" message:"{{.Comment}}不能为空"{{end}}`{{if .Comment}} // {{.Comment}}{{end}}
+	{{- if eq .GoType "time.Time"}}
+	{{.FieldName}} *{{.GoType}} `form:"{{.JsonTag}}"{{if and .Required (ne .FrontendType "number")}} validate:"required" message:"{{.Comment}}不能为空"{{end}}`{{if .Comment}} // {{.Comment}}{{end}}
+	{{- else}}
+	{{.FieldName}} {{.GoType}} `form:"{{.JsonTag}}"{{if and .Required (ne .FrontendType "number")}} validate:"required" message:"{{.Comment}}不能为空"{{end}}`{{if .Comment}} // {{.Comment}}{{end}}
+	{{- end}}
     {{- end}}
 {{- end}}
 }
