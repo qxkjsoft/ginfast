@@ -183,7 +183,8 @@ func (cgc *CodeGenController) PreviewCode(ctx *gin.Context) {
 	}
 
 	cgc.Success(ctx, gin.H{
-		"preview": result,
+		"code": result["code"],
+		"tree": result["tree"],
 	})
 }
 

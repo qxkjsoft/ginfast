@@ -685,7 +685,7 @@ func (cgs *CodeGenService) generateFrontendViewCode(ctx *models.FrontendGenConte
 }
 
 // PreviewCode 根据genID生成代码预览
-func (cgs *CodeGenService) PreviewCode(ctx context.Context, genID uint) (map[string]string, error) {
+func (cgs *CodeGenService) PreviewCode(ctx context.Context, genID uint) (map[string]interface{}, error) {
 	if genID == 0 {
 		return nil, fmt.Errorf("代码生成配置ID不能为空")
 	}
@@ -741,16 +741,32 @@ func (cgs *CodeGenService) PreviewCode(ctx context.Context, genID uint) (map[str
 	frontendHooksCode := cgs.generateFrontendHooksCode(frontendCtx)
 	frontendViewCode := cgs.generateFrontendViewCode(frontendCtx)
 
-	return map[string]string{
-		"model":         modelCode,
-		"modelparam":    modelParamCode,
-		"controller":    controllerCode,
-		"service":       serviceCode,
-		"routes":        routesCode,
-		"init":          initCode,
-		"frontendApi":   frontendApiCode,
-		"frontendHooks": frontendHooksCode,
-		"frontendView":  frontendViewCode,
+	// 获取前端代码生成目录
+	frontendDir := cgs.getFrontendGenDir()
+	// 如果有前端目录，提取相对路径部分用于显示
+	var frontendPath string
+	if frontendDir != "" {
+		frontendPath = "src/plugins"
+	}
+
+	// 构建文件树结构
+	dirName := common.KeepLettersOnlyLower(sysGen.ModuleName)
+	fileName := common.KeepLettersOnlyLower(sysGen.FileName)
+	fileTree := models.BuildFileTree(dirName, fileName, frontendPath)
+
+	return map[string]interface{}{
+		"tree": fileTree,
+		"code": map[string]string{
+			"model":         modelCode,
+			"modelparam":    modelParamCode,
+			"controller":    controllerCode,
+			"service":       serviceCode,
+			"routes":        routesCode,
+			"init":          initCode,
+			"frontendApi":   frontendApiCode,
+			"frontendHooks": frontendHooksCode,
+			"frontendView":  frontendViewCode,
+		},
 	}, nil
 }
 

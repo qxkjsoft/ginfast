@@ -414,3 +414,176 @@ func (c ColumnTemplateList) HasTenantID() bool {
 	}
 	return false
 }
+
+// FileTreeNode 文件树节点 - 用于表示代码生成的目录结构
+type FileTreeNode struct {
+	Name     string          `json:"name"`               // 节点名称（文件名或目录名）
+	Path     string          `json:"path"`               // 完整路径
+	Type     string          `json:"type"`               // 节点类型: "file" 或 "directory"
+	Children []*FileTreeNode `json:"children,omitempty"` // 子节点（仅目录有）
+}
+
+// BuildFileTree 构建文件树结构
+func BuildFileTree(dirName, fileName string, frontendDir string) []*FileTreeNode {
+	root := []*FileTreeNode{}
+
+	// 后端代码目录结构
+	backendRoot := &FileTreeNode{
+		Name: "backend",
+		Path: "backend",
+		Type: "directory",
+		Children: []*FileTreeNode{
+			{
+				Name: "plugins",
+				Path: "plugins",
+				Type: "directory",
+				Children: []*FileTreeNode{
+					{
+						Name: dirName,
+						Path: "plugins/" + dirName,
+						Type: "directory",
+						Children: []*FileTreeNode{
+							{
+								Name: "controllers",
+								Path: "plugins/" + dirName + "/controllers",
+								Type: "directory",
+								Children: []*FileTreeNode{
+									{
+										Name: fileName + "controller.go",
+										Path: "plugins/" + dirName + "/controllers/" + fileName + "controller.go",
+										Type: "file",
+									},
+								},
+							},
+							{
+								Name: "models",
+								Path: "plugins/" + dirName + "/models",
+								Type: "directory",
+								Children: []*FileTreeNode{
+									{
+										Name: fileName + ".go",
+										Path: "plugins/" + dirName + "/models/" + fileName + ".go",
+										Type: "file",
+									},
+									{
+										Name: fileName + "param.go",
+										Path: "plugins/" + dirName + "/models/" + fileName + "param.go",
+										Type: "file",
+									},
+								},
+							},
+							{
+								Name: "service",
+								Path: "plugins/" + dirName + "/service",
+								Type: "directory",
+								Children: []*FileTreeNode{
+									{
+										Name: fileName + "service.go",
+										Path: "plugins/" + dirName + "/service/" + fileName + "service.go",
+										Type: "file",
+									},
+								},
+							},
+							{
+								Name: "routes",
+								Path: "plugins/" + dirName + "/routes",
+								Type: "directory",
+								Children: []*FileTreeNode{
+									{
+										Name: fileName + "routes.go",
+										Path: "plugins/" + dirName + "/routes/" + fileName + "routes.go",
+										Type: "file",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				Name: dirName + "init.go",
+				Path: "plugins/" + dirName + "init.go",
+				Type: "file",
+			},
+		},
+	}
+	root = append(root, backendRoot)
+
+	// 前端代码目录结构
+	if frontendDir != "" {
+		frontendRoot := &FileTreeNode{
+			Name: "frontend",
+			Path: "frontend",
+			Type: "directory",
+			Children: []*FileTreeNode{
+				{
+					Name: "src",
+					Path: "src",
+					Type: "directory",
+					Children: []*FileTreeNode{
+						{
+							Name: "plugins",
+							Path: "src/plugins",
+							Type: "directory",
+							Children: []*FileTreeNode{
+								{
+									Name: dirName,
+									Path: "src/plugins/" + dirName,
+									Type: "directory",
+									Children: []*FileTreeNode{
+										{
+											Name: "api",
+											Path: "src/plugins/" + dirName + "/api",
+											Type: "directory",
+											Children: []*FileTreeNode{
+												{
+													Name: fileName + ".ts",
+													Path: "src/plugins/" + dirName + "/api/" + fileName + ".ts",
+													Type: "file",
+												},
+											},
+										},
+										{
+											Name: "hooks",
+											Path: "src/plugins/" + dirName + "/hooks",
+											Type: "directory",
+											Children: []*FileTreeNode{
+												{
+													Name: fileName + ".ts",
+													Path: "src/plugins/" + dirName + "/hooks/" + fileName + ".ts",
+													Type: "file",
+												},
+											},
+										},
+										{
+											Name: "views",
+											Path: "src/plugins/" + dirName + "/views",
+											Type: "directory",
+											Children: []*FileTreeNode{
+												{
+													Name: fileName,
+													Path: "src/plugins/" + dirName + "/views/" + fileName,
+													Type: "directory",
+													Children: []*FileTreeNode{
+														{
+															Name: fileName + "list.vue",
+															Path: "src/plugins/" + dirName + "/views/" + fileName + "/" + fileName + "list.vue",
+															Type: "file",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		root = append(root, frontendRoot)
+	}
+
+	return root
+}
