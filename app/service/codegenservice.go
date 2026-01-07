@@ -742,12 +742,12 @@ func (cgs *CodeGenService) PreviewCode(ctx context.Context, genID uint) (map[str
 	frontendViewCode := cgs.generateFrontendViewCode(frontendCtx)
 
 	// 获取前端代码生成目录
-	frontendDir := cgs.getFrontendGenDir()
+	//frontendDir := cgs.getFrontendGenDir()
 	// 如果有前端目录，提取相对路径部分用于显示
 	var frontendPath string
-	if frontendDir != "" {
-		frontendPath = "src/plugins"
-	}
+	//if frontendDir != "" {
+	frontendPath = "src/plugins"
+	//}
 
 	// 构建文件树结构
 	dirName := common.KeepLettersOnlyLower(sysGen.ModuleName)
