@@ -1101,20 +1101,9 @@ GO
 INSERT INTO [dbo].[sys_api] ([id], [title], [path], [method], [api_group], [created_at], [updated_at], [deleted_at], [created_by]) VALUES (N'201', N'卸载插件', N'/api/pluginsmanager/uninstall', N'DELETE', N'插件管理', N'2025-12-08 16:48:07.000', N'2025-12-08 16:48:07.000', null, N'1')
 GO
 GO
-INSERT INTO [dbo].[sys_api] ([id], [title], [path], [method], [api_group], [created_at], [updated_at], [deleted_at], [created_by]) VALUES (N'1001', N'列表查询', N'/api/plugins/demoschool/demostudents/list', N'GET', N'学员管理', N'2025-12-10 10:28:36.000', N'2025-12-10 10:28:36.000', null, N'1')
+SET IDENTITY_INSERT [dbo].[sys_api] ON
 GO
-GO
-INSERT INTO [dbo].[sys_api] ([id], [title], [path], [method], [api_group], [created_at], [updated_at], [deleted_at], [created_by]) VALUES (N'1002', N'新增', N'/api/plugins/demoschool/demostudents/add', N'POST', N'学员管理', N'2025-12-10 10:28:36.000', N'2025-12-10 10:28:36.000', null, N'1')
-GO
-GO
-INSERT INTO [dbo].[sys_api] ([id], [title], [path], [method], [api_group], [created_at], [updated_at], [deleted_at], [created_by]) VALUES (N'1003', N'修改', N'/api/plugins/demoschool/demostudents/edit', N'PUT', N'学员管理', N'2025-12-10 10:28:36.000', N'2025-12-10 10:28:36.000', null, N'1')
-GO
-GO
-INSERT INTO [dbo].[sys_api] ([id], [title], [path], [method], [api_group], [created_at], [updated_at], [deleted_at], [created_by]) VALUES (N'1004', N'删除', N'/api/plugins/demoschool/demostudents/delete', N'DELETE', N'学员管理', N'2025-12-10 10:28:36.000', N'2025-12-10 10:28:36.000', null, N'1')
-GO
-GO
-INSERT INTO [dbo].[sys_api] ([id], [title], [path], [method], [api_group], [created_at], [updated_at], [deleted_at], [created_by]) VALUES (N'1005', N'查询单条数据', N'/api/plugins/demoschool/demostudents/:id', N'GET', N'学员管理', N'2025-12-10 10:28:36.000', N'2025-12-10 10:28:36.000', null, N'1')
-GO
+INSERT INTO [dbo].[sys_api] ([id], [title], [path], [method], [api_group], [created_at], [updated_at], [deleted_at], [created_by]) VALUES (N'202', N'切换租户', N'/api/users/switchTenant/:tenantld', N'GET', N'用户管理', N'2026-01-09 16:29:37.000', N'2026-01-09 16:29:37.000', null, N'1')
 GO
 SET IDENTITY_INSERT [dbo].[sys_api] OFF
 GO
@@ -1408,6 +1397,266 @@ INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4]
 GO
 GO
 INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'90', N'g', N'user_1', N'role_1', N'*', N'', N'', N'')
+GO
+GO
+SET IDENTITY_INSERT [dbo].[sys_casbin_rule] ON
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'4189', N'g', N'user_4', N'role_2', N'*', N'', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7118', N'p', N'role_2', N'/api/codegen/generate', N'POST', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7132', N'p', N'role_2', N'/api/codegen/insertmenuandapi', N'POST', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7183', N'p', N'role_2', N'/api/codegen/preview', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7117', N'p', N'role_2', N'/api/codegen/tables', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7129', N'p', N'role_2', N'/api/config/get', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7163', N'p', N'role_2', N'/api/config/update', N'PUT', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7188', N'p', N'role_2', N'/api/config/viewCache', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7130', N'p', N'role_2', N'/api/plugins/example/:id', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7147', N'p', N'role_2', N'/api/plugins/example/add', N'POST', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7156', N'p', N'role_2', N'/api/plugins/example/delete', N'DELETE', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7155', N'p', N'role_2', N'/api/plugins/example/edit', N'PUT', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7149', N'p', N'role_2', N'/api/plugins/example/list', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7152', N'p', N'role_2', N'/api/pluginsmanager/export', N'POST', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7126', N'p', N'role_2', N'/api/pluginsmanager/exports', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7136', N'p', N'role_2', N'/api/pluginsmanager/import', N'POST', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7198', N'p', N'role_2', N'/api/pluginsmanager/uninstall', N'DELETE', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7196', N'p', N'role_2', N'/api/sysAffix/delete', N'DELETE', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7140', N'p', N'role_2', N'/api/sysAffix/download/:id', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7115', N'p', N'role_2', N'/api/sysAffix/list', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7162', N'p', N'role_2', N'/api/sysAffix/updateName', N'PUT', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7154', N'p', N'role_2', N'/api/sysAffix/upload', N'POST', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7121', N'p', N'role_2', N'/api/sysApi/:id', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7128', N'p', N'role_2', N'/api/sysApi/add', N'POST', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7187', N'p', N'role_2', N'/api/sysApi/delete', N'DELETE', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7145', N'p', N'role_2', N'/api/sysApi/edit', N'PUT', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7144', N'p', N'role_2', N'/api/sysApi/list', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7139', N'p', N'role_2', N'/api/sysDepartment/add', N'POST', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7170', N'p', N'role_2', N'/api/sysDepartment/delete', N'DELETE', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7122', N'p', N'role_2', N'/api/sysDepartment/edit', N'PUT', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7173', N'p', N'role_2', N'/api/sysDepartment/getDivision', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7195', N'p', N'role_2', N'/api/sysDict/add', N'POST', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7123', N'p', N'role_2', N'/api/sysDict/delete', N'DELETE', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7133', N'p', N'role_2', N'/api/sysDict/edit', N'PUT', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7119', N'p', N'role_2', N'/api/sysDict/getAllDicts', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7191', N'p', N'role_2', N'/api/sysDict/list', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7146', N'p', N'role_2', N'/api/sysDictItem/add', N'POST', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7181', N'p', N'role_2', N'/api/sysDictItem/delete', N'DELETE', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7202', N'p', N'role_2', N'/api/sysDictItem/edit', N'PUT', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7134', N'p', N'role_2', N'/api/sysDictItem/getByDictId/:dictId', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7148', N'p', N'role_2', N'/api/sysGen/:id', N'DELETE', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7143', N'p', N'role_2', N'/api/sysGen/:id', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7197', N'p', N'role_2', N'/api/sysGen/batchInsert', N'POST', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7135', N'p', N'role_2', N'/api/sysGen/list', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7169', N'p', N'role_2', N'/api/sysGen/refreshFields', N'PUT', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7172', N'p', N'role_2', N'/api/sysGen/update', N'PUT', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7194', N'p', N'role_2', N'/api/sysMenu/add', N'POST', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7180', N'p', N'role_2', N'/api/sysMenu/apis/:id', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7186', N'p', N'role_2', N'/api/sysMenu/batchDelete', N'DELETE', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7175', N'p', N'role_2', N'/api/sysMenu/delete', N'DELETE', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7114', N'p', N'role_2', N'/api/sysMenu/edit', N'PUT', N'*', N'', N'')
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7141', N'p', N'role_2', N'/api/sysMenu/export', N'GET', N'*', N'', N'')
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7201', N'p', N'role_2', N'/api/sysMenu/getMenuList', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7184', N'p', N'role_2', N'/api/sysMenu/getRouters', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7131', N'p', N'role_2', N'/api/sysMenu/import', N'POST', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7138', N'p', N'role_2', N'/api/sysMenu/setApis', N'POST', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7189', N'p', N'role_2', N'/api/sysOperationLog/delete', N'DELETE', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7182', N'p', N'role_2', N'/api/sysOperationLog/export', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7120', N'p', N'role_2', N'/api/sysOperationLog/list', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7137', N'p', N'role_2', N'/api/sysRole/add', N'POST', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7179', N'p', N'role_2', N'/api/sysRole/addRoleMenu', N'POST', N'*', '', N'')
+GO
+GO
+INSERT INTO [Ndbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7176', N'p', N'role_2', N'/api/sysRole/dataScope', N'PUT', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7166', N'p', N'role_2', N'/api/sysRole/delete', N'DELETE', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7127', N'p', N'role_2', N'/api/sysRole/edit', N'PUT', N'*', N'', N'')
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7161', N'p', N'role_2', N'/api/sysRole/getRoles', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7174', N'p', N'role_2', N'/api/sysRole/getUserPermission/:roleId', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7190', N'p', N'role_2', N'/api/sysTenant/:id', N'DELETE', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7167', N'p', N'role_2', N'/api/sysTenant/:id', N'GET', N'*', N'', N'')
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7150', N'p', N'role_2', N'/api/sysTenant/add', N'POST', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7164', N'p', N'role_2', N'/api/sysTenant/edit', N'PUT', N'*', N'', N'')
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7124', N'p', N'role_2', N'/api/sysTenant/list', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7151', N'p', N'role_2', N'/api/sysUserTenant/batchAdd', N'POST', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7168', N'p', N'role_2', N'/api/sysUserTenant/batchDelete', N'DELETE', N'*', N'', N'')
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7177', N'p', N'role_2', N'/api/sysUserTenant/get', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7171', N'p', N'role_2', N'/api/sysUserTenant/getRolesAll', N'GET', N'*', N'', N'')
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7116', N'p', N'role_2', N'/api/sysUserTenant/getUserRoleIDs', N'GET', N'*', N'', N'')
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7125', N'p', N'role_2', N'/api/sysUserTenant/list', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7178', N'p', N'role_2', N'/api/sysUserTenant/setUserRoles', N'POST', N'*', N'', N'')
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7142', N'p', N'role_2', N'/api/sysUserTenant/userListAll', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7158', N'p', N'role_2', N'/api/users/:id', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7185', N'p', N'role_2', N'/api/users/add', N'POST', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7193', N'p', N'role_2', N'/api/users/delete', N'DELETE', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7192', N'p', N'role_2', N'/api/users/edit', N'PUT', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7153', N'p', N'role_2', N'/api/users/list', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7199', N'p', N'role_2', N'/api/users/logout', N'POST', N'*', N'', N'')
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7200', N'p', N'role_2', N'/api/users/profile', N'GET', N'*', N'', N'')
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7160', N'p', N'role_2', N'/api/users/switchTenant/:tenantld', N'GET', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7157', N'p', N'role_2', N'/api/users/updateAccount', N'PUT', N'*', N'', N'')
+GO
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7165', N'p', N'role_2', N'/api/users/updateBasicInfo', N'PUT', N'*', N'', N'')
+GO
+INSERT INTO [dbo].[sys_casbin_rule] ([id], [ptype], [v0], [v1], [v2], [v3], [v4], [v5]) VALUES (N'7159', N'p', N'role_2', N'/api/users/uploadAvatar', N'POST', N'*', N'', N'')
 GO
 GO
 SET IDENTITY_INSERT [dbo].[sys_casbin_rule] OFF
@@ -3827,6 +4076,7 @@ CREATE TABLE [dbo].[sys_tenants] (
 [status] tinyint NOT NULL DEFAULT ((1)) ,
 [domain] nvarchar(255) NULL ,
 [platform_domain] nvarchar(255) NULL 
+[menu_permission] nvarchar(1000) NULL 
 )
 
 

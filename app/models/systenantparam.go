@@ -14,6 +14,7 @@ type SysTenantAddRequest struct {
 	Status         int8   `form:"status" json:"status" validate:"required|in:0,1" message:"状态值必须为0或1"`
 	Domain         string `form:"domain" json:"domain"`
 	PlatformDomain string `form:"platformDomain" json:"platformDomain"`
+	MenuPermission string `form:"menuPermission" json:"menuPermission"`
 }
 
 func (r *SysTenantAddRequest) Validate(c *gin.Context) error {
@@ -30,6 +31,7 @@ type SysTenantUpdateRequest struct {
 	Status         int8   `form:"status" json:"status" validate:"required|in:0,1" message:"状态值必须为0或1"`
 	Domain         string `form:"domain" json:"domain"`
 	PlatformDomain string `form:"platformDomain" json:"platformDomain"`
+	MenuPermission string `form:"menuPermission" json:"menuPermission"`
 }
 
 func (r *SysTenantUpdateRequest) Validate(c *gin.Context) error {

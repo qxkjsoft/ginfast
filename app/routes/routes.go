@@ -110,6 +110,8 @@ func InitRoutes(engine *gin.Engine) {
 				users.POST("/uploadAvatar", userControllers.UploadAvatar)
 				// 更新当前登录用户基本信息
 				users.PUT("/updateBasicInfo", userControllers.UpdateBasicInfo)
+				// 切换租户
+				users.GET("/switchTenant/:tenantId", userControllers.SwitchTenant)
 			}
 
 			// 系统菜单路由组

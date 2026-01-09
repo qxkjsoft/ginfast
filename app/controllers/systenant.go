@@ -159,6 +159,7 @@ func (tc *TenantController) Add(c *gin.Context) {
 	tenant.Status = req.Status
 	tenant.Domain = req.Domain
 	tenant.PlatformDomain = req.PlatformDomain
+	tenant.MenuPermission = req.MenuPermission
 
 	err = app.DB().WithContext(c).Create(tenant).Error
 	if err != nil {
@@ -243,6 +244,7 @@ func (tc *TenantController) Update(c *gin.Context) {
 	tenant.Status = req.Status
 	tenant.Domain = req.Domain
 	tenant.PlatformDomain = req.PlatformDomain
+	tenant.MenuPermission = req.MenuPermission
 
 	err = app.DB().WithContext(c).Save(tenant).Error
 	if err != nil {

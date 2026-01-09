@@ -17,6 +17,10 @@ type SysUserTenant struct {
 	CreatedAt time.Time `gorm:"type:timestamp;column:created_at;default:null;comment:创建时间" json:"createdAt"`
 }
 
+func NewSysUserTenant() *SysUserTenant {
+	return &SysUserTenant{}
+}
+
 // TableName 设置表名
 func (SysUserTenant) TableName() string {
 	return "sys_user_tenant"
@@ -73,4 +77,23 @@ func (list *SysUserTenantList) GetTotal(c context.Context, query ...func(*gorm.D
 		return 0, err
 	}
 	return total, nil
+}
+
+func (list SysUserTenantList) Filter(filter func(*SysUserTenant) bool) *SysUserTenant {
+	for _, item := range list {
+		if filter(item) {
+			return item
+		}
+	}
+	return nil
+}
+
+func (list SysUserTenantList) GetTenants() TenantList {
+	var tenants TenantList
+	for _, item := range list {
+		if item.Tenant != nil {
+			tenants = append(tenants, item.Tenant)
+		}
+	}
+	return tenants
 }

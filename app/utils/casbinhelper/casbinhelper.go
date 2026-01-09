@@ -101,6 +101,8 @@ func (s *CasbinHelper) PrefixUser(userID uint) string {
 func (s *CasbinHelper) PrefixRole(roleID uint) string {
 	return fmt.Sprintf("%s%d", RolePrefix, roleID)
 }
+
+// PrefixDomain 为租户ID添加域前缀
 func (s *CasbinHelper) PrefixDomain(domainID uint) string {
 	return fmt.Sprintf("%s%d", DomainPrefix, domainID)
 }

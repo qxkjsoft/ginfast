@@ -17,6 +17,7 @@ type Tenant struct {
 	Domain         string `gorm:"column:domain;size:255;comment:绑定域名(完整域名，非空时应唯一)" json:"domain"`
 	PlatformDomain string `gorm:"column:platform_domain;size:255;comment:平台基础域名(如:yourplatform.com)" json:"platformDomain"`
 	CreatedBy      uint   `gorm:"column:created_by;comment:创建人" json:"createdBy"`
+	MenuPermission string `gorm:"column:menu_permission;size:500;comment:菜单权限" json:"menuPermission"`
 }
 
 // TableName 设置表名

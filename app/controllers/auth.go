@@ -65,7 +65,7 @@ func (ac *AuthController) Login(c *gin.Context) {
 	var tenantID uint
 	var tenantCode string
 
-	// 检查租户是否存在
+	// 检查租户是否存在, 并验证用户是否关联该租户, 通过后用户token的租户ID将设置成请求的租户编码相关的租户ID
 	if req.TenantCode != "" {
 		if user.TenantID > 0 {
 			// 查询用户关联的所有租户

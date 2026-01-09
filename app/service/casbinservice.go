@@ -16,6 +16,7 @@ func NewPermissionService() *PermissionService {
 	return &PermissionService{}
 }
 
+// 获取当前租户的Casbin域
 func (ps *PermissionService) GetDomain(c context.Context) []string {
 	tenantID := common.GetCurrentTenantID(common.TryConvertToGinContext(c))
 	if tenantID == 0 {
@@ -28,9 +29,13 @@ func (ps *PermissionService) PrefixDomain(tenantID uint) string {
 	return app.CasbinV2.PrefixDomain(tenantID)
 }
 
+// 处理租户ID，若未指定则使用当前登录用户所处的租户的ID，返回nil时代表全局租户
 func (ps *PermissionService) HandleTenantID(c context.Context, tenantID ...uint) []string {
 	var domain []string
 	if len(tenantID) > 0 {
+		if tenantID[0] == 0 {
+			return nil
+		}
 		domain = []string{ps.PrefixDomain(tenantID[0])}
 	} else {
 		domain = ps.GetDomain(c)
@@ -61,7 +66,7 @@ func (ps *PermissionService) AddPoliciesForRole(c context.Context, roleID uint, 
 			// 处理路径中的参数，将 :roleId 等参数转换为 *
 			path := api.Path
 			// 使用正则表达式替换路径参数为通配符 *
-			path = common.ConvertPathToWildcard(path)
+			//path = common.ConvertPathToWildcard(path)
 
 			// 构建策略：[obj, act]
 			policy := []string{path, api.Method}
@@ -171,12 +176,12 @@ func (ps *PermissionService) DeleteUserRoles(c context.Context, userID uint, rol
 
 // 根据菜单ID调整与该菜单关联的角色的API权限
 func (ps *PermissionService) UpdateRoleApiPermissionsByMenuID(c context.Context, menuID uint, tenantID ...uint) (err error) {
-	domain := ps.HandleTenantID(c, tenantID...)
+	//domain := ps.HandleTenantID(c, tenantID...)
 
 	// 1. 查找与指定菜单ID关联的所有角色
 	var roleMenus models.SysRoleMenuList
 	if err = roleMenus.Find(c, func(db *gorm.DB) *gorm.DB {
-		return db.Where("menu_id = ?", menuID)
+		return db.Where("menu_id = ?", menuID).Preload("Role")
 	}); err != nil {
 		return
 	}
@@ -186,24 +191,21 @@ func (ps *PermissionService) UpdateRoleApiPermissionsByMenuID(c context.Context,
 		return
 	}
 
-	// 提取关联角色ID列表
-	roleIDs := roleMenus.Map(func(rm *models.SysRoleMenu) uint {
-		return rm.RoleID
-	})
-
+	// 获取关联角色
+	roles := roleMenus.GetRoles()
 	// 2. 为每个关联的角色更新API权限
-	for _, roleID := range roleIDs {
+	for _, role := range roles {
 		// 查找该角色关联的所有菜单
 		var roleMenusForRole models.SysRoleMenuList
 		if err = roleMenusForRole.Find(c, func(db *gorm.DB) *gorm.DB {
-			return db.Where("role_id = ?", roleID)
+			return db.Where("role_id = ?", role.ID)
 		}); err != nil {
 			return
 		}
-
+		domain := ps.HandleTenantID(c, role.TenantID)
 		// 如果角色没有关联任何菜单，则清除该角色的所有API权限
 		if roleMenusForRole.IsEmpty() {
-			app.CasbinV2.RemoveAllPoliciesForRole(roleID, domain...)
+			app.CasbinV2.RemoveAllPoliciesForRole(role.ID, domain...)
 			continue
 		}
 
@@ -230,7 +232,7 @@ func (ps *PermissionService) UpdateRoleApiPermissionsByMenuID(c context.Context,
 		allApis = allApis.Unique()
 
 		// 使用已有的 AddPoliciesForRole 方法为角色分配所有关联菜单的API权限
-		if err = ps.AddPoliciesForRole(c, roleID, allApis, tenantID...); err != nil {
+		if err = ps.AddPoliciesForRole(c, role.ID, allApis, role.TenantID); err != nil {
 			return
 		}
 	}

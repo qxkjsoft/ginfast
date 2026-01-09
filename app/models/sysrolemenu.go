@@ -11,6 +11,8 @@ import (
 type SysRoleMenu struct {
 	RoleID uint `gorm:"primaryKey;column:role_id;comment:角色ID" json:"roleId"`
 	MenuID uint `gorm:"primaryKey;column:menu_id;comment:菜单ID" json:"menuId"`
+	// 关联角色
+	Role *SysRole `gorm:"foreignKey:RoleID;references:ID" json:"role"`
 }
 
 // TableName 设置表名
@@ -50,4 +52,13 @@ func (list SysRoleMenuList) Map(fn func(*SysRoleMenu) uint) []uint {
 		res[i] = fn(v)
 	}
 	return res
+}
+
+func (list SysRoleMenuList) GetRoles() (res []*SysRole) {
+	for _, v := range list {
+		if v.Role != nil {
+			res = append(res, v.Role)
+		}
+	}
+	return
 }

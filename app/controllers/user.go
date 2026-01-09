@@ -75,25 +75,53 @@ func (uc *UserController) GetProfile(c *gin.Context) {
 		}
 	}
 
+	userTenantList := models.NewSysUserTenantList()
+	tenantList := models.NewTenantList() // 关联的租户列表
+	if user.TenantID > 0 {
+		// 获取关联的租户信息
+		if err := userTenantList.Find(c, func(d *gorm.DB) *gorm.DB {
+			return d.Where("user_id = ?", claims.UserID).Preload("Tenant")
+		}); err != nil {
+			uc.FailAndAbort(c, "查询用户关联租户错误", err)
+		}
+		tenantList = userTenantList.GetTenants()
+	} else {
+		// 如果用户默认租户ID，则获取所有关联的租户
+		if err := tenantList.Find(c); err != nil {
+			uc.FailAndAbort(c, "查询用户关联租户错误", err)
+		}
+	}
+
+	defaultUserTenant := userTenantList.Filter(func(ut *models.SysUserTenant) bool {
+		return ut.IsDefault == true
+	})
+	// 默认租户, TenantID为0时无默认租户
+	var defaultTenant *models.Tenant
+	if defaultUserTenant != nil {
+		defaultTenant = defaultUserTenant.Tenant
+	}
+
 	uc.Success(c, gin.H{
-		"id":           user.ID,
-		"avatar":       user.Avatar,
-		"userName":     user.Username,
-		"nickName":     user.NickName,
-		"roleIDs":      user.Roles.GetRoleIDs(),
-		"permissions":  user.Permissions,
-		"sex":          user.Sex,
-		"status":       user.Status,
-		"email":        user.Email,
-		"phone":        user.Phone,
-		"createdAt":    user.CreatedAt.Format(time.DateTime),
-		"description":  user.Description,
-		"roles":        user.Roles,
-		"department":   user.Department,
-		"tenantID":     claims.TenantID,
-		"tenantCode":   claims.TenantCode,
-		"tenantName":   tenantName,
-		"tenantDomain": tenantDomain,
+		"id":            user.ID,
+		"avatar":        user.Avatar,
+		"userName":      user.Username,
+		"nickName":      user.NickName,
+		"roleIDs":       user.Roles.GetRoleIDs(),
+		"permissions":   user.Permissions,
+		"sex":           user.Sex,
+		"status":        user.Status,
+		"email":         user.Email,
+		"phone":         user.Phone,
+		"createdAt":     user.CreatedAt.Format(time.DateTime),
+		"description":   user.Description,
+		"roles":         user.Roles,
+		"department":    user.Department,
+		"tenantID":      claims.TenantID, // 用户当前登录的租户的ID
+		"tenantCode":    claims.TenantCode,
+		"tenantName":    tenantName,
+		"tenantDomain":  tenantDomain,  // 完整的域名
+		"defaultTenant": defaultTenant, // 默认租户
+		"tenants":       tenantList,    // 关联的租户列表
 	})
 }
 
@@ -636,4 +664,148 @@ func (uc *UserController) UpdateBasicInfo(c *gin.Context) {
 	}
 
 	uc.SuccessWithMessage(c, "基本信息更新成功", nil)
+}
+
+// SwitchTenant 切换租户
+// @Summary 切换租户
+// @Description 切换当前登录用户的租户，注销当前token并生成新token
+// @Tags 用户管理
+// @Accept json
+// @Produce json
+// @Param tenantId path int true "租户ID"
+// @Success 200 {object} map[string]interface{} "成功返回新的访问令牌"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 401 {object} map[string]interface{} "用户未登录"
+// @Failure 403 {object} map[string]interface{} "租户不存在或未启用"
+// @Router /users/switchTenant/{tenantId} [get]
+// @Security ApiKeyAuth
+func (uc *UserController) SwitchTenant(c *gin.Context) {
+	// 从上下文中获取用户信息
+	claims := common.GetClaims(c)
+	if claims == nil {
+		uc.FailAndAbort(c, "用户未登录", nil)
+		return
+	}
+
+	// 从路径参数中获取租户ID
+	tenantIdStr := c.Param("tenantId")
+	if tenantIdStr == "" {
+		uc.FailAndAbort(c, "租户ID不能为空", nil)
+		return
+	}
+	tenantId, err := strconv.Atoi(tenantIdStr)
+	if err != nil {
+		uc.FailAndAbort(c, "租户ID格式错误", err)
+		return
+	}
+
+	// 获取用户信息
+	user := models.NewUser()
+	err = user.GetUserByID(c, claims.UserID)
+	if err != nil {
+		uc.FailAndAbort(c, "用户查询错误", err)
+		return
+	}
+	if user.IsEmpty() {
+		uc.FailAndAbort(c, "用户不存在", nil)
+		return
+	}
+
+	var tenantID uint
+	var tenantCode string
+
+	// 当参数tenantId为0且用户的TenantID也为0时，直接使用tenantID=0和tenantCode=""生成token
+	if tenantId == 0 && user.TenantID == 0 {
+		tenantID = 0
+		tenantCode = ""
+	} else {
+		// 查询租户信息
+		tenant := models.NewTenant()
+		err = tenant.FindByID(c, uint(tenantId))
+		if err != nil {
+			uc.FailAndAbort(c, "查询租户错误", err)
+			return
+		}
+		if tenant.IsEmpty() {
+			uc.FailAndAbort(c, "租户不存在", nil)
+			return
+		}
+		if tenant.Status != 1 {
+			uc.FailAndAbort(c, "租户未启用", nil)
+			return
+		}
+
+		// 检查用户是否关联该租户
+		if user.TenantID > 0 {
+			// 用户有默认租户，需要验证是否关联了目标租户
+			userTenant := &models.SysUserTenant{}
+			err = userTenant.Find(c, func(d *gorm.DB) *gorm.DB {
+				return d.Where("user_id = ? AND tenant_id = ?", user.ID, uint(tenantId))
+			})
+			if err != nil {
+				uc.FailAndAbort(c, "查询用户租户关联错误", err)
+				return
+			}
+			if userTenant.IsEmpty() {
+				uc.FailAndAbort(c, "用户未关联该租户", nil)
+				return
+			}
+		}
+
+		tenantID = tenant.ID
+		tenantCode = tenant.Code
+	}
+
+	// 撤销当前 access token
+	tokenString, err := common.GetAccessToken(c)
+	if err == nil && tokenString != "" {
+		app.TokenService.RevokeTokenWithCache(tokenString)
+	}
+
+	// 撤销当前 refresh token
+	err = app.TokenService.RevokeRefreshToken(claims.UserID)
+	if err != nil {
+		uc.FailAndAbort(c, "撤销旧token失败", err)
+		return
+	}
+
+	// 生成新的token
+	user.Password = ""
+	newToken, err := app.TokenService.GenerateTokenWithCache(&app.ClaimsUser{
+		UserID:     user.ID,
+		Username:   user.Username,
+		TenantID:   tenantID,
+		TenantCode: tenantCode,
+	})
+	if err != nil {
+		uc.FailAndAbort(c, "生成新token失败", err)
+		return
+	}
+
+	// 生成新的refresh token
+	newRefreshToken, err := app.TokenService.GenerateRefreshToken(user.ID)
+	if err != nil {
+		uc.FailAndAbort(c, "生成新refresh token失败", err)
+		return
+	}
+
+	// 解析token获取过期时间
+	newClaims, err := app.TokenService.ParseToken(newToken)
+	if err != nil {
+		uc.FailAndAbort(c, "解析新token失败", err)
+		return
+	}
+
+	newRefreshClaims, err := app.TokenService.ParseRefreshToken(newRefreshToken)
+	if err != nil {
+		uc.FailAndAbort(c, "解析新refresh token失败", err)
+		return
+	}
+
+	uc.Success(c, gin.H{
+		"accessToken":         newToken,
+		"accessTokenExpires":  newClaims.ExpiresAt.Unix(),
+		"refreshToken":        newRefreshToken,
+		"refreshTokenExpires": newRefreshClaims.ExpiresAt.Unix(),
+	})
 }

@@ -278,10 +278,11 @@ INSERT INTO sys_api (id, title, path, method, api_group, created_at, updated_at,
 (198, '获取插件列表', '/api/pluginsmanager/exports', 'GET', '插件管理', '2025-12-08 16:38:26', '2025-12-08 16:38:26', NULL, 1),
 (199, '导出插件', '/api/pluginsmanager/export', 'POST', '插件管理', '2025-12-08 16:39:19', '2025-12-08 16:44:36', NULL, 1),
 (200, '导入插件', '/api/pluginsmanager/import', 'POST', '插件管理', '2025-12-08 16:47:11', '2025-12-08 16:47:11', NULL, 1),
-(201, '卸载插件', '/api/pluginsmanager/uninstall', 'DELETE', '插件管理', '2025-12-08 16:48:07', '2025-12-08 16:48:07', NULL, 1);
+(201, '卸载插件', '/api/pluginsmanager/uninstall', 'DELETE', '插件管理', '2025-12-08 16:48:07', '2025-12-08 16:48:07', NULL, 1),
+(202, '切换租户', '/api/users/switchTenant/:tenantld', 'GET', '用户管理', '2026-01-09 16:29:37', '2026-01-09 16:29:37', NULL, 1);
 
 -- 设置序列起始值
-SELECT setval('sys_api_id_seq', 202, false);
+SELECT setval('sys_api_id_seq', 203, false);
 
 -- 表: sys_casbin_rule
 DROP TABLE IF EXISTS sys_casbin_rule;
@@ -545,10 +546,100 @@ INSERT INTO sys_casbin_rule (id, ptype, v0, v1, v2, v3, v4, v5) VALUES
 (2969, 'p', 'role_4', '/api/users/*', 'GET', '*', '', ''),
 (2967, 'p', 'role_4', '/api/users/logout', 'POST', '*', '', ''),
 (2968, 'p', 'role_4', '/api/users/profile', 'GET', '*', '', ''),
-(2965, 'p', 'role_4', '/api/users/uploadAvatar', 'POST', '*', '', '');
+(2965, 'p', 'role_4', '/api/users/uploadAvatar', 'POST', '*', '', ''),
+(7113, 'p', 'role_1', '/api/users/switchTenant/:tenantld', 'GET', '*', '', ''),
+(7118, 'p', 'role_2', '/api/codegen/generate', 'POST', '*', '', ''),
+(7132, 'p', 'role_2', '/api/codegen/insertmenuandapi', 'POST', '*', '', ''),
+(7183, 'p', 'role_2', '/api/codegen/preview', 'GET', '*', '', ''),
+(7117, 'p', 'role_2', '/api/codegen/tables', 'GET', '*', '', ''),
+(7129, 'p', 'role_2', '/api/config/get', 'GET', '*', '', ''),
+(7163, 'p', 'role_2', '/api/config/update', 'PUT', '*', '', ''),
+(7188, 'p', 'role_2', '/api/config/viewCache', 'GET', '*', '', ''),
+(7130, 'p', 'role_2', '/api/plugins/example/:id', 'GET', '*', '', ''),
+(7147, 'p', 'role_2', '/api/plugins/example/add', 'POST', '*', '', ''),
+(7156, 'p', 'role_2', '/api/plugins/example/delete', 'DELETE', '*', '', ''),
+(7155, 'p', 'role_2', '/api/plugins/example/edit', 'PUT', '*', '', ''),
+(7149, 'p', 'role_2', '/api/plugins/example/list', 'GET', '*', '', ''),
+(7152, 'p', 'role_2', '/api/pluginsmanager/export', 'POST', '*', '', ''),
+(7126, 'p', 'role_2', '/api/pluginsmanager/exports', 'GET', '*', '', ''),
+(7136, 'p', 'role_2', '/api/pluginsmanager/import', 'POST', '*', '', ''),
+(7198, 'p', 'role_2', '/api/pluginsmanager/uninstall', 'DELETE', '*', '', ''),
+(7196, 'p', 'role_2', '/api/sysAffix/delete', 'DELETE', '*', '', ''),
+(7140, 'p', 'role_2', '/api/sysAffix/download/:id', 'GET', '*', '', ''),
+(7115, 'p', 'role_2', '/api/sysAffix/list', 'GET', '*', '', ''),
+(7162, 'p', 'role_2', '/api/sysAffix/updateName', 'PUT', '*', '', ''),
+(7154, 'p', 'role_2', '/api/sysAffix/upload', 'POST', '*', '', ''),
+(7121, 'p', 'role_2', '/api/sysApi/:id', 'GET', '*', '', ''),
+(7128, 'p', 'role_2', '/api/sysApi/add', 'POST', '*', '', ''),
+(7187, 'p', 'role_2', '/api/sysApi/delete', 'DELETE', '*', '', ''),
+(7145, 'p', 'role_2', '/api/sysApi/edit', 'PUT', '*', '', ''),
+(7144, 'p', 'role_2', '/api/sysApi/list', 'GET', '*', '', ''),
+(7139, 'p', 'role_2', '/api/sysDepartment/add', 'POST', '*', '', ''),
+(7170, 'p', 'role_2', '/api/sysDepartment/delete', 'DELETE', '*', '', ''),
+(7122, 'p', 'role_2', '/api/sysDepartment/edit', 'PUT', '*', '', ''),
+(7173, 'p', 'role_2', '/api/sysDepartment/getDivision', 'GET', '*', '', ''),
+(7195, 'p', 'role_2', '/api/sysDict/add', 'POST', '*', '', ''),
+(7123, 'p', 'role_2', '/api/sysDict/delete', 'DELETE', '*', '', ''),
+(7133, 'p', 'role_2', '/api/sysDict/edit', 'PUT', '*', '', ''),
+(7119, 'p', 'role_2', '/api/sysDict/getAllDicts', 'GET', '*', '', ''),
+(7191, 'p', 'role_2', '/api/sysDict/list', 'GET', '*', '', ''),
+(7146, 'p', 'role_2', '/api/sysDictItem/add', 'POST', '*', '', ''),
+(7181, 'p', 'role_2', '/api/sysDictItem/delete', 'DELETE', '*', '', ''),
+(7202, 'p', 'role_2', '/api/sysDictItem/edit', 'PUT', '*', '', ''),
+(7134, 'p', 'role_2', '/api/sysDictItem/getByDictId/:dictId', 'GET', '*', '', ''),
+(7148, 'p', 'role_2', '/api/sysGen/:id', 'DELETE', '*', '', ''),
+(7143, 'p', 'role_2', '/api/sysGen/:id', 'GET', '*', '', ''),
+(7197, 'p', 'role_2', '/api/sysGen/batchInsert', 'POST', '*', '', ''),
+(7135, 'p', 'role_2', '/api/sysGen/list', 'GET', '*', '', ''),
+(7169, 'p', 'role_2', '/api/sysGen/refreshFields', 'PUT', '*', '', ''),
+(7172, 'p', 'role_2', '/api/sysGen/update', 'PUT', '*', '', ''),
+(7194, 'p', 'role_2', '/api/sysMenu/add', 'POST', '*', '', ''),
+(7180, 'p', 'role_2', '/api/sysMenu/apis/:id', 'GET', '*', '', ''),
+(7186, 'p', 'role_2', '/api/sysMenu/batchDelete', 'DELETE', '*', '', ''),
+(7175, 'p', 'role_2', '/api/sysMenu/delete', 'DELETE', '*', '', ''),
+(7114, 'p', 'role_2', '/api/sysMenu/edit', 'PUT', '*', '', ''),
+(7141, 'p', 'role_2', '/api/sysMenu/export', 'GET', '*', '', ''),
+(7201, 'p', 'role_2', '/api/sysMenu/getMenuList', 'GET', '*', '', ''),
+(7184, 'p', 'role_2', '/api/sysMenu/getRouters', 'GET', '*', '', ''),
+(7131, 'p', 'role_2', '/api/sysMenu/import', 'POST', '*', '', ''),
+(7138, 'p', 'role_2', '/api/sysMenu/setApis', 'POST', '*', '', ''),
+(7189, 'p', 'role_2', '/api/sysOperationLog/delete', 'DELETE', '*', '', ''),
+(7182, 'p', 'role_2', '/api/sysOperationLog/export', 'GET', '*', '', ''),
+(7120, 'p', 'role_2', '/api/sysOperationLog/list', 'GET', '*', '', ''),
+(7137, 'p', 'role_2', '/api/sysRole/add', 'POST', '*', '', ''),
+(7179, 'p', 'role_2', '/api/sysRole/addRoleMenu', 'POST', '*', '', ''),
+(7176, 'p', 'role_2', '/api/sysRole/dataScope', 'PUT', '*', '', ''),
+(7166, 'p', 'role_2', '/api/sysRole/delete', 'DELETE', '*', '', ''),
+(7127, 'p', 'role_2', '/api/sysRole/edit', 'PUT', '*', '', ''),
+(7161, 'p', 'role_2', '/api/sysRole/getRoles', 'GET', '*', '', ''),
+(7174, 'p', 'role_2', '/api/sysRole/getUserPermission/:roleId', 'GET', '*', '', ''),
+(7190, 'p', 'role_2', '/api/sysTenant/:id', 'DELETE', '*', '', ''),
+(7167, 'p', 'role_2', '/api/sysTenant/:id', 'GET', '*', '', ''),
+(7150, 'p', 'role_2', '/api/sysTenant/add', 'POST', '*', '', ''),
+(7164, 'p', 'role_2', '/api/sysTenant/edit', 'PUT', '*', '', ''),
+(7124, 'p', 'role_2', '/api/sysTenant/list', 'GET', '*', '', ''),
+(7151, 'p', 'role_2', '/api/sysUserTenant/batchAdd', 'POST', '*', '', ''),
+(7168, 'p', 'role_2', '/api/sysUserTenant/batchDelete', 'DELETE', '*', '', ''),
+(7177, 'p', 'role_2', '/api/sysUserTenant/get', 'GET', '*', '', ''),
+(7171, 'p', 'role_2', '/api/sysUserTenant/getRolesAll', 'GET', '*', '', ''),
+(7116, 'p', 'role_2', '/api/sysUserTenant/getUserRoleIDs', 'GET', '*', '', ''),
+(7125, 'p', 'role_2', '/api/sysUserTenant/list', 'GET', '*', '', ''),
+(7178, 'p', 'role_2', '/api/sysUserTenant/setUserRoles', 'POST', '*', '', ''),
+(7142, 'p', 'role_2', '/api/sysUserTenant/userListAll', 'GET', '*', '', ''),
+(7158, 'p', 'role_2', '/api/users/:id', 'GET', '*', '', ''),
+(7185, 'p', 'role_2', '/api/users/add', 'POST', '*', '', ''),
+(7193, 'p', 'role_2', '/api/users/delete', 'DELETE', '*', '', ''),
+(7192, 'p', 'role_2', '/api/users/edit', 'PUT', '*', '', ''),
+(7153, 'p', 'role_2', '/api/users/list', 'GET', '*', '', ''),
+(7199, 'p', 'role_2', '/api/users/logout', 'POST', '*', '', ''),
+(7200, 'p', 'role_2', '/api/users/profile', 'GET', '*', '', ''),
+(7160, 'p', 'role_2', '/api/users/switchTenant/:tenantld', 'GET', '*', '', ''),
+(7157, 'p', 'role_2', '/api/users/updateAccount', 'PUT', '*', '', ''),
+(7165, 'p', 'role_2', '/api/users/updateBasicInfo', 'PUT', '*', '', ''),
+(7159, 'p', 'role_2', '/api/users/uploadAvatar', 'POST', '*', '', '');
 
 -- 设置序列起始值
-SELECT setval('sys_casbin_rule_id_seq', 7025, false);
+SELECT setval('sys_casbin_rule_id_seq', 7203, false);
 
 -- 创建唯一索引
 CREATE UNIQUE INDEX idx_casbin_rule ON sys_casbin_rule (ptype, v0, v1, v2, v3, v4, v5);
@@ -928,6 +1019,7 @@ INSERT INTO sys_menu_api (menu_id, api_id) VALUES
 (10, 12),
 (10, 27),
 (10, 54),
+(10, 202),
 (1001, 8),
 (1001, 18),
 (1001, 19),
@@ -1269,7 +1361,8 @@ CREATE TABLE sys_tenants (
     description VARCHAR(500),
     status SMALLINT NOT NULL DEFAULT 1,
     domain VARCHAR(255),
-    platform_domain VARCHAR(255)
+    platform_domain VARCHAR(255),
+    menu_permission VARCHAR(1000)
 );
 
 COMMENT ON TABLE sys_tenants IS '租户表';
@@ -1284,13 +1377,14 @@ COMMENT ON COLUMN sys_tenants.description IS '租户描述';
 COMMENT ON COLUMN sys_tenants.status IS '状态 0停用 1启用';
 COMMENT ON COLUMN sys_tenants.domain IS '租户域名';
 COMMENT ON COLUMN sys_tenants.platform_domain IS '主域名';
+COMMENT ON COLUMN sys_tenants.menu_permission IS '菜单权限';
 
 CREATE UNIQUE INDEX sys_tenants_code_idx ON sys_tenants (code);
 CREATE UNIQUE INDEX sys_tenants_domain_idx ON sys_tenants (domain);
 CREATE INDEX idx_sys_tenants_deleted_at ON sys_tenants (deleted_at);
 
-INSERT INTO sys_tenants (id, created_at, updated_at, deleted_at, created_by, name, code, description, status, domain, platform_domain) VALUES
-(1, '2025-11-03 11:16:45', '2025-11-03 11:16:45', NULL, 1, '测试租户1', 'dom1', '', 1, '', NULL);
+INSERT INTO sys_tenants (id, created_at, updated_at, deleted_at, created_by, name, code, description, status, domain, platform_domain, menu_permission) VALUES
+(1, '2025-11-03 11:16:45', '2026-01-09 16:31:23', NULL, 1, '测试租户1', 'dom1', '', 1, '', '', '1,10,1001,140214,140215,140216,1002,140218,140219,140220,140221,140244,1003,140222,140223,140224,140225,140257,140258,1004,140229,140230,140231,1006,140255,140256,1007,140252,140264,140239,140240,140241,140242,140243,140254');
 
 SELECT setval('sys_tenants_id_seq', 2, false);
 

@@ -8,6 +8,7 @@ import (
 	"gin-fast/app/utils/common"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -142,21 +143,69 @@ func (sm *SysMenuController) GetRouters(c *gin.Context) {
 
 // GetMenuList 获取完整的菜单列表
 // @Summary 获取完整的菜单列表
-// @Description 获取系统中所有菜单列表
+// @Description 获取系统中所有菜单列表，根据当前登录用户的租户权限过滤
 // @Tags 菜单管理
 // @Accept json
 // @Produce json
 // @Success 200 {object} map[string]interface{} "成功返回菜单列表"
+// @Failure 401 {object} map[string]interface{} "用户未登录"
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"
 // @Router /sysMenu/getMenuList [get]
 // @Security ApiKeyAuth
 func (sm *SysMenuController) GetMenuList(c *gin.Context) {
+
 	menuList := models.NewSysMenuList()
-	err := menuList.Find(c, func(db *gorm.DB) *gorm.DB {
-		return db.Preload("Apis")
-	})
+	var err error
+
+	// 获取当前用户的租户ID
+	tenantID := common.GetCurrentTenantID(c)
+
+	// 如果有租户ID，则根据租户的菜单权限过滤
+	if tenantID > 0 {
+		// 查询租户信息，获取菜单权限
+		tenant := models.NewTenant()
+		err = tenant.Find(c, func(db *gorm.DB) *gorm.DB {
+			return db.Where("id = ?", tenantID)
+		})
+		if err != nil {
+			sm.FailAndAbort(c, "获取租户信息失败", err)
+			return
+		}
+
+		// 解析菜单权限（逗号分隔的菜单ID）
+		var menuIDs []uint
+		if tenant.MenuPermission != "" {
+			// 分割字符串并转换为uint类型
+			parts := strings.Split(tenant.MenuPermission, ",")
+			for _, part := range parts {
+				part = strings.TrimSpace(part)
+				if part != "" {
+					if id, err := strconv.ParseUint(part, 10, 32); err == nil {
+						menuIDs = append(menuIDs, uint(id))
+					}
+				}
+			}
+		}
+
+		// 如果有菜单权限，则只返回匹配的菜单
+		if len(menuIDs) > 0 {
+			err = menuList.Find(c, func(db *gorm.DB) *gorm.DB {
+				return db.Preload("Apis").Where("id in (?)", menuIDs)
+			})
+		} else {
+			// 如果没有菜单权限，返回空列表
+			err = nil
+		}
+	} else {
+		// 如果没有租户ID，返回所有菜单
+		err = menuList.Find(c, func(db *gorm.DB) *gorm.DB {
+			return db.Preload("Apis")
+		})
+	}
+
 	if err != nil {
 		sm.FailAndAbort(c, "获取菜单失败", err)
+		return
 	}
 
 	if !menuList.IsEmpty() {

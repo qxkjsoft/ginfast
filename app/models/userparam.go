@@ -178,3 +178,13 @@ type UpdateBasicInfoRequest struct {
 func (r *UpdateBasicInfoRequest) Validate(c *gin.Context) error {
 	return r.Check(c, r)
 }
+
+// SwitchTenantRequest 切换租户请求结构
+type SwitchTenantRequest struct {
+	Validator
+	TenantId uint `form:"tenantId" validate:"required" message:"租户ID不能为空"`
+}
+
+func (r *SwitchTenantRequest) Validate(c *gin.Context) error {
+	return r.Check(c, r)
+}
