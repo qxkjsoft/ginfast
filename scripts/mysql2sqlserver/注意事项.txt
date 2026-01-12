@@ -1,0 +1,1 @@
+转换后sys_casbin_rule表除了id其他字段类型需从varchar改成nvarchar， 否则可能编译报错。
