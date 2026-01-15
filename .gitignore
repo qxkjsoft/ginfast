@@ -8,6 +8,9 @@
 # .trae 文件夹不提交
 .trae/
 
+# payment_cert 文件夹不提交
+payment_cert/
+
 # 编译输出
 *.exe
 *.exe~

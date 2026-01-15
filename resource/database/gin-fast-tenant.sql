@@ -269,7 +269,7 @@ CREATE TABLE `sys_casbin_rule` (
   `v4` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
   `v5` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE KEY `idx_casbin_rule` (`ptype`,`v0`,`v1`,`v2`,`v3`,`v4`,`v5`) USING BTREE,
+  UNIQUE KEY `idx_casbin_rule` (`ptype`,`v0`,`v1`,`v2`,`v3`,`v4`,`v5`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=7203 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ----------------------------
