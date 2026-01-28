@@ -1,0 +1,7 @@
+# token配置
+token:
+    jwttokensignkey:  "ginfastexampletoken"   #设置token生成时加密的签名
+    jwttokenexpire:  43200    #设置token过期时间，单位秒 示例:43200=12小时
+    jwttokenrefreshexpire:  2592000  #设置刷新token过期时间，单位秒 示例:2592000=30天
+    cachekeyprefix: "ginfastexampletoken:"  # 缓存前缀
+    isCache: false   # 是否为token启用缓存

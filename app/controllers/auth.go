@@ -8,10 +8,10 @@ import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
 
+	"gin-fast/app/utils/captchahelper"
 	"gin-fast/app/utils/common"
 	"gin-fast/app/utils/passwordhelper"
 
-	"github.com/dchest/captcha"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -320,38 +320,23 @@ func (ac *AuthController) Logout(c *gin.Context) {
 	})
 }
 
-// CaptchaId 获取验证码ID
-// @Summary 获取验证码ID
-// @Description 获取验证码ID用于生成验证码图片
+// GetVerifyImgString 获取验证码图片字符串
+// @Summary 获取验证码图片字符串
+// @Description 获取验证码图片字符串，返回验证码ID和base64图片
 // @Tags 认证
 // @Produce json
-// @Success 200 {object} map[string]interface{} "成功返回验证码ID"
-// @Router /captcha/id [get]
-func (ac *AuthController) GetCaptchaId(c *gin.Context) {
-	length := app.ConfigYml.GetInt("captcha.length")
-	ac.Success(c, gin.H{
-		"captchaId": captcha.NewLen(length),
-	})
-}
+// @Success 200 {object} map[string]interface{} "成功返回验证码ID和base64图片"
+// @Failure 500 {object} map[string]interface{} "生成验证码失败"
+// @Router /captcha/verify [get]
+func (ac *AuthController) GetVerifyImgString(c *gin.Context) {
+	idKeyC, base64stringC, err := captchahelper.GetCaptchaHelper().GetVerifyImgString()
+	if err != nil {
+		ac.FailAndAbort(c, "生成验证码失败", err)
+		return
+	}
 
-// CaptchaImage 获取验证码图片
-// @Summary 获取验证码图片
-// @Description 根据验证码ID获取验证码图片
-// @Tags 认证
-// @Produce json
-// @Param captchaId query string true "验证码ID"
-// @Param width query int false "图片宽度" default(130)
-// @Param height query int false "图片高度" default(30)
-// @Success 200 {object} map[string]interface{} "成功返回验证码图片"
-// @Failure 400 {object} map[string]interface{} "请求参数错误"
-// @Router /captcha/image [get]
-func (ac *AuthController) GetCaptchaImg(c *gin.Context) {
-	var req models.CaptchaImgRequest
-	if err := req.Validate(c); err != nil {
-		ac.FailAndAbort(c, "获取验证码图片失败", err)
-	}
-	if req.Time != "" {
-		captcha.Reload(req.CaptchaId)
-	}
-	captcha.WriteImage(c.Writer, req.CaptchaId, req.Width, req.Height)
+	ac.Success(c, gin.H{
+		"captchaId": idKeyC,
+		"image":     base64stringC,
+	})
 }

@@ -161,7 +161,28 @@ func createZapFactory(entry func(zapcore.Entry) error) *zap.Logger {
 	//参数一：编码器
 	//参数二：写入器
 	//参数三：参数级别，debug级别支持后续调用的所有函数写日志，如果是 fatal 高级别，则级别>=fatal 才可以写日志
-	zapCore := zapcore.NewCore(encoder, writer, zap.InfoLevel)
+
+	// 从配置文件读取日志等级
+	logLevelStr := app.ConfigYml.GetString("logs.level")
+	var logLevel zapcore.Level
+	switch logLevelStr {
+	case "debug":
+		logLevel = zap.DebugLevel
+	case "info":
+		logLevel = zap.InfoLevel
+	case "warn":
+		logLevel = zap.WarnLevel
+	case "error":
+		logLevel = zap.ErrorLevel
+	case "fatal":
+		logLevel = zap.FatalLevel
+	case "panic":
+		logLevel = zap.PanicLevel
+	default:
+		logLevel = zap.InfoLevel // 默认使用 info 级别
+	}
+
+	zapCore := zapcore.NewCore(encoder, writer, logLevel)
 	return zap.New(zapCore, zap.AddCaller(), zap.Hooks(entry), zap.AddStacktrace(zap.WarnLevel))
 }
 

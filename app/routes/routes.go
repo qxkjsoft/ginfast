@@ -72,13 +72,10 @@ func InitRoutes(engine *gin.Engine) {
 		public := api.Group("")
 		public.POST("/login", middleware.CaptchaMiddleware(), authControllers.Login)
 		public.POST("/refreshToken", authControllers.RefreshToken)
-		// 生成验证码ID
-		public.GET("/captcha/id", authControllers.GetCaptchaId)
-		// 获取验证码图片
-		public.GET("/captcha/image", authControllers.GetCaptchaImg)
+		// 获取验证码图片字符串
+		public.GET("/captcha/verify", authControllers.GetVerifyImgString)
 		// 获取配置信息
 		public.GET("/config/get", configControllers.GetConfig)
-
 		// 受保护的路由
 		protected := api.Group("")
 		protected.Use(middleware.JWTAuthMiddleware())

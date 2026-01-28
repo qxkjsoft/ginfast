@@ -3,20 +3,23 @@ package middleware
 import (
 	"bytes"
 	"encoding/json"
-	"gin-fast/app/global/app"
 	"io"
 
-	"github.com/dchest/captcha"
+	"gin-fast/app/global/app"
+	"gin-fast/app/utils/captchahelper"
+
 	"github.com/gin-gonic/gin"
 )
 
 // CaptchaMiddleware 验证码验证中间件
 func CaptchaMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// 检查配置是否开启验证码
 		if !app.ConfigYml.GetBool("captcha.open") {
 			c.Next()
 			return
 		}
+
 		// 从请求中获取验证码ID和验证码值
 		captchaId := c.Query("captchaId")
 		if captchaId == "" {
@@ -59,7 +62,7 @@ func CaptchaMiddleware() gin.HandlerFunc {
 		}
 
 		// 验证验证码
-		if !captcha.VerifyString(captchaId, captchaValue) {
+		if !captchahelper.GetCaptchaHelper().VerifyVerifyImgString(captchaId, captchaValue) {
 			app.Response.Fail(c, "验证码错误")
 			c.Abort()
 			return
