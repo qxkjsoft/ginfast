@@ -2,11 +2,15 @@ package controllers
 
 import (
 	"gin-fast/app/global/app"
+	"gin-fast/app/global/consts"
 	"gin-fast/app/models"
 	"gin-fast/app/utils/datascope"
 	"gin-fast/app/utils/filehelper"
+	"gin-fast/app/utils/imagehelper"
 	"gin-fast/app/utils/tenanthelper"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -33,11 +37,14 @@ func NewSysAffixController() *SysAffixController {
 
 // Upload 上传文件
 // @Summary 上传文件
-// @Description 上传文件并保存记录
+// @Description 上传文件并保存记录，支持生成缩略图
 // @Tags 文件附件管理
 // @Accept multipart/form-data
 // @Produce json
 // @Param file formData file true "上传的文件"
+// @Param isThumb formData int false "是否生成缩略图(0或1)" default(0)
+// @Param width formData int false "缩略图宽度" default(120)
+// @Param height formData int false "缩略图高度" default(120)
 // @Success 200 {object} map[string]interface{} "文件上传成功"
 // @Failure 400 {object} map[string]interface{} "请求参数错误"
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"
@@ -64,20 +71,67 @@ func (ac *SysAffixController) Upload(c *gin.Context) {
 	affix.Suffix = response.FileType
 	affix.Ftype = filehelper.GetFileTypeBySuffix(response.FileType) // 根据后缀判断文件类型
 
+	// 生成缩略图逻辑
+	// 条件：1. 上传类型为本地 2. isThumb为1 3. 文件类型为图片 4. width和height大于0
+	if req.IsThumb == 1 &&
+		app.ConfigYml.GetString("upload.upload_type") == consts.UploadTypeLocal &&
+		affix.Ftype == consts.UploadFileTypeImage &&
+		req.Width > 0 && req.Height > 0 {
+
+		// 生成缩略图文件名
+		thumbnailName := imagehelper.GenerateThumbnailName(response.FileName, req.Width, req.Height)
+
+		// 获取原图所在目录
+		originalDir := filepath.Dir(response.Path)
+
+		// 构建缩略图完整路径
+		thumbnailPath := filepath.Join(originalDir, thumbnailName)
+
+		// 生成缩略图
+		if err := imagehelper.GenerateThumbnail(response.Path, thumbnailPath, req.Width, req.Height); err != nil {
+			// 缩略图生成失败不影响原图上传，记录日志即可
+			app.ZapLog.Warn("生成缩略图失败", zap.Error(err))
+		} else {
+			// 缩略图生成成功，保存缩略图信息
+			affix.ThumbnailName = thumbnailName
+			affix.ThumbnailPath = thumbnailPath
+
+			// 获取缩略图URL（从原图URL中提取相对路径部分）
+			// 原图URL格式: /public/uploads/2025-01-27/20250127_xxx.jpg
+			// 缩略图URL格式: /public/uploads/2025-01-27/w120_h120_20250127_xxx.jpg
+			urlParts := strings.Split(response.Url, "/")
+			if len(urlParts) > 0 {
+				// 获取最后一个部分（文件名）
+				urlParts[len(urlParts)-1] = thumbnailName
+				affix.ThumbnailUrl = strings.Join(urlParts, "/")
+			}
+		}
+	}
+
 	// 保存到数据库
 	if err := affix.Create(c); err != nil {
 		ac.FailAndAbort(c, "保存文件记录失败", err)
 	}
 
-	// 返回成功响应
-	ac.Success(c, gin.H{
+	// 构建返回响应
+	responseData := gin.H{
 		"id":    affix.ID,
 		"name":  affix.Name,
 		"path":  affix.Path,
 		"size":  affix.Size,
 		"ftype": affix.Ftype,
 		"url":   affix.Url,
-	})
+	}
+
+	// 如果生成了缩略图，添加到响应中
+	if affix.ThumbnailUrl != "" {
+		responseData["thumbnailName"] = affix.ThumbnailName
+		responseData["thumbnailPath"] = affix.ThumbnailPath
+		responseData["thumbnailUrl"] = affix.ThumbnailUrl
+	}
+
+	// 返回成功响应
+	ac.Success(c, responseData)
 }
 
 // Delete 删除文件
@@ -108,6 +162,14 @@ func (ac *SysAffixController) Delete(c *gin.Context) {
 	if err := app.UploadService.DeleteFile(affix.Path); err != nil {
 		// 报错后继续删除数据库记录
 		app.ZapLog.Error("删除物理文件失败", zap.Error(err))
+	}
+
+	// 删除缩略图文件（如果存在）
+	if affix.ThumbnailPath != "" {
+		if err := app.UploadService.DeleteFile(affix.ThumbnailPath); err != nil {
+			// 缩略图删除失败不影响主流程，记录日志即可
+			app.ZapLog.Warn("删除缩略图文件失败", zap.Error(err))
+		}
 	}
 
 	// 删除数据库记录

@@ -120,6 +120,9 @@ CREATE TABLE `sys_affix` (
   `created_by` int(11) DEFAULT NULL,
   `suffix` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '文件后缀',
   `tenant_id` int(11) unsigned DEFAULT '0' COMMENT '租户ID字段',
+  `thumbnail_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '缩略图路径',
+  `thumbnail_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '缩略图名称',
+  `thumbnail_url` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '缩略图URL',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 

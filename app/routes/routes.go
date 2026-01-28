@@ -32,6 +32,10 @@ var pluginsManagerControllers = controllers.NewPluginsManagerController()   // �
 
 // InitRoutes 初始化路由
 func InitRoutes(engine *gin.Engine) {
+	// 全局跨域中间件
+	if app.ConfigYml.GetBool("httpserver.allowcrossdomain") {
+		engine.Use(middleware.CorsNext())
+	}
 
 	// 静态文件
 	engine.Static(app.ConfigYml.GetString("httpserver.serverrootpath"), app.ConfigYml.GetString("httpserver.serverroot"))
@@ -49,11 +53,6 @@ func InitRoutes(engine *gin.Engine) {
 			}
 			ctx.JSON(200, items)
 		})
-	}
-
-	// 全局跨域中间件
-	if app.ConfigYml.GetBool("httpserver.allowcrossdomain") {
-		engine.Use(middleware.CorsNext())
 	}
 
 	// 全局操作日志中间件

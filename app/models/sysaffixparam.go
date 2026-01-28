@@ -36,7 +36,10 @@ func (r *ListRequest) Handle() func(db *gorm.DB) *gorm.DB {
 // UploadRequest 上传文件请求参数
 type UploadRequest struct {
 	Validator
-	File *multipart.FileHeader `form:"file" validate:"required" message:"文件不能为空"`
+	File    *multipart.FileHeader `form:"file" validate:"required" message:"文件不能为空"`
+	IsThumb int                   `form:"isThumb" message:"是否生成缩略图(0或1)"`
+	Width   int                   `form:"width" message:"缩略图宽度"`
+	Height  int                   `form:"height" message:"缩略图高度"`
 }
 
 // Validate 验证请求参数

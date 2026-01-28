@@ -124,6 +124,9 @@ CREATE TABLE [sys_affix] (
     [created_by] INT,
     [suffix] VARCHAR(100),
     [tenant_id] INT DEFAULT 0,
+    [thumbnail_path] VARCHAR(255),
+    [thumbnail_name] VARCHAR(255),
+    [thumbnail_url] VARCHAR(255),
     PRIMARY KEY ([id])
 );
 

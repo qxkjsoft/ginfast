@@ -125,6 +125,9 @@ CREATE TABLE sys_affix (
     created_by INTEGER,
     suffix VARCHAR(100),
     tenant_id INTEGER DEFAULT '0',
+    thumbnail_path VARCHAR(255),
+    thumbnail_name VARCHAR(255),
+    thumbnail_url VARCHAR(255)
     PRIMARY KEY (id)
 );
 
@@ -136,7 +139,9 @@ COMMENT ON COLUMN sys_affix.id IS 'ID';
 COMMENT ON COLUMN sys_affix.name IS '文件名';
 COMMENT ON COLUMN sys_affix.path IS '路径';
 COMMENT ON COLUMN sys_affix.url IS '文件url';
-
+COMMENT ON COLUMN sys_affix.thumbnail_path IS '缩略图路径';
+COMMENT ON COLUMN sys_affix.thumbnail_name IS '缩略图名称';
+COMMENT ON COLUMN sys_affix.thumbnail_url IS '缩略图URL';
 -- Records of sys_affix
 -- Table structure for sys_api
 DROP TABLE IF EXISTS sys_api;

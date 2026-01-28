@@ -10,13 +10,16 @@ import (
 // SysAffix 文件附件模型
 type SysAffix struct {
 	BaseModel
-	Name      string `gorm:"type:varchar(255);comment:文件名" json:"name"`
-	Path      string `gorm:"type:varchar(255);comment:文件路径" json:"path"`
-	Size      int    `gorm:"type:int(10);comment:文件大小(字节)" json:"size"`
-	Ftype     string `gorm:"type:varchar(100);comment:文件类型" json:"ftype"`
-	CreatedBy uint   `gorm:"type:int(11);comment:创建者ID" json:"createdBy"`
-	Suffix    string `gorm:"type:varchar(100);comment:文件后缀" json:"suffix"`
-	Url       string `gorm:"type:varchar(255);comment:文件访问URL" json:"url"`
+	Name          string `gorm:"type:varchar(255);comment:文件名" json:"name"`
+	Path          string `gorm:"type:varchar(255);comment:文件路径" json:"path"`
+	Size          int    `gorm:"type:int(10);comment:文件大小(字节)" json:"size"`
+	Ftype         string `gorm:"type:varchar(100);comment:文件类型" json:"ftype"`
+	CreatedBy     uint   `gorm:"type:int(11);comment:创建者ID" json:"createdBy"`
+	Suffix        string `gorm:"type:varchar(100);comment:文件后缀" json:"suffix"`
+	Url           string `gorm:"type:varchar(255);comment:文件访问URL" json:"url"`
+	ThumbnailPath string `gorm:"type:varchar(255);comment:缩略图路径" json:"thumbnailPath,omitempty"`
+	ThumbnailName string `gorm:"type:varchar(255);comment:缩略图名称" json:"thumbnailName,omitempty"`
+	ThumbnailUrl  string `gorm:"type:varchar(255);comment:缩略图URL" json:"thumbnailUrl,omitempty"`
 	// 添加与User模型的关联
 	User     User `gorm:"foreignKey:id;references:created_by" json:"user"`
 	TenantID uint `gorm:"type:int(11);column:tenant_id;comment:租户ID" json:"tenantID"`

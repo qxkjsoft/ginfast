@@ -16,6 +16,9 @@ github地址：[https://github.com/qxkjsoft/ginfast-ui](https://github.com/qxkjs
 
 [多租户版的使用视频](https://www.bilibili.com/video/BV1Kk1wBaELb/)
 
+[多租户版的使用及开发视频](https://www.bilibili.com/video/BV199kaB9EdZ/)
+
+[ginfast宝塔部署教程](https://www.bilibili.com/video/BV1Wi6MBwEYL/)
 ## 演示地址
 
 [http://gin.g-fast.cn/system](http://gin.g-fast.cn/system)
