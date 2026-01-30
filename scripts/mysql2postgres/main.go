@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -66,6 +67,7 @@ type TableInfo struct {
 	Comments             map[string]string // 列注释
 	TableComment         string
 	AutoIncrementColumns []string
+	AutoIncrementMax     map[string]int64 // 列名 -> 最大ID值
 	Indexes              []IndexInfo
 }
 
@@ -92,6 +94,7 @@ type Converter struct {
 	outputFile   string
 	tables       map[string]*TableInfo
 	currentTable string
+	hasData      map[string]bool // 记录表是否有数据插入
 }
 
 func NewConverter(input, output string) *Converter {
@@ -99,6 +102,7 @@ func NewConverter(input, output string) *Converter {
 		inputFile:  input,
 		outputFile: output,
 		tables:     make(map[string]*TableInfo),
+		hasData:    make(map[string]bool),
 	}
 }
 
@@ -148,7 +152,10 @@ func (c *Converter) Convert() error {
 	// 写入 PostgreSQL 头部
 	writer.WriteString("-- PostgreSQL SQL 转换文件\n")
 	writer.WriteString("-- 由 MySQL SQL 转换而来\n\n")
-	writer.WriteString("SET session_replication_role = replica;\n\n")
+
+	// 禁止外键检查和通知消息，减少干扰
+	writer.WriteString("SET session_replication_role = replica;\n")
+	writer.WriteString("SET client_min_messages TO WARNING;\n\n")
 
 	// 逐行处理
 	lines := strings.Split(string(inputContent), "\n")
@@ -157,6 +164,7 @@ func (c *Converter) Convert() error {
 	var tableName string
 	var inInsert bool
 	var insertLines []string
+	var currentInsertTable string // 当前INSERT语句的表名
 
 	for _, line := range lines {
 		trimmedLine := strings.TrimSpace(line)
@@ -184,7 +192,8 @@ func (c *Converter) Convert() error {
 		// 处理 DROP TABLE
 		if strings.HasPrefix(trimmedLine, "DROP TABLE IF EXISTS") {
 			tableName = extractTableName(trimmedLine)
-			writer.WriteString(fmt.Sprintf("DROP TABLE IF EXISTS %s;\n", tableName))
+			// 在PostgreSQL中，我们将在后面统一DROP TABLE
+			// 这里不写入，避免表不存在时的NOTICE
 			continue
 		}
 
@@ -198,6 +207,7 @@ func (c *Converter) Convert() error {
 				Name:     tableName,
 				Comments: make(map[string]string),
 			}
+			c.hasData[tableName] = false
 			continue
 		}
 
@@ -218,10 +228,13 @@ func (c *Converter) Convert() error {
 		if strings.HasPrefix(trimmedLine, "INSERT INTO") {
 			// 如果已经在处理 INSERT 语句，先处理完之前的
 			if inInsert && len(insertLines) > 0 {
-				c.processInsert(writer, insertLines)
+				c.processInsert(writer, insertLines, currentInsertTable)
 			}
 			inInsert = true
 			insertLines = []string{line}
+			// 提取INSERT语句的表名
+			currentInsertTable = extractInsertTableName(trimmedLine)
+			c.hasData[currentInsertTable] = true
 			continue
 		}
 
@@ -230,14 +243,14 @@ func (c *Converter) Convert() error {
 			// 检查是否 INSERT 语句结束（以分号结尾）
 			if strings.HasSuffix(trimmedLine, ";") {
 				insertLines = append(insertLines, line)
-				c.processInsert(writer, insertLines)
+				c.processInsert(writer, insertLines, currentInsertTable)
 				inInsert = false
 				insertLines = nil
 				continue
 			}
 			// 如果是空行且已经收集了 INSERT 内容，说明 INSERT 结束
 			if trimmedLine == "" && len(insertLines) > 0 {
-				c.processInsert(writer, insertLines)
+				c.processInsert(writer, insertLines, currentInsertTable)
 				inInsert = false
 				insertLines = nil
 				continue
@@ -247,14 +260,15 @@ func (c *Converter) Convert() error {
 		}
 	}
 
-	// 写入序列值设置
-	c.writeSequences(writer)
-
-	// 写入索引
+	// 写入索引（在数据插入之后）
 	c.writeIndexes(writer)
+
+	// 写入序列值设置（在数据插入之后）
+	c.writeSequences(writer)
 
 	// 恢复外键检查
 	writer.WriteString("\nSET session_replication_role = DEFAULT;\n")
+	writer.WriteString("SET client_min_messages TO NOTICE;\n")
 
 	return nil
 }
@@ -275,6 +289,7 @@ func (c *Converter) processCreateTable(writer *bufio.Writer, tableName string, l
 	}
 
 	// 开始 CREATE TABLE
+	writer.WriteString(fmt.Sprintf("DROP TABLE IF EXISTS %s;\n", tableName))
 	writer.WriteString(fmt.Sprintf("CREATE TABLE %s (\n", tableName))
 
 	// 处理列定义
@@ -431,6 +446,13 @@ func (c *Converter) convertColumn(line string, tableInfo *TableInfo) string {
 		}
 
 		tableInfo.AutoIncrementColumns = append(tableInfo.AutoIncrementColumns, colName)
+
+		// 初始化AutoIncrementMax映射
+		if tableInfo.AutoIncrementMax == nil {
+			tableInfo.AutoIncrementMax = make(map[string]int64)
+		}
+		// 初始化最大值为0
+		tableInfo.AutoIncrementMax[colName] = 0
 	}
 
 	// 检查是否为主键
@@ -553,7 +575,7 @@ func (c *Converter) parseIndex(line string) *IndexInfo {
 }
 
 // 处理 INSERT 语句（支持多行）
-func (c *Converter) processInsert(writer *bufio.Writer, lines []string) {
+func (c *Converter) processInsert(writer *bufio.Writer, lines []string, tableName string) {
 	// 合并多行为一行
 	insertSQL := strings.Join(lines, " ")
 
@@ -583,16 +605,155 @@ func (c *Converter) processInsert(writer *bufio.Writer, lines []string) {
 
 	// 写入 INSERT 语句
 	writer.WriteString(insertSQL + "\n")
+
+	// 提取并更新自增列的最大值
+	c.extractAndUpdateAutoIncrementValues(insertSQL, tableName)
+}
+
+// 从INSERT语句中提取自增列的值
+func (c *Converter) extractAndUpdateAutoIncrementValues(insertSQL string, tableName string) {
+	tableInfo, exists := c.tables[tableName]
+	if !exists || len(tableInfo.AutoIncrementColumns) == 0 {
+		return
+	}
+
+	// 使用正则表达式匹配 INSERT 语句中的 VALUES 部分
+	// 支持两种格式：
+	// 1. INSERT INTO table (col1, col2, ...) VALUES (val1, val2, ...)
+	// 2. INSERT INTO table VALUES (val1, val2, ...)
+	re := regexp.MustCompile(`(?i)INSERT INTO\s+\w+\s*(?:\([^)]+\))?\s*VALUES\s*\(([^)]+)\)`)
+	matches := re.FindStringSubmatch(insertSQL)
+
+	if len(matches) < 2 {
+		return
+	}
+
+	valuesStr := matches[1]
+
+	// 解析值
+	values := c.parseValues(valuesStr)
+
+	// 初始化AutoIncrementMax映射
+	if tableInfo.AutoIncrementMax == nil {
+		tableInfo.AutoIncrementMax = make(map[string]int64)
+	}
+
+	// 简化处理：假设自增列是第一个列
+	// 对于大多数MySQL表，自增ID通常是第一列
+	if len(values) > 0 && len(tableInfo.AutoIncrementColumns) > 0 {
+		autoCol := tableInfo.AutoIncrementColumns[0]
+		valStr := values[0]
+		// 去除可能的引号
+		valStr = strings.Trim(valStr, "'\"")
+		if val, err := strconv.ParseInt(valStr, 10, 64); err == nil {
+			if val > tableInfo.AutoIncrementMax[autoCol] {
+				tableInfo.AutoIncrementMax[autoCol] = val
+			}
+		}
+	}
+}
+
+// 解析VALUES子句中的值
+func (c *Converter) parseValues(valuesStr string) []string {
+	var values []string
+	var currentValue strings.Builder
+	inQuotes := false
+	quoteChar := rune(0)
+
+	for i := 0; i < len(valuesStr); i++ {
+		ch := rune(valuesStr[i])
+
+		if ch == '\\' && i+1 < len(valuesStr) {
+			// 处理转义字符
+			currentValue.WriteRune(ch)
+			i++
+			currentValue.WriteRune(rune(valuesStr[i]))
+			continue
+		}
+
+		if !inQuotes && (ch == '\'' || ch == '"') {
+			inQuotes = true
+			quoteChar = ch
+			currentValue.WriteRune(ch)
+			continue
+		}
+
+		if inQuotes && ch == quoteChar {
+			// 检查是否转义引号
+			if i+1 < len(valuesStr) && rune(valuesStr[i+1]) == quoteChar {
+				currentValue.WriteRune(ch)
+				i++
+				currentValue.WriteRune(rune(valuesStr[i]))
+				continue
+			}
+			inQuotes = false
+			currentValue.WriteRune(ch)
+			continue
+		}
+
+		if !inQuotes && ch == ',' {
+			values = append(values, strings.TrimSpace(currentValue.String()))
+			currentValue.Reset()
+			continue
+		}
+
+		currentValue.WriteRune(ch)
+	}
+
+	// 添加最后一个值
+	if currentValue.Len() > 0 {
+		values = append(values, strings.TrimSpace(currentValue.String()))
+	}
+
+	return values
 }
 
 // 写入序列值设置
 func (c *Converter) writeSequences(writer *bufio.Writer) {
-	// 这里需要从 INSERT 语句中提取最大的 ID 值
-	// 简化处理：不自动设置序列值，用户可以手动设置
+	if len(c.tables) == 0 {
+		return
+	}
+
+	writer.WriteString("\n-- 设置序列值\n")
+
+	// 收集所有表的自增列信息
+	for tableName, tableInfo := range c.tables {
+		for _, columnName := range tableInfo.AutoIncrementColumns {
+			// PostgreSQL中SERIAL类型创建的序列命名规则为：表名_列名_seq
+			seqName := fmt.Sprintf("%s_%s_seq", tableName, columnName)
+
+			// 获取收集到的最大值
+			maxVal := int64(0)
+			if tableInfo.AutoIncrementMax != nil {
+				if val, exists := tableInfo.AutoIncrementMax[columnName]; exists {
+					maxVal = val
+				}
+			}
+
+			// 如果表有数据且有最大值，设置序列值
+			if c.hasData[tableName] && maxVal > 0 {
+				setSeqSQL := fmt.Sprintf("SELECT setval('%s', %d, true);\n", seqName, maxVal)
+				writer.WriteString(setSeqSQL)
+			} else {
+				// 对于空表，不设置序列值，让序列保持默认起始值1
+				// 这样可以避免"value 0 is out of bounds"错误
+				writer.WriteString(fmt.Sprintf("-- 表 %s 的列 %s 没有数据，序列 %s 将保持默认起始值\n",
+					tableName, columnName, seqName))
+			}
+		}
+	}
+
+	writer.WriteString("\n")
 }
 
 // 写入索引
 func (c *Converter) writeIndexes(writer *bufio.Writer) {
+	if len(c.tables) == 0 {
+		return
+	}
+
+	writer.WriteString("\n-- 创建索引\n")
+
 	for tableName, tableInfo := range c.tables {
 		for _, index := range tableInfo.Indexes {
 			if index.IsUnique {
@@ -606,7 +767,7 @@ func (c *Converter) writeIndexes(writer *bufio.Writer) {
 	}
 }
 
-// 提取表名
+// 提取表名（用于DROP TABLE和CREATE TABLE）
 func extractTableName(line string) string {
 	line = strings.ReplaceAll(line, "`", "")
 	line = strings.TrimSpace(line)
@@ -614,6 +775,21 @@ func extractTableName(line string) string {
 	// 匹配 DROP TABLE IF EXISTS table_name 或 CREATE TABLE table_name
 	// 使用非贪婪匹配直到遇到空格、分号或左括号
 	re := regexp.MustCompile(`(?:DROP TABLE IF EXISTS|CREATE TABLE)\s+([^\s;(]+)`)
+	matches := re.FindStringSubmatch(line)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+
+	return ""
+}
+
+// 提取INSERT语句的表名
+func extractInsertTableName(line string) string {
+	line = strings.ReplaceAll(line, "`", "")
+	line = strings.TrimSpace(line)
+
+	// 匹配 INSERT INTO table_name
+	re := regexp.MustCompile(`INSERT INTO\s+([^\s(]+)`)
 	matches := re.FindStringSubmatch(line)
 	if len(matches) > 1 {
 		return matches[1]

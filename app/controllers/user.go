@@ -112,7 +112,7 @@ func (uc *UserController) GetProfile(c *gin.Context) {
 		"status":        user.Status,
 		"email":         user.Email,
 		"phone":         user.Phone,
-		"createdAt":     user.CreatedAt.Format(time.DateTime),
+		"createdAt":     user.CreatedAt,
 		"description":   user.Description,
 		"roles":         user.Roles,
 		"department":    user.Department,

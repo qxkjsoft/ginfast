@@ -18,8 +18,8 @@ type SysGen struct {
 	Describe     string          `gorm:"column:describe;size:1000;comment:描述" json:"describe"`
 	CreatedBy    uint            `gorm:"column:created_by;comment:创建人" json:"createdBy"`
 	SysGenFields SysGenFieldList `gorm:"foreignKey:GenID;references:ID" json:"sysGenFields"`
-	IsCover      bool            `gorm:"column:is_cover;default:false;comment:是否覆盖" json:"isCover"`
-	IsMenu       bool            `gorm:"column:is_menu;default:false;comment:是否生成菜单" json:"isMenu"`
+	IsCover      int             `gorm:"column:is_cover;default:0;comment:是否覆盖" json:"isCover"`
+	IsMenu       int             `gorm:"column:is_menu;default:0;comment:是否生成菜单" json:"isMenu"`
 }
 
 // TableName 设置表名

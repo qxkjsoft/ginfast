@@ -5,7 +5,6 @@ import (
 	"gin-fast/app/global/myerrors"
 	"reflect"
 	"strings"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -29,12 +28,6 @@ func CreateBeforeHook(gormDB *gorm.DB) {
 			for i := 0; i < inLen; i++ {
 				row := destValueOf.Index(i)
 				if row.Type().Kind() == reflect.Struct {
-					if b, column := structHasSpecialField("CreatedAt", row); b {
-						destValueOf.Index(i).FieldByName(column).Set(reflect.ValueOf(time.Now().Format(time.DateTime)))
-					}
-					if b, column := structHasSpecialField("UpdatedAt", row); b {
-						destValueOf.Index(i).FieldByName(column).Set(reflect.ValueOf(time.Now().Format(time.DateTime)))
-					}
 					// 检查是否有TenantID字段，如果有则自动设置
 					if b, column := structHasSpecialField("TenantID", row); b {
 						// 从上下文中获取租户ID
@@ -50,12 +43,6 @@ func CreateBeforeHook(gormDB *gorm.DB) {
 						}
 					}
 				} else if row.Type().Kind() == reflect.Map {
-					if b, column := structHasSpecialField("created_at", row); b {
-						row.SetMapIndex(reflect.ValueOf(column), reflect.ValueOf(time.Now().Format(time.DateTime)))
-					}
-					if b, column := structHasSpecialField("updated_at", row); b {
-						row.SetMapIndex(reflect.ValueOf(column), reflect.ValueOf(time.Now().Format(time.DateTime)))
-					}
 					// 检查是否有TenantID字段，如果有则自动设置
 					if b, column := structHasSpecialField("tenant_id", row); b {
 						// 从上下文中获取租户ID
@@ -73,14 +60,6 @@ func CreateBeforeHook(gormDB *gorm.DB) {
 				}
 			}
 		} else if destValueOf.Type().Kind() == reflect.Struct {
-			//  if destValueOf.Type().Kind() == reflect.Struct
-			// 参数校验无错误自动设置 CreatedAt、 UpdatedAt
-			if b, column := structHasSpecialField("CreatedAt", gormDB.Statement.Dest); b {
-				gormDB.Statement.SetColumn(column, time.Now().Format(time.DateTime))
-			}
-			if b, column := structHasSpecialField("UpdatedAt", gormDB.Statement.Dest); b {
-				gormDB.Statement.SetColumn(column, time.Now().Format(time.DateTime))
-			}
 			// 检查是否有TenantID字段，如果有则自动设置
 			if b, column := structHasSpecialField("TenantID", gormDB.Statement.Dest); b {
 				// 从上下文中获取租户ID
@@ -96,12 +75,6 @@ func CreateBeforeHook(gormDB *gorm.DB) {
 				}
 			}
 		} else if destValueOf.Type().Kind() == reflect.Map {
-			if b, column := structHasSpecialField("created_at", gormDB.Statement.Dest); b {
-				destValueOf.SetMapIndex(reflect.ValueOf(column), reflect.ValueOf(time.Now().Format(time.DateTime)))
-			}
-			if b, column := structHasSpecialField("updated_at", gormDB.Statement.Dest); b {
-				destValueOf.SetMapIndex(reflect.ValueOf(column), reflect.ValueOf(time.Now().Format(time.DateTime)))
-			}
 			// 检查是否有TenantID字段，如果有则自动设置
 			if b, column := structHasSpecialField("tenant_id", gormDB.Statement.Dest); b {
 				// 从上下文中获取租户ID
@@ -132,17 +105,12 @@ func UpdateBeforeHook(gormDB *gorm.DB) {
 	} else if reflect.TypeOf(gormDB.Statement.Dest).Kind() == reflect.Map {
 		// 如果是调用了 gorm.Update 、updates 函数 , 在参数没有传递指针的情况下，无法触发回调函数
 
-	} else if reflect.TypeOf(gormDB.Statement.Dest).Kind() == reflect.Ptr && reflect.ValueOf(gormDB.Statement.Dest).Elem().Kind() == reflect.Struct {
-		// 参数校验无错误自动设置 UpdatedAt
-		if b, column := structHasSpecialField("UpdatedAt", gormDB.Statement.Dest); b {
-			gormDB.Statement.SetColumn(column, time.Now().Format(time.DateTime))
-		}
-	} else if reflect.TypeOf(gormDB.Statement.Dest).Kind() == reflect.Ptr && reflect.ValueOf(gormDB.Statement.Dest).Elem().Kind() == reflect.Map {
-		if b, column := structHasSpecialField("updated_at", gormDB.Statement.Dest); b {
-			destValueOf := reflect.ValueOf(gormDB.Statement.Dest).Elem()
-			destValueOf.SetMapIndex(reflect.ValueOf(column), reflect.ValueOf(time.Now().Format(time.DateTime)))
-		}
 	}
+}
+
+// DeleteBeforeHook 删除前Hook
+func DeleteBeforeHook(gormDB *gorm.DB) {
+	// GORM 会自动处理 DeletedAt 字段（软删除）
 }
 
 // structHasSpecialField  检查结构体是否有特定字段

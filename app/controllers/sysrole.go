@@ -222,8 +222,10 @@ func (sc *SysRoleController) Add(c *gin.Context) {
 		sc.FailAndAbort(c, "新增角色失败", err)
 	}
 	// casbin 添加角色继承关系
-	if err = sc.CasbinService.AddRoleInheritance(c, role.ID, req.ParentID); err != nil {
-		sc.FailAndAbort(c, "添加角色继承关系失败", err)
+	if req.ParentID > 0 {
+		if err = sc.CasbinService.AddRoleInheritance(c, role.ID, req.ParentID); err != nil {
+			sc.FailAndAbort(c, "添加角色继承关系失败", err)
+		}
 	}
 	sc.SuccessWithMessage(c, "角色创建成功", role)
 }

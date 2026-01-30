@@ -50,8 +50,8 @@ type SysGenUpdateRequest struct {
 	ModuleName   string                     `json:"moduleName" form:"moduleName" validate:"required" message:"模块名称不能为空"` // 模块名称
 	FileName     string                     `json:"fileName" form:"fileName" validate:"required" message:"文件名不能为空"`      // 文件名
 	Describe     string                     `json:"describe" form:"describe" validate:"required" message:"描述不能为空"`       // 描述
-	IsCover      bool                       `json:"isCover" form:"isCover" `
-	IsMenu       bool                       `json:"isMenu" form:"isMenu" `
+	IsCover      int                        `json:"isCover" form:"isCover" `
+	IsMenu       int                        `json:"isMenu" form:"isMenu" `
 	FieldUpdates []SysGenFieldUpdateRequest `json:"sysGenFields" form:"sysGenFields" validate:"required" message:"字段更新列表不能为空"` // 字段更新列表
 }
 

@@ -325,17 +325,27 @@ func (cgs *CodeGenService) GetTableColumns(database, table string) (models.Table
 			// 如果USE命令失败，尝试直接查询
 			rows, err := sqlDB.Query(`
 				SELECT
-					column_name,
-					data_type,
-					col_description((table_schema||'.'||table_name)::regclass, ordinal_position) as column_comment,
-					is_nullable,
-					column_default,
-					'' as column_key,
+					c.column_name,
+					c.data_type,
+					col_description((c.table_schema||'.'||c.table_name)::regclass, c.ordinal_position) as column_comment,
+					c.is_nullable,
+					c.column_default,
+					CASE WHEN pk.column_name IS NOT NULL THEN 'PRI' ELSE '' END as column_key,
 					'' as extra,
 					'' as column_type
-				FROM information_schema.columns
-				WHERE table_schema = 'public' AND table_name = $1
-				ORDER BY ordinal_position`, table)
+				FROM information_schema.columns c
+				LEFT JOIN (
+					SELECT kc.column_name
+					FROM information_schema.table_constraints tc
+					JOIN information_schema.key_column_usage kc
+						ON tc.constraint_name = kc.constraint_name
+						AND tc.table_schema = kc.table_schema
+					WHERE tc.constraint_type = 'PRIMARY KEY'
+						AND tc.table_schema = 'public'
+						AND tc.table_name = $1
+				) pk ON c.column_name = pk.column_name
+				WHERE c.table_schema = 'public' AND c.table_name = $1
+				ORDER BY c.ordinal_position`, table)
 			if err != nil {
 				return nil, err
 			}
@@ -366,17 +376,27 @@ func (cgs *CodeGenService) GetTableColumns(database, table string) (models.Table
 		} else {
 			rows, err := sqlDB.Query(`
 				SELECT
-					column_name,
-					data_type,
-					col_description((table_schema||'.'||table_name)::regclass, ordinal_position) as column_comment,
-					is_nullable,
-					column_default,
-					'' as column_key,
+					c.column_name,
+					c.data_type,
+					col_description((c.table_schema||'.'||c.table_name)::regclass, c.ordinal_position) as column_comment,
+					c.is_nullable,
+					c.column_default,
+					CASE WHEN pk.column_name IS NOT NULL THEN 'PRI' ELSE '' END as column_key,
 					'' as extra,
 					'' as column_type
-				FROM information_schema.columns
-				WHERE table_schema = 'public' AND table_name = $1
-				ORDER BY ordinal_position`, table)
+				FROM information_schema.columns c
+				LEFT JOIN (
+					SELECT kc.column_name
+					FROM information_schema.table_constraints tc
+					JOIN information_schema.key_column_usage kc
+						ON tc.constraint_name = kc.constraint_name
+						AND tc.table_schema = kc.table_schema
+					WHERE tc.constraint_type = 'PRIMARY KEY'
+						AND tc.table_schema = 'public'
+						AND tc.table_name = $1
+				) pk ON c.column_name = pk.column_name
+				WHERE c.table_schema = 'public' AND c.table_name = $1
+				ORDER BY c.ordinal_position`, table)
 			if err != nil {
 				return nil, err
 			}
@@ -496,47 +516,47 @@ func (cgs *CodeGenService) GenerateBackendCodeFiles(ctx context.Context, sysGen 
 	// 生成模型代码
 	modelCode := cgs.generateModelCode(codeGenCtx)
 	modelFilePath := filepath.Join(pluginsDir, "models", fileName+".go")
-	if err := cgs.writeCodeToFileWithCover(modelFilePath, modelCode, sysGen.IsCover); err != nil {
+	if err := cgs.writeCodeToFileWithCover(modelFilePath, modelCode, sysGen.IsCover == 1); err != nil {
 		return fmt.Errorf("生成模型文件失败: %v", err)
 	}
 
 	// 生成参数模型代码
 	modelParamCode := cgs.generateModelParamCode(codeGenCtx)
 	modelParamFilePath := filepath.Join(pluginsDir, "models", fileName+"param.go")
-	if err := cgs.writeCodeToFileWithCover(modelParamFilePath, modelParamCode, sysGen.IsCover); err != nil {
+	if err := cgs.writeCodeToFileWithCover(modelParamFilePath, modelParamCode, sysGen.IsCover == 1); err != nil {
 		return fmt.Errorf("生成参数模型文件失败: %v", err)
 	}
 
 	// 生成控制器代码
 	controllerCode := cgs.generateControllerCode(codeGenCtx)
 	controllerFilePath := filepath.Join(pluginsDir, "controllers", fileName+"controller.go")
-	if err := cgs.writeCodeToFileWithCover(controllerFilePath, controllerCode, sysGen.IsCover); err != nil {
+	if err := cgs.writeCodeToFileWithCover(controllerFilePath, controllerCode, sysGen.IsCover == 1); err != nil {
 		return fmt.Errorf("生成控制器文件失败: %v", err)
 	}
 
 	// 生成服务代码
 	serviceCode := cgs.generateServiceCode(codeGenCtx)
 	serviceFilePath := filepath.Join(pluginsDir, "service", fileName+"service.go")
-	if err := cgs.writeCodeToFileWithCover(serviceFilePath, serviceCode, sysGen.IsCover); err != nil {
+	if err := cgs.writeCodeToFileWithCover(serviceFilePath, serviceCode, sysGen.IsCover == 1); err != nil {
 		return fmt.Errorf("生成服务文件失败: %v", err)
 	}
 
 	// 生成路由代码
 	routesCode := cgs.generateRoutesCode(codeGenCtx)
 	routesFilePath := filepath.Join(pluginsDir, "routes", fileName+"routes.go")
-	if err := cgs.writeCodeToFileWithCover(routesFilePath, routesCode, sysGen.IsCover); err != nil {
+	if err := cgs.writeCodeToFileWithCover(routesFilePath, routesCode, sysGen.IsCover == 1); err != nil {
 		return fmt.Errorf("生成路由文件失败: %v", err)
 	}
 
 	// 生成初始化代码
 	initCode := cgs.generateInitCode(codeGenCtx)
 	initFilePath := filepath.Join("plugins", dirName+"init.go")
-	if err := cgs.writeCodeToFileWithCover(initFilePath, initCode, sysGen.IsCover); err != nil {
+	if err := cgs.writeCodeToFileWithCover(initFilePath, initCode, sysGen.IsCover == 1); err != nil {
 		return fmt.Errorf("生成初始化文件失败: %v", err)
 	}
 
 	// 插入菜单和API数据
-	if sysGen.IsMenu {
+	if sysGen.IsMenu == 1 {
 		menuApiCtx := &models.MenuApiContext{TableName: tableName, FileName: fileName, DirName: dirName, Comment: comment}
 		if err := cgs.InsertMenuAndApiData(ctx, menuApiCtx); err != nil {
 			return fmt.Errorf("插入菜单和API数据失败: %v", err)
@@ -580,21 +600,21 @@ func (cgs *CodeGenService) GenerateFrontendCodeFiles(sysGen *models.SysGen) erro
 	frontendCtx := models.NewFrontendGenContext(tableName, sysGen.ModuleName, sysGen.FileName, columnTemplates)
 	apiCode := cgs.generateFrontendAPICode(frontendCtx)
 	apiFilePath := filepath.Join(pluginsDir, "api", fileName+".ts")
-	if err := cgs.writeCodeToFileWithCover(apiFilePath, apiCode, sysGen.IsCover); err != nil {
+	if err := cgs.writeCodeToFileWithCover(apiFilePath, apiCode, sysGen.IsCover == 1); err != nil {
 		return fmt.Errorf("生成API文件失败: %v", err)
 	}
 
 	// 生成Hooks代码
 	hooksCode := cgs.generateFrontendHooksCode(frontendCtx)
 	hooksFilePath := filepath.Join(pluginsDir, "hooks", fileName+".ts")
-	if err := cgs.writeCodeToFileWithCover(hooksFilePath, hooksCode, sysGen.IsCover); err != nil {
+	if err := cgs.writeCodeToFileWithCover(hooksFilePath, hooksCode, sysGen.IsCover == 1); err != nil {
 		return fmt.Errorf("生成Hooks文件失败: %v", err)
 	}
 
 	// 生成视图代码
 	viewCode := cgs.generateFrontendViewCode(frontendCtx)
 	viewFilePath := filepath.Join(pluginsDir, "views", fileName, fileName+"list.vue")
-	if err := cgs.writeCodeToFileWithCover(viewFilePath, viewCode, sysGen.IsCover); err != nil {
+	if err := cgs.writeCodeToFileWithCover(viewFilePath, viewCode, sysGen.IsCover == 1); err != nil {
 		return fmt.Errorf("生成视图文件失败: %v", err)
 	}
 

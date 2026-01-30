@@ -91,13 +91,14 @@ gormv2: # 只针对 gorm  操作数据库有效
   mysql:
     isinitglobalgormmysql: 1      # 随项目启动初始化一个全局变量 gorm.Db（1=开启、0=关闭）
     slowthreshold: 30            # 慢 SQL 阈值(sql执行时间超过此时间单位（秒），就会触发系统日志记录)
+    timezone: "Local"            # 时区配置，例如: Local, Asia/Shanghai, UTC 等
     write:
       host: "127.0.0.1"
       database: "gin-fast"
       port: 3306
       prefix: ""
       user: "root"
-      pass: "root" 
+      pass: "root"
       charset: "utf8mb4"
       setmaxidleconns: 10    # 最大空闲连接数
       setmaxopenconns: 128   # 最大打开连接数
@@ -119,6 +120,7 @@ gormv2: # 只针对 gorm  操作数据库有效
   sqlserver:
     isinitglobalgormsqlserver: 0  # 随项目启动初始一个全局变量 gorm.Db（1=开启、0=关闭）
     slowthreshold: 30
+    timezone: ""                  # SQL Server 不需要时区配置
     write:
       host: "127.0.0.1"
       database: "gin-fast"
@@ -145,6 +147,7 @@ gormv2: # 只针对 gorm  操作数据库有效
   postgresql:
     isinitglobalgormpostgresql: 0   # 随项目启动初始一个全局变量 gorm.Db（1=开启、0=关闭）
     slowthreshold: 30
+    timezone: "Asia/Shanghai"       # 时区配置，例如: Asia/Shanghai, UTC 等
     write:
       host: "127.0.0.1"
       database: "gin-fast"

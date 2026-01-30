@@ -87,6 +87,8 @@ func GetSqlDriver(sqlType string, readDbIsOpen int, dbConf ...ConfigParams) (*go
 	_ = gormDb.Callback().Create().Before("gorm:before_create").Register("CreateBeforeHook", CreateBeforeHook)
 	// 为了完美支持gorm的一系列回调函数
 	_ = gormDb.Callback().Update().Before("gorm:before_update").Register("UpdateBeforeHook", UpdateBeforeHook)
+	// 删除前Hook，自动设置 DeletedAt 字段
+	_ = gormDb.Callback().Delete().Before("gorm:before_delete").Register("DeleteBeforeHook", DeleteBeforeHook)
 
 	// 为主连接设置连接池(43行返回的数据库驱动指针)
 	if rawDb, err := gormDb.DB(); err != nil {
@@ -125,6 +127,7 @@ func getDsn(sqlType, readWrite string, dbConf ...ConfigParams) string {
 	User := app.ConfigYml.GetString("gormv2." + sqlType + "." + readWrite + ".user")
 	Pass := app.ConfigYml.GetString("gormv2." + sqlType + "." + readWrite + ".pass")
 	Charset := app.ConfigYml.GetString("gormv2." + sqlType + "." + readWrite + ".charset")
+	TimeZone := app.ConfigYml.GetString("gormv2." + sqlType + ".timezone")
 
 	if len(dbConf) > 0 {
 		if strings.ToLower(readWrite) == "write" {
@@ -170,12 +173,20 @@ func getDsn(sqlType, readWrite string, dbConf ...ConfigParams) string {
 
 	switch strings.ToLower(sqlType) {
 	case "mysql":
-		return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=true&loc=Local", User, Pass, Host, Port, DataBase, Charset)
+		// 如果未配置时区，默认使用 Local
+		if TimeZone == "" {
+			TimeZone = "Local"
+		}
+		return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=true&loc=%s", User, Pass, Host, Port, DataBase, Charset, TimeZone)
 	case "sqlserver", "mssql":
 		// UseRowNumberForPaging=true 这个参数会告诉GORM的驱动，在为分页生成SQL时，使用兼容旧版本（SQL Server 2008）的ROW_NUMBER()语法，而不是OFFSET...FETCH
 		return fmt.Sprintf("server=%s;port=%d;database=%s;user id=%s;password=%s;encrypt=disable;UseRowNumberForPaging=true", Host, Port, DataBase, User, Pass)
 	case "postgresql", "postgre", "postgres":
-		return fmt.Sprintf("host=%s port=%d dbname=%s user=%s password=%s sslmode=disable TimeZone=Asia/Shanghai", Host, Port, DataBase, User, Pass)
+		// 如果未配置时区，默认使用 Asia/Shanghai
+		if TimeZone == "" {
+			TimeZone = "Asia/Shanghai"
+		}
+		return fmt.Sprintf("host=%s port=%d dbname=%s user=%s password=%s sslmode=disable TimeZone=%s", Host, Port, DataBase, User, Pass, TimeZone)
 	}
 	return ""
 }

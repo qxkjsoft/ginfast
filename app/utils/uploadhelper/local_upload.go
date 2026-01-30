@@ -81,10 +81,18 @@ func (s *LocalUploadService) UploadFileWithCustomPath(file *multipart.FileHeader
 
 // DeleteFile 删除文件
 func (s *LocalUploadService) DeleteFile(fileUrl string) error {
-	// 从URL中提取文件路径
-	filePath := s.getFilePathFromUrl(fileUrl)
-	if filePath == "" {
-		return fmt.Errorf("无效的文件路径: %s", fileUrl)
+	var filePath string
+
+	// 先检查 fileUrl 是否作为文件路径存在
+	if _, err := os.Stat(fileUrl); err == nil {
+		// fileUrl 是有效的文件路径
+		filePath = fileUrl
+	} else {
+		// fileUrl 不存在，从URL中提取文件路径
+		filePath = s.getFilePathFromUrl(fileUrl)
+		if filePath == "" {
+			return fmt.Errorf("无效的文件路径: %s", fileUrl)
+		}
 	}
 
 	// 删除文件

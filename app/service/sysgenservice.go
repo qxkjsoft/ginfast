@@ -59,8 +59,8 @@ func (sgs *SysGenService) BatchInsert(ctx context.Context, req *models.SysGenBat
 		// 获取表注释
 		describe, err := codeGenService.GetTableComment(database, tableName)
 		if err != nil {
-			failedTables[tableName] = fmt.Sprintf("获取表注释失败: %v", err)
-			continue
+			app.ZapLog.Error("获取表注释失败", zap.String("table", tableName), zap.Error(err))
+			describe = tableName // 使用表名作为表注释
 		}
 
 		// 处理模块名称：只保留字母及下划线，且全小写
@@ -94,8 +94,8 @@ func (sgs *SysGenService) BatchInsert(ctx context.Context, req *models.SysGenBat
 			gen.ModuleName = moduleName
 			gen.Describe = describe
 			gen.FileName = moduleName
-			gen.IsCover = true
-			gen.IsMenu = true
+			gen.IsCover = 1
+			gen.IsMenu = 1
 			// 插入记录
 			if err := tx.Create(gen).Error; err != nil {
 				failedTables[tableName] = fmt.Sprintf("插入记录失败: %v", err)
@@ -291,12 +291,12 @@ func (sgs *SysGenService) Update(ctx context.Context, req *models.SysGenUpdateRe
 	if req.Describe != "" {
 		updates["describe"] = req.Describe
 	}
-	if req.IsCover {
+	if req.IsCover == 1 {
 		updates["is_cover"] = 1
 	} else {
 		updates["is_cover"] = 0
 	}
-	if req.IsMenu {
+	if req.IsMenu == 1 {
 		updates["is_menu"] = 1
 	} else {
 		updates["is_menu"] = 0

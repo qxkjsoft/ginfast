@@ -135,11 +135,49 @@ func (tc *TableColumn) IsPrimaryKey() bool {
 	return tc.ColumnKey.Valid && tc.ColumnKey.String == "PRI"
 }
 
+// normalizeDataType 标准化数据类型，将不同数据库的数据类型转换为统一的小写格式
+func (tc *TableColumn) normalizeDataType() string {
+	dataType := strings.ToLower(tc.DataType)
+
+	// 移除括号和长度信息，如 varchar(255) -> varchar
+	if idx := strings.Index(dataType, "("); idx != -1 {
+		dataType = dataType[:idx]
+	}
+
+	// 处理不同数据库的类型别名
+	switch dataType {
+	case "int", "integer", "int4", "int2", "int1", "tinyint", "smallint", "mediumint":
+		return "integer"
+	case "bigint", "int8":
+		return "bigint"
+	case "varchar", "char", "text", "nvarchar", "ntext", "string", "character varying", "character":
+		return "string"
+	case "datetime", "timestamp", "timestamp without time zone", "timestamp with time zone", "timestamptz":
+		return "datetime"
+	case "date":
+		return "date"
+	case "time":
+		return "time"
+	case "decimal", "numeric", "float", "double", "real", "double precision", "float4", "float8", "money":
+		return "decimal"
+	case "boolean", "bool", "bit":
+		return "boolean"
+	case "json", "jsonb":
+		return "json"
+	case "binary", "varbinary", "blob", "bytea":
+		return "binary"
+	default:
+		return "string"
+	}
+}
+
 // GoType 获取Go语言类型
 func (tc *TableColumn) GoType() string {
-	// 根据数据类型和是否unsigned返回对应的Go类型
-	switch tc.DataType {
-	case "int", "integer", "smallint", "tinyint":
+	// 使用标准化后的数据类型进行判断
+	dataType := tc.normalizeDataType()
+
+	switch dataType {
+	case "integer":
 		if tc.IsUnsigned {
 			return "uint"
 		}
@@ -149,32 +187,37 @@ func (tc *TableColumn) GoType() string {
 			return "uint64"
 		}
 		return "int64"
-	case "varchar", "text", "char", "nvarchar", "ntext":
+	case "string", "json":
 		return "string"
-	case "datetime", "timestamp", "date":
+	case "datetime", "date", "time", "timestamp":
 		return "time.Time"
-	case "decimal", "numeric", "float", "double":
+	case "decimal":
 		return "float64"
-	case "boolean", "bool":
+	case "boolean":
 		return "bool"
+	case "binary":
+		return "[]byte"
 	default:
 		return "string"
 	}
 }
 
+// FrontendType 获取前端TypeScript类型
 func (tc *TableColumn) FrontendType() string {
-	// 根据数据类型返回对应的TypeScript类型
-	switch tc.DataType {
-	case "int", "integer", "smallint", "tinyint", "bigint":
+	// 使用标准化后的数据类型进行判断
+	dataType := tc.normalizeDataType()
+
+	switch dataType {
+	case "integer", "bigint", "decimal":
 		return "number"
-	case "varchar", "text", "char", "nvarchar", "ntext":
+	case "string", "json":
 		return "string"
-	case "datetime", "timestamp", "date":
+	case "datetime", "date", "time", "timestamp":
 		return "string" // 前端通常使用字符串表示日期
-	case "decimal", "numeric", "float", "double":
-		return "number"
-	case "boolean", "bool":
+	case "boolean":
 		return "boolean"
+	case "binary":
+		return "string" // 二进制数据在前端通常用字符串表示（如base64）
 	default:
 		return "string"
 	}
@@ -226,7 +269,7 @@ func (tc *TableColumn) BuildGormTag() string {
 	}
 
 	// 处理数值类型精度
-	if (tc.DataType == "decimal" || tc.DataType == "numeric") && tc.NumericPrecision.Valid && tc.NumericScale.Valid {
+	if isDecimalType(tc.DataType) && tc.NumericPrecision.Valid && tc.NumericScale.Valid {
 		precision := tc.NumericPrecision.Int64
 		scale := tc.NumericScale.Int64
 		if precision > 0 && scale >= 0 {
@@ -241,10 +284,53 @@ func (tc *TableColumn) BuildGormTag() string {
 	return strings.Join(tags, ";")
 }
 
+// normalizeDataTypeString 标准化数据类型字符串（静态函数版本，不依赖TableColumn）
+func normalizeDataTypeString(dataType string) string {
+	dataType = strings.ToLower(dataType)
+
+	// 移除括号和长度信息，如 varchar(255) -> varchar
+	if idx := strings.Index(dataType, "("); idx != -1 {
+		dataType = dataType[:idx]
+	}
+
+	// 处理不同数据库的类型别名
+	switch dataType {
+	case "int", "integer", "int4", "int2", "int1", "tinyint", "smallint", "mediumint":
+		return "integer"
+	case "bigint", "int8":
+		return "bigint"
+	case "varchar", "char", "text", "nvarchar", "ntext", "string", "character varying", "character":
+		return "string"
+	case "datetime", "timestamp", "timestamp without time zone", "timestamp with time zone", "timestamptz":
+		return "datetime"
+	case "date":
+		return "date"
+	case "time":
+		return "time"
+	case "decimal", "numeric", "float", "double", "real", "double precision", "float4", "float8", "money":
+		return "decimal"
+	case "boolean", "bool", "bit":
+		return "boolean"
+	case "json", "jsonb":
+		return "json"
+	case "binary", "varbinary", "blob", "bytea":
+		return "binary"
+	default:
+		return "string"
+	}
+}
+
+// isDecimalType 判断是否为decimal/numeric类型
+func isDecimalType(dataType string) bool {
+	normalized := normalizeDataTypeString(dataType)
+	return normalized == "decimal"
+}
+
 // needsQuotes 判断数据类型是否需要引号包围默认值
 func needsQuotes(dataType string) bool {
-	switch dataType {
-	case "varchar", "char", "text", "datetime", "timestamp", "date":
+	normalized := normalizeDataTypeString(dataType)
+	switch normalized {
+	case "string", "datetime", "date", "time", "json":
 		return true
 	default:
 		return false
@@ -297,7 +383,7 @@ func (tcs TableColumns) ColumnTemplate() ColumnTemplateList {
 
 		columnTemplates = append(columnTemplates, ColumnTemplate{
 			FieldName:    fieldName,
-			GoType:       column.FrontendType(),
+			GoType:       column.GoType(),
 			FrontendType: column.FrontendType(),
 			JsonTag:      common.ToCamelCaseLower(column.ColumnName),
 			GormTag:      column.BuildGormTag(),

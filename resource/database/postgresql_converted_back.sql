@@ -2,7 +2,6 @@
 -- 由 MySQL SQL 转换而来
 
 SET session_replication_role = replica;
-SET client_min_messages TO WARNING;
 
 -- Table structure for demo_students
 DROP TABLE IF EXISTS demo_students;
@@ -24,19 +23,19 @@ CREATE TABLE demo_students (
     PRIMARY KEY (student_id)
 );
 
-COMMENT ON COLUMN demo_students.updated_at IS '更新时间';
 COMMENT ON COLUMN demo_students.deleted_at IS '删除时间';
 COMMENT ON COLUMN demo_students.created_by IS '创建人';
-COMMENT ON COLUMN demo_students.student_name IS '姓名';
 COMMENT ON COLUMN demo_students.age IS '年龄';
+COMMENT ON COLUMN demo_students.class_name IS '班级名称';
+COMMENT ON COLUMN demo_students.address IS '地址';
+COMMENT ON COLUMN demo_students.updated_at IS '更新时间';
+COMMENT ON COLUMN demo_students.tenant_id IS '租户ID字段';
+COMMENT ON COLUMN demo_students.student_name IS '姓名';
 COMMENT ON COLUMN demo_students.gender IS '性别';
 COMMENT ON COLUMN demo_students.admission_date IS '入学日期';
-COMMENT ON COLUMN demo_students.created_at IS '创建时间';
-COMMENT ON COLUMN demo_students.tenant_id IS '租户ID字段';
-COMMENT ON COLUMN demo_students.class_name IS '班级名称';
 COMMENT ON COLUMN demo_students.email IS ' 邮箱';
 COMMENT ON COLUMN demo_students.phone IS '电话号码';
-COMMENT ON COLUMN demo_students.address IS '地址';
+COMMENT ON COLUMN demo_students.created_at IS '创建时间';
 
 -- Records of demo_students
 -- Table structure for demo_teacher
@@ -60,21 +59,21 @@ CREATE TABLE demo_teacher (
     PRIMARY KEY (id)
 );
 
+COMMENT ON COLUMN demo_teacher.status IS '状态：0-离职 1-在职';
+COMMENT ON COLUMN demo_teacher.hire_date IS '入职日期';
+COMMENT ON COLUMN demo_teacher.created_at IS '创建时间';
+COMMENT ON COLUMN demo_teacher.created_by IS '创建人';
+COMMENT ON COLUMN demo_teacher.subject IS '所教学科';
 COMMENT ON COLUMN demo_teacher.updated_at IS '更新时间';
+COMMENT ON COLUMN demo_teacher.deleted_at IS '删除时间';
 COMMENT ON COLUMN demo_teacher.id IS '主键ID';
 COMMENT ON COLUMN demo_teacher.name IS '教师姓名';
 COMMENT ON COLUMN demo_teacher.employee_id IS '工号';
 COMMENT ON COLUMN demo_teacher.gender IS '性别：0-未知 1-男 2-女';
-COMMENT ON COLUMN demo_teacher.email IS '邮箱';
-COMMENT ON COLUMN demo_teacher.subject IS '所教学科';
-COMMENT ON COLUMN demo_teacher.created_at IS '创建时间';
-COMMENT ON COLUMN demo_teacher.hire_date IS '入职日期';
-COMMENT ON COLUMN demo_teacher.created_by IS '创建人';
-COMMENT ON COLUMN demo_teacher.deleted_at IS '删除时间';
-COMMENT ON COLUMN demo_teacher.birth_date IS '出生日期';
 COMMENT ON COLUMN demo_teacher.phone IS '手机号';
+COMMENT ON COLUMN demo_teacher.email IS '邮箱';
 COMMENT ON COLUMN demo_teacher.title IS '职称';
-COMMENT ON COLUMN demo_teacher.status IS '状态：0-离职 1-在职';
+COMMENT ON COLUMN demo_teacher.birth_date IS '出生日期';
 
 -- Records of demo_teacher
 -- Table structure for example
@@ -132,18 +131,17 @@ CREATE TABLE sys_affix (
     PRIMARY KEY (id)
 );
 
-COMMENT ON COLUMN sys_affix.name IS '文件名';
-COMMENT ON COLUMN sys_affix.path IS '路径';
 COMMENT ON COLUMN sys_affix.size IS '文件大小';
 COMMENT ON COLUMN sys_affix.ftype IS '文件类型';
-COMMENT ON COLUMN sys_affix.tenant_id IS '租户ID字段';
-COMMENT ON COLUMN sys_affix.thumbnail_name IS '缩略图名称';
-COMMENT ON COLUMN sys_affix.id IS 'ID';
-COMMENT ON COLUMN sys_affix.url IS '文件url';
 COMMENT ON COLUMN sys_affix.suffix IS '文件后缀';
+COMMENT ON COLUMN sys_affix.tenant_id IS '租户ID字段';
+COMMENT ON COLUMN sys_affix.id IS 'ID';
+COMMENT ON COLUMN sys_affix.name IS '文件名';
+COMMENT ON COLUMN sys_affix.path IS '路径';
+COMMENT ON COLUMN sys_affix.url IS '文件url';
 COMMENT ON COLUMN sys_affix.thumbnail_path IS '缩略图路径';
+COMMENT ON COLUMN sys_affix.thumbnail_name IS '缩略图名称';
 COMMENT ON COLUMN sys_affix.thumbnail_url IS '缩略图URL';
-
 -- Records of sys_affix
 -- Table structure for sys_api
 DROP TABLE IF EXISTS sys_api;
@@ -559,15 +557,15 @@ CREATE TABLE sys_department (
     PRIMARY KEY (id)
 );
 
-COMMENT ON COLUMN sys_department.name IS '部门名称';
-COMMENT ON COLUMN sys_department.phone IS '联系电话';
-COMMENT ON COLUMN sys_department.email IS '邮箱';
-COMMENT ON COLUMN sys_department.describe IS '描述';
-COMMENT ON COLUMN sys_department.tenant_id IS '租户ID字段';
-COMMENT ON COLUMN sys_department.parent_id IS '父级';
-COMMENT ON COLUMN sys_department.status IS '状态： 0 停用 1 启用';
-COMMENT ON COLUMN sys_department.leader IS '负责人';
 COMMENT ON COLUMN sys_department.sort IS '排序';
+COMMENT ON COLUMN sys_department.describe IS '描述';
+COMMENT ON COLUMN sys_department.parent_id IS '父级';
+COMMENT ON COLUMN sys_department.leader IS '负责人';
+COMMENT ON COLUMN sys_department.phone IS '联系电话';
+COMMENT ON COLUMN sys_department.tenant_id IS '租户ID字段';
+COMMENT ON COLUMN sys_department.name IS '部门名称';
+COMMENT ON COLUMN sys_department.status IS '状态： 0 停用 1 启用';
+COMMENT ON COLUMN sys_department.email IS '邮箱';
 
 -- Records of sys_department
 INSERT INTO sys_department VALUES ('1', '0', '总部', '1', '张明', '13800000001', 'headquarters@company.com', '1', '公司总部管理部门', '2023-01-15 09:00:00', '2025-10-31 17:05:24', NULL, '1', '0');
@@ -642,19 +640,19 @@ CREATE TABLE sys_gen (
     PRIMARY KEY (id)
 );
 
-COMMENT ON COLUMN sys_gen.db_type IS '数据库类型';
+COMMENT ON COLUMN sys_gen.name IS '数据库表名';
 COMMENT ON COLUMN sys_gen.module_name IS '模块名称';
+COMMENT ON COLUMN sys_gen.file_name IS '文件名称';
+COMMENT ON COLUMN sys_gen.describe IS '描述';
 COMMENT ON COLUMN sys_gen.created_at IS '创建时间';
-COMMENT ON COLUMN sys_gen.updated_at IS '修改时间';
 COMMENT ON COLUMN sys_gen.deleted_at IS '删除时间';
+COMMENT ON COLUMN sys_gen.db_type IS '数据库类型';
+COMMENT ON COLUMN sys_gen.updated_at IS '修改时间';
+COMMENT ON COLUMN sys_gen.created_by IS '创建人';
 COMMENT ON COLUMN sys_gen.is_cover IS '是否覆盖';
 COMMENT ON COLUMN sys_gen.is_menu IS '是否生成菜单';
 COMMENT ON COLUMN sys_gen.id IS 'ID';
 COMMENT ON COLUMN sys_gen.database IS '数据库';
-COMMENT ON COLUMN sys_gen.name IS '数据库表名';
-COMMENT ON COLUMN sys_gen.file_name IS '文件名称';
-COMMENT ON COLUMN sys_gen.describe IS '描述';
-COMMENT ON COLUMN sys_gen.created_by IS '创建人';
 
 -- Records of sys_gen
 INSERT INTO sys_gen VALUES ('23', 'mysql', 'gin-fast-tenant', 'demo_students', 'test_school', 'demo_students', '学员管理', '2025-11-13 15:17:27', '2025-11-17 16:31:43', NULL, '1', '1', '1');
@@ -685,24 +683,24 @@ CREATE TABLE sys_gen_field (
     PRIMARY KEY (id)
 );
 
-COMMENT ON COLUMN sys_gen_field.list_show IS '列表显示';
-COMMENT ON COLUMN sys_gen_field.query_show IS '查询显示';
-COMMENT ON COLUMN sys_gen_field.data_type IS '数据类型';
-COMMENT ON COLUMN sys_gen_field.data_comment IS '列注释';
-COMMENT ON COLUMN sys_gen_field.data_extra IS '额外信息';
-COMMENT ON COLUMN sys_gen_field.data_column_key IS '列键信息';
-COMMENT ON COLUMN sys_gen_field.data_unsigned IS '是否为无符号类型';
-COMMENT ON COLUMN sys_gen_field.query_type IS '查询方式\r\nEQ  等于\r\nNE 不等于\r\nGT 大于\r\nGTE 大于等于\r\nLT 小于\r\nLTE 小于等于\r\nLIKE 包含\r\nBETWEEN 范围';
-COMMENT ON COLUMN sys_gen_field.form_type IS '表单类型\r\ninput 文本框\r\ntextarea 文本域\r\nnumber 数字输入框\r\nselect 下拉框\r\nradio 单选框\r\ncheckbox 复选框\r\ndatetime 日期时间';
-COMMENT ON COLUMN sys_gen_field.dict_type IS '关联的字典';
-COMMENT ON COLUMN sys_gen_field.gorm_tag IS 'gorm标签';
-COMMENT ON COLUMN sys_gen_field.form_show IS '表单显示';
 COMMENT ON COLUMN sys_gen_field.data_name IS '列名';
 COMMENT ON COLUMN sys_gen_field.is_primary IS '是否主键';
+COMMENT ON COLUMN sys_gen_field.gorm_tag IS 'gorm标签';
+COMMENT ON COLUMN sys_gen_field.data_comment IS '列注释';
+COMMENT ON COLUMN sys_gen_field.data_extra IS '额外信息';
+COMMENT ON COLUMN sys_gen_field.require IS '是否必填';
+COMMENT ON COLUMN sys_gen_field.list_show IS '列表显示';
+COMMENT ON COLUMN sys_gen_field.form_show IS '表单显示';
+COMMENT ON COLUMN sys_gen_field.form_type IS '表单类型\r\ninput 文本框\r\ntextarea 文本域\r\nnumber 数字输入框\r\nselect 下拉框\r\nradio 单选框\r\ncheckbox 复选框\r\ndatetime 日期时间';
+COMMENT ON COLUMN sys_gen_field.data_type IS '数据类型';
+COMMENT ON COLUMN sys_gen_field.data_unsigned IS '是否为无符号类型';
+COMMENT ON COLUMN sys_gen_field.custom_name IS '自定义字段名称';
+COMMENT ON COLUMN sys_gen_field.query_show IS '查询显示';
+COMMENT ON COLUMN sys_gen_field.query_type IS '查询方式\r\nEQ  等于\r\nNE 不等于\r\nGT 大于\r\nGTE 大于等于\r\nLT 小于\r\nLTE 小于等于\r\nLIKE 包含\r\nBETWEEN 范围';
+COMMENT ON COLUMN sys_gen_field.dict_type IS '关联的字典';
+COMMENT ON COLUMN sys_gen_field.data_column_key IS '列键信息';
 COMMENT ON COLUMN sys_gen_field.go_type IS 'go类型';
 COMMENT ON COLUMN sys_gen_field.front_type IS '前端类型';
-COMMENT ON COLUMN sys_gen_field.custom_name IS '自定义字段名称';
-COMMENT ON COLUMN sys_gen_field.require IS '是否必填';
 
 -- Records of sys_gen_field
 INSERT INTO sys_gen_field VALUES ('185', '23', 'student_id', 'int', 'ID', 'auto_increment', 'PRI', '1', '1', 'uint', 'number', 'stu_id', '1', '0', '0', '1', 'EQ', '', '', 'column:student_id;primaryKey;not NULL;autoIncrement');
@@ -764,28 +762,28 @@ CREATE TABLE sys_menu (
     PRIMARY KEY (id)
 );
 
-COMMENT ON COLUMN sys_menu.keep_alive IS '是否缓存：0-否，1-是';
-COMMENT ON COLUMN sys_menu.link IS '外链地址';
-COMMENT ON COLUMN sys_menu.icon IS '普通图标名称';
-COMMENT ON COLUMN sys_menu.permission IS '权限标识';
-COMMENT ON COLUMN sys_menu.created_at IS '创建时间';
 COMMENT ON COLUMN sys_menu.updated_at IS '更新时间';
-COMMENT ON COLUMN sys_menu.id IS '路由ID';
-COMMENT ON COLUMN sys_menu.name IS '路由名称';
+COMMENT ON COLUMN sys_menu.path IS '路由路径';
 COMMENT ON COLUMN sys_menu.title IS '菜单标题，国际化key';
-COMMENT ON COLUMN sys_menu.affix IS '是否固定：0-否，1-是';
+COMMENT ON COLUMN sys_menu.hide IS '是否隐藏：0-否，1-是';
 COMMENT ON COLUMN sys_menu.svg_icon IS 'svg图标名称';
-COMMENT ON COLUMN sys_menu.type IS '类型：1-目录，2-菜单，3-按钮';
 COMMENT ON COLUMN sys_menu.parent_id IS '父级路由ID，顶层为0';
 COMMENT ON COLUMN sys_menu.redirect IS '重定向';
 COMMENT ON COLUMN sys_menu.component IS '组件文件路径';
-COMMENT ON COLUMN sys_menu.is_full IS '是否全屏显示：0-否，1-是';
-COMMENT ON COLUMN sys_menu.sort IS '排序字段';
-COMMENT ON COLUMN sys_menu.path IS '路由路径';
-COMMENT ON COLUMN sys_menu.iframe IS '是否内嵌：0-否，1-是';
-COMMENT ON COLUMN sys_menu.is_link IS '是否外链';
-COMMENT ON COLUMN sys_menu.hide IS '是否隐藏：0-否，1-是';
 COMMENT ON COLUMN sys_menu.disable IS '是否停用：0-否，1-是';
+COMMENT ON COLUMN sys_menu.icon IS '普通图标名称';
+COMMENT ON COLUMN sys_menu.permission IS '权限标识';
+COMMENT ON COLUMN sys_menu.name IS '路由名称';
+COMMENT ON COLUMN sys_menu.keep_alive IS '是否缓存：0-否，1-是';
+COMMENT ON COLUMN sys_menu.iframe IS '是否内嵌：0-否，1-是';
+COMMENT ON COLUMN sys_menu.sort IS '排序字段';
+COMMENT ON COLUMN sys_menu.is_link IS '是否外链';
+COMMENT ON COLUMN sys_menu.created_at IS '创建时间';
+COMMENT ON COLUMN sys_menu.id IS '路由ID';
+COMMENT ON COLUMN sys_menu.is_full IS '是否全屏显示：0-否，1-是';
+COMMENT ON COLUMN sys_menu.affix IS '是否固定：0-否，1-是';
+COMMENT ON COLUMN sys_menu.link IS '外链地址';
+COMMENT ON COLUMN sys_menu.type IS '类型：1-目录，2-菜单，3-按钮';
 
 -- Records of sys_menu
 INSERT INTO sys_menu VALUES ('1', '0', '/home', 'home', NULL, 'home/home', 'home', '0', '0', '0', '0', '1', '', '0', 'home', '', '0', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', NULL, '1');
@@ -990,20 +988,20 @@ CREATE TABLE sys_operation_logs (
 );
 
 COMMENT ON COLUMN sys_operation_logs.username IS '操作用户名';
-COMMENT ON COLUMN sys_operation_logs.operation IS '操作类型';
 COMMENT ON COLUMN sys_operation_logs.method IS '请求方法';
+COMMENT ON COLUMN sys_operation_logs.user_agent IS '用户代理';
+COMMENT ON COLUMN sys_operation_logs.path IS '请求路径';
+COMMENT ON COLUMN sys_operation_logs.response_data IS '响应数据';
+COMMENT ON COLUMN sys_operation_logs.error_msg IS '错误信息';
+COMMENT ON COLUMN sys_operation_logs.tenant_id IS '租户ID字段';
+COMMENT ON COLUMN sys_operation_logs.operation IS '操作类型';
+COMMENT ON COLUMN sys_operation_logs.status_code IS '响应状态码';
+COMMENT ON COLUMN sys_operation_logs.user_id IS '操作用户ID';
+COMMENT ON COLUMN sys_operation_logs.module IS '操作模块';
+COMMENT ON COLUMN sys_operation_logs.ip IS '客户端IP';
 COMMENT ON COLUMN sys_operation_logs.request_data IS '请求参数';
 COMMENT ON COLUMN sys_operation_logs.duration IS '操作耗时(毫秒)';
-COMMENT ON COLUMN sys_operation_logs.tenant_id IS '租户ID字段';
-COMMENT ON COLUMN sys_operation_logs.user_id IS '操作用户ID';
-COMMENT ON COLUMN sys_operation_logs.error_msg IS '错误信息';
 COMMENT ON COLUMN sys_operation_logs.location IS '操作地点';
-COMMENT ON COLUMN sys_operation_logs.ip IS '客户端IP';
-COMMENT ON COLUMN sys_operation_logs.user_agent IS '用户代理';
-COMMENT ON COLUMN sys_operation_logs.response_data IS '响应数据';
-COMMENT ON COLUMN sys_operation_logs.module IS '操作模块';
-COMMENT ON COLUMN sys_operation_logs.path IS '请求路径';
-COMMENT ON COLUMN sys_operation_logs.status_code IS '响应状态码';
 
 -- Records of sys_operation_logs
 -- Table structure for sys_role
@@ -1025,13 +1023,13 @@ CREATE TABLE sys_role (
     PRIMARY KEY (id)
 );
 
-COMMENT ON COLUMN sys_role.checked_depts IS '数据权限关联的部门';
-COMMENT ON COLUMN sys_role.tenant_id IS '租户ID字段';
-COMMENT ON COLUMN sys_role.name IS '角色名称';
 COMMENT ON COLUMN sys_role.sort IS '排序';
 COMMENT ON COLUMN sys_role.status IS '状态';
 COMMENT ON COLUMN sys_role.description IS '描述';
 COMMENT ON COLUMN sys_role.data_scope IS '数据权限';
+COMMENT ON COLUMN sys_role.checked_depts IS '数据权限关联的部门';
+COMMENT ON COLUMN sys_role.tenant_id IS '租户ID字段';
+COMMENT ON COLUMN sys_role.name IS '角色名称';
 
 -- Records of sys_role
 INSERT INTO sys_role VALUES ('1', '系统管理员', '0', '1', '最高权限管理员角色', '0', '2025-09-01 17:32:12', '2025-09-30 15:53:24', NULL, '1', '1', '', '0');
@@ -1206,6 +1204,7 @@ CREATE TABLE sys_tenants (
     PRIMARY KEY (id)
 );
 
+COMMENT ON COLUMN sys_tenants.code IS '租户编码';
 COMMENT ON COLUMN sys_tenants.description IS '租户描述';
 COMMENT ON COLUMN sys_tenants.status IS '状态 0停用 1启用';
 COMMENT ON COLUMN sys_tenants.domain IS '租户域名';
@@ -1213,7 +1212,6 @@ COMMENT ON COLUMN sys_tenants.platform_domain IS '主域名';
 COMMENT ON COLUMN sys_tenants.menu_permission IS '菜单权限';
 COMMENT ON COLUMN sys_tenants.created_by IS '创建人';
 COMMENT ON COLUMN sys_tenants.name IS '租户名称';
-COMMENT ON COLUMN sys_tenants.code IS '租户编码';
 
 -- Records of sys_tenants
 INSERT INTO sys_tenants VALUES ('1', '2025-11-03 11:16:45', '2026-01-09 16:31:23', NULL, '1', '测试租户1', 'dom1', '', '1', '', '', '1,10,1001,140214,140215,140216,1002,140218,140219,140220,140221,140244,1003,140222,140223,140224,140225,140257,140258,1004,140229,140230,140231,1006,140255,140256,1007,140252,140264,140239,140240,140241,140242,140243,140254');
@@ -1239,18 +1237,18 @@ CREATE TABLE sys_users (
     PRIMARY KEY (id)
 );
 
+COMMENT ON COLUMN sys_users.password IS '密码';
 COMMENT ON COLUMN sys_users.status IS '是否启用 0停用 1启用';
 COMMENT ON COLUMN sys_users.dept_id IS '部门ID';
 COMMENT ON COLUMN sys_users.phone IS '电话';
 COMMENT ON COLUMN sys_users.sex IS '性别';
-COMMENT ON COLUMN sys_users.avatar IS '头像';
+COMMENT ON COLUMN sys_users.nick_name IS '昵称';
 COMMENT ON COLUMN sys_users.description IS '描述';
 COMMENT ON COLUMN sys_users.username IS '用户名';
-COMMENT ON COLUMN sys_users.nick_name IS '昵称';
+COMMENT ON COLUMN sys_users.email IS '邮箱';
+COMMENT ON COLUMN sys_users.avatar IS '头像';
 COMMENT ON COLUMN sys_users.created_by IS '创建人';
 COMMENT ON COLUMN sys_users.tenant_id IS '租户ID字段';
-COMMENT ON COLUMN sys_users.password IS '密码';
-COMMENT ON COLUMN sys_users.email IS '邮箱';
 
 -- Records of sys_users
 INSERT INTO sys_users VALUES ('1', 'admin', '$2a$10$0aS9FxWlOz/PXiqzsBr7huy.Dqdwucyb795qiWcA6fsn0Lu.GLA.C', 'admin@example.com', '1', '1', '18800000006', '1', '超级管理员', '/public/uploads/2025-11-04/20251104_0945787a-8536-45fc-ba75-e94c8daaec06.jpeg', '超级管理员', '2025-08-18 14:55:05', '2025-11-17 17:38:01', NULL, '0', '0');
@@ -1279,42 +1277,21 @@ CREATE TABLE sys_user_tenant (
     PRIMARY KEY (user_id,tenant_id)
 );
 
+COMMENT ON COLUMN sys_user_tenant.is_default IS '是否默认租户';
 COMMENT ON COLUMN sys_user_tenant.user_id IS '用户ID';
 COMMENT ON COLUMN sys_user_tenant.tenant_id IS '租户id';
-COMMENT ON COLUMN sys_user_tenant.is_default IS '是否默认租户';
 
 -- Records of sys_user_tenant
-
--- 创建索引
 CREATE UNIQUE INDEX idx_casbin_rule ON sys_casbin_rule (ptype, v0, v1, v2, v3, v4, v5);
-CREATE INDEX idx_sys_operation_logs_deleted_at ON sys_operation_logs (deleted_at);
-CREATE INDEX idx_user_id ON sys_operation_logs (user_id);
+CREATE UNIQUE INDEX idx_sys_casbin_rule ON sys_casbin_rule (ptype, v0, v1, v2, v3, v4, v5);
 CREATE UNIQUE INDEX username ON sys_users (username);
-CREATE UNIQUE INDEX code ON sys_tenants (code);
-CREATE UNIQUE INDEX domain ON sys_tenants (domain);
-CREATE INDEX idx_sys_tenants_deleted_at ON sys_tenants (deleted_at);
 CREATE INDEX idx_parent_id ON sys_menu (parent_id);
 CREATE INDEX idx_sort ON sys_menu (sort);
 CREATE INDEX idx_type ON sys_menu (type);
-
--- 设置序列值
--- 表 demo_teacher 的列 id 没有数据，序列 demo_teacher_id_seq 将保持默认起始值
-SELECT setval('example_id_seq', 15, true);
--- 表 sys_operation_logs 的列 id 没有数据，序列 sys_operation_logs_id_seq 将保持默认起始值
-SELECT setval('sys_role_id_seq', 2, true);
-SELECT setval('sys_users_id_seq', 4, true);
-SELECT setval('sys_gen_field_id_seq', 213, true);
-SELECT setval('sys_tenants_id_seq', 1, true);
-SELECT setval('sys_api_id_seq', 202, true);
-SELECT setval('sys_dict_item_id_seq', 42, true);
-SELECT setval('sys_gen_id_seq', 24, true);
-SELECT setval('sys_menu_id_seq', 140340, true);
--- 表 demo_students 的列 student_id 没有数据，序列 demo_students_student_id_seq 将保持默认起始值
--- 表 sys_affix 的列 id 没有数据，序列 sys_affix_id_seq 将保持默认起始值
-SELECT setval('sys_casbin_rule_id_seq', 7202, true);
-SELECT setval('sys_department_id_seq', 1, true);
-SELECT setval('sys_dict_id_seq', 4, true);
-
+CREATE INDEX idx_sys_operation_logs_deleted_at ON sys_operation_logs (deleted_at);
+CREATE INDEX idx_user_id ON sys_operation_logs (user_id);
+CREATE UNIQUE INDEX code ON sys_tenants (code);
+CREATE UNIQUE INDEX domain ON sys_tenants (domain);
+CREATE INDEX idx_sys_tenants_deleted_at ON sys_tenants (deleted_at);
 
 SET session_replication_role = DEFAULT;
-SET client_min_messages TO NOTICE;
