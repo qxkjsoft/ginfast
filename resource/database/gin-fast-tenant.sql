@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50726
 File Encoding         : 65001
 
-Date: 2026-01-09 16:34:45
+Date: 2026-02-05 11:52:51
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -272,7 +272,8 @@ CREATE TABLE `sys_casbin_rule` (
   `v4` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
   `v5` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE KEY `idx_casbin_rule` (`ptype`,`v0`,`v1`,`v2`,`v3`,`v4`,`v5`) USING BTREE
+  UNIQUE KEY `idx_casbin_rule` (`ptype`,`v0`,`v1`,`v2`,`v3`,`v4`,`v5`) USING BTREE,
+  UNIQUE KEY `idx_sys_casbin_rule` (`ptype`,`v0`,`v1`,`v2`,`v3`,`v4`,`v5`)
 ) ENGINE=InnoDB AUTO_INCREMENT=7203 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ----------------------------
@@ -629,14 +630,15 @@ CREATE TABLE `sys_gen` (
   `created_by` int(11) unsigned DEFAULT NULL COMMENT '创建人',
   `is_cover` tinyint(3) DEFAULT '0' COMMENT '是否覆盖',
   `is_menu` tinyint(3) DEFAULT '0' COMMENT '是否生成菜单',
+  `is_tree` tinyint(3) DEFAULT '0' COMMENT '是否为树状结构',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_gen
 -- ----------------------------
-INSERT INTO `sys_gen` VALUES ('23', 'mysql', 'gin-fast-tenant', 'demo_students', 'test_school', 'demo_students', '学员管理', '2025-11-13 15:17:27', '2025-11-17 16:31:43', null, '1', '1', '1');
-INSERT INTO `sys_gen` VALUES ('24', 'mysql', 'gin-fast-tenant', 'demo_teacher', 'test_school', 'demo_teacher', '教师表', '2025-11-13 15:17:27', '2025-11-17 17:29:28', null, '1', '1', '1');
+INSERT INTO `sys_gen` VALUES ('23', 'mysql', 'gin-fast-tenant', 'demo_students', 'test_school', 'demo_students', '学员管理', '2025-11-13 15:17:27', '2025-11-17 16:31:43', null, '1', '1', '1', 0);
+INSERT INTO `sys_gen` VALUES ('24', 'mysql', 'gin-fast-tenant', 'demo_teacher', 'test_school', 'demo_teacher', '教师表', '2025-11-13 15:17:27', '2025-11-17 17:29:28', null, '1', '1', '1', 0);
 
 -- ----------------------------
 -- Table structure for sys_gen_field

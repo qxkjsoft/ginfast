@@ -137,6 +137,12 @@ func (cgc *CodeGenController) GenerateCode(ctx *gin.Context) {
 	if sysGen.SysGenFields.PrimaryKeyCount() != 1 {
 		cgc.FailAndAbort(ctx, "表必须也只能包含一个主键", nil)
 	}
+	// 检查树形结构配置
+	if sysGen.IsTree == 1 {
+		if !sysGen.SysGenFields.HasParentIDWithNumericType() {
+			cgc.FailAndAbort(ctx, "树形结构表必须包含parent_id或pid字段且类型与主键类型一致", nil)
+		}
+	}
 	// 生成后端代码
 	err = cgc.service.GenerateBackendCodeFiles(ctx, sysGen)
 	if err != nil {
@@ -233,7 +239,7 @@ func (cgc *CodeGenController) InsertMenuAndApiData(ctx *gin.Context) {
 	}
 
 	// 调用service层的InsertMenuAndApiData方法
-	err = cgc.service.InsertMenuAndApiData(ctx, menuApiCtx)
+	err = cgc.service.InsertMenuAndApiData(ctx, menuApiCtx, sysGen.IsTree == 1)
 	if err != nil {
 		cgc.FailAndAbort(ctx, "插入菜单和API数据失败", err)
 	}

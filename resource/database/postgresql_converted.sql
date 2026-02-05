@@ -639,6 +639,7 @@ CREATE TABLE sys_gen (
     created_by INTEGER,
     is_cover SMALLINT DEFAULT '0',
     is_menu SMALLINT DEFAULT '0',
+    is_tree SMALLINT DEFAULT '0',
     PRIMARY KEY (id)
 );
 
@@ -655,10 +656,11 @@ COMMENT ON COLUMN sys_gen.name IS '数据库表名';
 COMMENT ON COLUMN sys_gen.file_name IS '文件名称';
 COMMENT ON COLUMN sys_gen.describe IS '描述';
 COMMENT ON COLUMN sys_gen.created_by IS '创建人';
+COMMENT ON COLUMN sys_gen.is_tree IS '是否为树状结构';
 
 -- Records of sys_gen
-INSERT INTO sys_gen VALUES ('23', 'mysql', 'gin-fast-tenant', 'demo_students', 'test_school', 'demo_students', '学员管理', '2025-11-13 15:17:27', '2025-11-17 16:31:43', NULL, '1', '1', '1');
-INSERT INTO sys_gen VALUES ('24', 'mysql', 'gin-fast-tenant', 'demo_teacher', 'test_school', 'demo_teacher', '教师表', '2025-11-13 15:17:27', '2025-11-17 17:29:28', NULL, '1', '1', '1');
+INSERT INTO sys_gen VALUES ('23', 'mysql', 'gin-fast-tenant', 'demo_students', 'test_school', 'demo_students', '学员管理', '2025-11-13 15:17:27', '2025-11-17 16:31:43', NULL, '1', '1', '1', 0);
+INSERT INTO sys_gen VALUES ('24', 'mysql', 'gin-fast-tenant', 'demo_teacher', 'test_school', 'demo_teacher', '教师表', '2025-11-13 15:17:27', '2025-11-17 17:29:28', NULL, '1', '1', '1', 0);
 -- Table structure for sys_gen_field
 DROP TABLE IF EXISTS sys_gen_field;
 CREATE TABLE sys_gen_field (

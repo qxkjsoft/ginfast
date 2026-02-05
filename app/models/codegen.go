@@ -32,12 +32,16 @@ type CodeGenContext struct {
 	HasTimeFieldInQuery bool `json:"hasTimeFieldInQuery"` // 是否在查询中有时间字段
 	HasTimeFieldInForm  bool `json:"hasTimeFieldInForm"`  // 是否在表单中有时间字段
 
+	// 树形结构相关
+	IsTree        bool            `json:"isTree"`        // 是否生成树形结构
+	ParentIdField *ColumnTemplate `json:"parentIdField"` // 父ID字段（树形结构时使用）
+
 	// 扩展参数
 	ExtraParams map[string]interface{} `json:"extraParams"` // 额外参数
 }
 
 // NewCodeGenContext 创建代码生成上下文
-func NewCodeGenContext(tableName, dirName, fileName, comment string, columns ColumnTemplateList) *CodeGenContext {
+func NewCodeGenContext(tableName, dirName, fileName, comment string, columns ColumnTemplateList, isTree bool) *CodeGenContext {
 	// 日光时间字段判断 - 筛选实际会被渲染的时间字段
 	hasTimeInQuery := len(columns.Filter(func(col ColumnTemplate) bool {
 		return col.QueryShow && col.GoType == "time.Time"
@@ -47,13 +51,19 @@ func NewCodeGenContext(tableName, dirName, fileName, comment string, columns Col
 		return col.FormShow && col.GoType == "time.Time"
 	})) > 0
 
+	primaryKey := columns.GetPrimaryKey()
+	var parentIdField *ColumnTemplate
+	if isTree {
+		parentIdField = columns.GetParentIdField(primaryKey)
+	}
+
 	ctx := &CodeGenContext{
 		TableName:           tableName,
 		DirName:             common.KeepLettersOnlyLower(dirName),
 		FileName:            common.KeepLettersOnlyLower(fileName),
 		Comment:             comment,
 		Columns:             columns,
-		PrimaryKey:          columns.GetPrimaryKey(),
+		PrimaryKey:          primaryKey,
 		StructName:          common.ToCamelCase(fileName),
 		StructNameLower:     common.ToCamelCaseLower(fileName),
 		ExtraParams:         make(map[string]interface{}),
@@ -62,6 +72,8 @@ func NewCodeGenContext(tableName, dirName, fileName, comment string, columns Col
 		HasTenantID:         columns.HasTenantID(),
 		HasTimeFieldInQuery: hasTimeInQuery,
 		HasTimeFieldInForm:  hasTimeInForm,
+		IsTree:              isTree,
+		ParentIdField:       parentIdField,
 	}
 	return ctx
 }
@@ -89,20 +101,32 @@ type FrontendGenContext struct {
 	Columns    ColumnTemplateList `json:"columns"`    // 字段列表
 	PrimaryKey *ColumnTemplate    `json:"primaryKey"` // 主键
 
+	// 树形结构相关
+	IsTree        bool            `json:"isTree"`        // 是否生成树形结构
+	ParentIdField *ColumnTemplate `json:"parentIdField"` // 父ID字段（树形结构时使用）
+
 	// 扩展参数
 	ExtraParams map[string]interface{} `json:"extraParams"` // 额外参数
 }
 
 // NewFrontendGenContext 创建前端代码生成上下文
-func NewFrontendGenContext(tableName, dirName, fileName string, columns ColumnTemplateList) *FrontendGenContext {
+func NewFrontendGenContext(tableName, dirName, fileName string, columns ColumnTemplateList, isTree bool) *FrontendGenContext {
+	primaryKey := columns.GetPrimaryKey()
+	var parentIdField *ColumnTemplate
+	if isTree && primaryKey != nil {
+		parentIdField = columns.GetParentIdField(primaryKey)
+	}
+
 	ctx := &FrontendGenContext{
 		TableName:       tableName,
 		DirName:         common.KeepLettersOnlyLower(dirName),
 		FileName:        common.KeepLettersOnlyLower(fileName),
 		Columns:         columns,
-		PrimaryKey:      columns.GetPrimaryKey(),
+		PrimaryKey:      primaryKey,
 		StructName:      common.ToCamelCase(fileName),
 		StructNameLower: common.ToCamelCaseLower(fileName),
+		IsTree:          isTree,
+		ParentIdField:   parentIdField,
 		ExtraParams:     make(map[string]interface{}),
 	}
 	return ctx
@@ -439,6 +463,7 @@ type ColumnTemplate struct {
 	GormTag      string `json:"gormTag"`      // GORM标签
 	Comment      string `json:"comment"`      // 注释
 	IsPrimary    bool   `json:"isPrimary"`    // 是否主键
+	IsParentKey  bool   `json:"isParentKey"`  // 是否父级键
 	Exclude      bool   `json:"exclude"`      // 是否在Create/Update中排除
 	Required     bool   `json:"required"`     // 是否必填
 	ListShow     bool   `json:"listShow"`     // 是否在列表中显示
@@ -499,6 +524,20 @@ func (c ColumnTemplateList) HasTenantID() bool {
 		}
 	}
 	return false
+}
+
+// GetParentIdField 获取父ID字段（树形结构时使用）
+func (c ColumnTemplateList) GetParentIdField(primaryKey *ColumnTemplate) *ColumnTemplate {
+	if primaryKey == nil {
+		return nil
+	}
+	// 查找与主键类型相同的 pid 或 parent_id 字段
+	for _, col := range c {
+		if (col.DataName == "pid" || col.DataName == "parent_id") && col.GoType == primaryKey.GoType {
+			return &col
+		}
+	}
+	return nil
 }
 
 // FileTreeNode 文件树节点 - 用于表示代码生成的目录结构

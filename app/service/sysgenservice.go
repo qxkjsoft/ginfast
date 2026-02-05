@@ -301,6 +301,13 @@ func (sgs *SysGenService) Update(ctx context.Context, req *models.SysGenUpdateRe
 	} else {
 		updates["is_menu"] = 0
 	}
+
+	if req.IsTree == 1 {
+		updates["is_tree"] = 1
+	} else {
+		updates["is_tree"] = 0
+	}
+
 	if len(updates) > 0 {
 		if err := tx.Model(gen).Updates(updates).Error; err != nil {
 			tx.Rollback()

@@ -511,10 +511,16 @@ func (cgs *CodeGenService) GenerateBackendCodeFiles(ctx context.Context, sysGen 
 	}
 
 	// 创建代码生成上下文
-	codeGenCtx := models.NewCodeGenContext(tableName, sysGen.ModuleName, sysGen.FileName, comment, columnTemplates)
+	isTree := sysGen.IsTree == 1
+	codeGenCtx := models.NewCodeGenContext(tableName, sysGen.ModuleName, sysGen.FileName, comment, columnTemplates, isTree)
 
 	// 生成模型代码
-	modelCode := cgs.generateModelCode(codeGenCtx)
+	var modelCode string
+	if isTree {
+		modelCode = cgs.generateModelCodeTree(codeGenCtx)
+	} else {
+		modelCode = cgs.generateModelCode(codeGenCtx)
+	}
 	modelFilePath := filepath.Join(pluginsDir, "models", fileName+".go")
 	if err := cgs.writeCodeToFileWithCover(modelFilePath, modelCode, sysGen.IsCover == 1); err != nil {
 		return fmt.Errorf("生成模型文件失败: %v", err)
@@ -528,21 +534,36 @@ func (cgs *CodeGenService) GenerateBackendCodeFiles(ctx context.Context, sysGen 
 	}
 
 	// 生成控制器代码
-	controllerCode := cgs.generateControllerCode(codeGenCtx)
+	var controllerCode string
+	if isTree {
+		controllerCode = cgs.generateControllerCodeTree(codeGenCtx)
+	} else {
+		controllerCode = cgs.generateControllerCode(codeGenCtx)
+	}
 	controllerFilePath := filepath.Join(pluginsDir, "controllers", fileName+"controller.go")
 	if err := cgs.writeCodeToFileWithCover(controllerFilePath, controllerCode, sysGen.IsCover == 1); err != nil {
 		return fmt.Errorf("生成控制器文件失败: %v", err)
 	}
 
 	// 生成服务代码
-	serviceCode := cgs.generateServiceCode(codeGenCtx)
+	var serviceCode string
+	if isTree {
+		serviceCode = cgs.generateServiceCodeTree(codeGenCtx)
+	} else {
+		serviceCode = cgs.generateServiceCode(codeGenCtx)
+	}
 	serviceFilePath := filepath.Join(pluginsDir, "service", fileName+"service.go")
 	if err := cgs.writeCodeToFileWithCover(serviceFilePath, serviceCode, sysGen.IsCover == 1); err != nil {
 		return fmt.Errorf("生成服务文件失败: %v", err)
 	}
 
 	// 生成路由代码
-	routesCode := cgs.generateRoutesCode(codeGenCtx)
+	var routesCode string
+	if isTree {
+		routesCode = cgs.generateRoutesCodeTree(codeGenCtx)
+	} else {
+		routesCode = cgs.generateRoutesCode(codeGenCtx)
+	}
 	routesFilePath := filepath.Join(pluginsDir, "routes", fileName+"routes.go")
 	if err := cgs.writeCodeToFileWithCover(routesFilePath, routesCode, sysGen.IsCover == 1); err != nil {
 		return fmt.Errorf("生成路由文件失败: %v", err)
@@ -558,7 +579,7 @@ func (cgs *CodeGenService) GenerateBackendCodeFiles(ctx context.Context, sysGen 
 	// 插入菜单和API数据
 	if sysGen.IsMenu == 1 {
 		menuApiCtx := &models.MenuApiContext{TableName: tableName, FileName: fileName, DirName: dirName, Comment: comment}
-		if err := cgs.InsertMenuAndApiData(ctx, menuApiCtx); err != nil {
+		if err := cgs.InsertMenuAndApiData(ctx, menuApiCtx, isTree); err != nil {
 			return fmt.Errorf("插入菜单和API数据失败: %v", err)
 		}
 	}
@@ -596,8 +617,11 @@ func (cgs *CodeGenService) GenerateFrontendCodeFiles(sysGen *models.SysGen) erro
 		}
 	}
 
+	// 创建前端代码生成上下文
+	isTree := sysGen.IsTree == 1
+	frontendCtx := models.NewFrontendGenContext(tableName, sysGen.ModuleName, sysGen.FileName, columnTemplates, isTree)
+
 	// 生成API代码
-	frontendCtx := models.NewFrontendGenContext(tableName, sysGen.ModuleName, sysGen.FileName, columnTemplates)
 	apiCode := cgs.generateFrontendAPICode(frontendCtx)
 	apiFilePath := filepath.Join(pluginsDir, "api", fileName+".ts")
 	if err := cgs.writeCodeToFileWithCover(apiFilePath, apiCode, sysGen.IsCover == 1); err != nil {
@@ -652,14 +676,22 @@ func (cgs *CodeGenService) generateFrontendAPICode(ctx *models.FrontendGenContex
 		"FileName":        ctx.FileName,
 		"Columns":         ctx.Columns,
 		"PrimaryKey":      ctx.PrimaryKey,
+		"IsTree":          ctx.IsTree,
+		"ParentIdField":   ctx.ParentIdField,
 	}
 
 	for key, value := range ctx.ExtraParams {
 		templateData[key] = value
 	}
 
+	// 根据是否为树形结构选择不同的模板
+	templateName := "frontend/api.tpl"
+	if ctx.IsTree {
+		templateName = "frontend/api_tree.tpl"
+	}
+
 	// 解析模板并生成代码
-	return cgs.executeTemplate("frontend/api.tpl", templateData)
+	return cgs.executeTemplate(templateName, templateData)
 }
 
 // generateFrontendHooksCode 生成前端Hooks代码
@@ -673,14 +705,22 @@ func (cgs *CodeGenService) generateFrontendHooksCode(ctx *models.FrontendGenCont
 		"FileName":        ctx.FileName,
 		"Columns":         ctx.Columns,
 		"PrimaryKey":      ctx.PrimaryKey,
+		"IsTree":          ctx.IsTree,
+		"ParentIdField":   ctx.ParentIdField,
 	}
 
 	for key, value := range ctx.ExtraParams {
 		templateData[key] = value
 	}
 
+	// 根据是否为树形结构选择不同的模板
+	templateName := "frontend/hooks.tpl"
+	if ctx.IsTree {
+		templateName = "frontend/hooks_tree.tpl"
+	}
+
 	// 解析模板并生成代码
-	return cgs.executeTemplate("frontend/hooks.tpl", templateData)
+	return cgs.executeTemplate(templateName, templateData)
 }
 
 // generateFrontendViewCode 生成前端视图代码
@@ -694,14 +734,22 @@ func (cgs *CodeGenService) generateFrontendViewCode(ctx *models.FrontendGenConte
 		"FileName":        ctx.FileName,
 		"Columns":         ctx.Columns,
 		"PrimaryKey":      ctx.PrimaryKey,
+		"IsTree":          ctx.IsTree,
+		"ParentIdField":   ctx.ParentIdField,
 	}
 
 	for key, value := range ctx.ExtraParams {
 		templateData[key] = value
 	}
 
+	// 根据是否为树形结构选择不同的模板
+	templateName := "frontend/views.tpl"
+	if ctx.IsTree {
+		templateName = "frontend/views_tree.tpl"
+	}
+
 	// 解析模板并生成代码
-	return cgs.executeTemplate("frontend/views.tpl", templateData)
+	return cgs.executeTemplate(templateName, templateData)
 }
 
 // PreviewCode 根据genID生成代码预览
@@ -735,28 +783,49 @@ func (cgs *CodeGenService) PreviewCode(ctx context.Context, genID uint) (map[str
 	columnTemplates = sysGen.SysGenFields.ToColumnTemplate()
 
 	// 创建代码生成上下文
-	codeGenCtx := models.NewCodeGenContext(tableName, sysGen.ModuleName, sysGen.FileName, comment, columnTemplates)
+	isTree := sysGen.IsTree == 1
+	codeGenCtx := models.NewCodeGenContext(tableName, sysGen.ModuleName, sysGen.FileName, comment, columnTemplates, isTree)
 
 	// 生成模型代码
-	modelCode := cgs.generateModelCode(codeGenCtx)
+	var modelCode string
+	if isTree {
+		modelCode = cgs.generateModelCodeTree(codeGenCtx)
+	} else {
+		modelCode = cgs.generateModelCode(codeGenCtx)
+	}
 
 	// 生成参数模型代码
 	modelParamCode := cgs.generateModelParamCode(codeGenCtx)
 
 	// 生成控制器代码
-	controllerCode := cgs.generateControllerCode(codeGenCtx)
+	var controllerCode string
+	if isTree {
+		controllerCode = cgs.generateControllerCodeTree(codeGenCtx)
+	} else {
+		controllerCode = cgs.generateControllerCode(codeGenCtx)
+	}
 
 	// 生成服务代码
-	serviceCode := cgs.generateServiceCode(codeGenCtx)
+	var serviceCode string
+	if isTree {
+		serviceCode = cgs.generateServiceCodeTree(codeGenCtx)
+	} else {
+		serviceCode = cgs.generateServiceCode(codeGenCtx)
+	}
 
 	// 生成路由代码
-	routesCode := cgs.generateRoutesCode(codeGenCtx)
+	var routesCode string
+	if isTree {
+		routesCode = cgs.generateRoutesCodeTree(codeGenCtx)
+	} else {
+		routesCode = cgs.generateRoutesCode(codeGenCtx)
+	}
 
 	// 生成初始化代码
 	initCode := cgs.generateInitCode(codeGenCtx)
 
 	// 生成前端代码
-	frontendCtx := models.NewFrontendGenContext(tableName, sysGen.ModuleName, sysGen.FileName, columnTemplates)
+	frontendCtx := models.NewFrontendGenContext(tableName, sysGen.ModuleName, sysGen.FileName, columnTemplates, isTree)
 	frontendApiCode := cgs.generateFrontendAPICode(frontendCtx)
 	frontendHooksCode := cgs.generateFrontendHooksCode(frontendCtx)
 	frontendViewCode := cgs.generateFrontendViewCode(frontendCtx)
@@ -893,6 +962,26 @@ func (cgs *CodeGenService) generateRoutesCode(ctx *models.CodeGenContext) string
 	return cgs.executeTemplate("routes.tpl", templateData)
 }
 
+// generateRoutesCodeTree 生成树形结构路由代码
+func (cgs *CodeGenService) generateRoutesCodeTree(ctx *models.CodeGenContext) string {
+	// 创建模板数据
+	templateData := map[string]interface{}{
+		"StructName":      ctx.StructName,
+		"StructNameLower": ctx.StructNameLower,
+		"TableName":       ctx.TableName,
+		"DirName":         ctx.DirName,
+		"FileName":        ctx.FileName,
+		"PrimaryKey":      ctx.PrimaryKey,
+	}
+
+	for key, value := range ctx.ExtraParams {
+		templateData[key] = value
+	}
+
+	// 解析模板并生成代码
+	return cgs.executeTemplate("routes_tree.tpl", templateData)
+}
+
 // generateInitCode 生成初始化代码
 func (cgs *CodeGenService) generateInitCode(ctx *models.CodeGenContext) string {
 	// 创建模板数据
@@ -909,6 +998,70 @@ func (cgs *CodeGenService) generateInitCode(ctx *models.CodeGenContext) string {
 
 	// 解析模板并生成代码
 	return cgs.executeTemplate("init.tpl", templateData)
+}
+
+// generateModelCodeTree 生成树形结构模型代码
+func (cgs *CodeGenService) generateModelCodeTree(ctx *models.CodeGenContext) string {
+	primaryKey := ctx.PrimaryKey
+	parentIdField := ctx.ParentIdField
+
+	// 创建模板数据
+	templateData := map[string]interface{}{
+		"StructName":    ctx.StructName,
+		"TableName":     ctx.TableName,
+		"Columns":       ctx.Columns,
+		"PrimaryKey":    primaryKey,
+		"ParentIdField": parentIdField,
+		"HasTimeField":  ctx.HasTimeField,
+	}
+
+	for key, value := range ctx.ExtraParams {
+		templateData[key] = value
+	}
+
+	// 解析模板并生成代码
+	return cgs.executeTemplate("model_tree.tpl", templateData)
+}
+
+// generateControllerCodeTree 生成树形结构控制器代码
+func (cgs *CodeGenService) generateControllerCodeTree(ctx *models.CodeGenContext) string {
+	// 创建模板数据
+	templateData := map[string]interface{}{
+		"StructName":      ctx.StructName,
+		"StructNameLower": ctx.StructNameLower,
+		"TableName":       ctx.TableName,
+		"DirName":         ctx.DirName,
+		"PrimaryKey":      ctx.PrimaryKey,
+	}
+
+	for key, value := range ctx.ExtraParams {
+		templateData[key] = value
+	}
+
+	// 解析模板并生成代码
+	return cgs.executeTemplate("controller_tree.tpl", templateData)
+}
+
+// generateServiceCodeTree 生成树形结构服务代码
+func (cgs *CodeGenService) generateServiceCodeTree(ctx *models.CodeGenContext) string {
+	// 创建模板数据
+	templateData := map[string]interface{}{
+		"StructName":      ctx.StructName,
+		"StructNameLower": ctx.StructNameLower,
+		"TableName":       ctx.TableName,
+		"DirName":         ctx.DirName,
+		"Columns":         ctx.Columns,
+		"PrimaryKey":      ctx.PrimaryKey,
+		"HasCreatedBy":    ctx.HasCreatedBy,
+		"HasTenantID":     ctx.HasTenantID,
+	}
+
+	for key, value := range ctx.ExtraParams {
+		templateData[key] = value
+	}
+
+	// 解析模板并生成代码
+	return cgs.executeTemplate("service_tree.tpl", templateData)
 }
 
 // executeTemplate 执行模板
@@ -974,12 +1127,12 @@ func (cgs *CodeGenService) writeCodeToFileWithCover(filePath string, content str
 }
 
 // InsertMenuAndApiData 在生成代码时插入菜单和API数据
-func (cgs *CodeGenService) InsertMenuAndApiData(ctx context.Context, menuApiCtx *models.MenuApiContext) error {
+func (cgs *CodeGenService) InsertMenuAndApiData(ctx context.Context, menuApiCtx *models.MenuApiContext, isTree bool) error {
 	// 获取数据库连接
 	db := app.DB()
 
 	// 生成菜单和API数据
-	menuData, apiData, err := cgs.generateMenuAndApiData(menuApiCtx.FileName, menuApiCtx.DirName, menuApiCtx.Comment)
+	menuData, apiData, err := cgs.generateMenuAndApiData(menuApiCtx.FileName, menuApiCtx.DirName, menuApiCtx.Comment, isTree)
 	if err != nil {
 		return fmt.Errorf("生成菜单和API数据失败: %v", err)
 	}
@@ -1096,7 +1249,7 @@ func (cgs *CodeGenService) InsertMenuAndApiData(ctx context.Context, menuApiCtx 
 }
 
 // generateMenuAndApiData 生成菜单和API数据
-func (cgs *CodeGenService) generateMenuAndApiData(fileName, dirName, comment string) (
+func (cgs *CodeGenService) generateMenuAndApiData(fileName, dirName, comment string, isTree bool) (
 	[]models.SysMenu, []models.SysApi, error) {
 
 	// 父级菜单ID
@@ -1181,11 +1334,27 @@ func (cgs *CodeGenService) generateMenuAndApiData(fileName, dirName, comment str
 	menus := []models.SysMenu{mainMenu, addButton, editButton, deleteButton}
 
 	// 生成API数据
-	listApi := models.SysApi{
-		Title:    "列表查询",
-		Path:     "/api/plugins/" + dirName + "/" + fileName + "/list",
-		Method:   "GET",
-		ApiGroup: comment, // 使用表注释作为API分组
+	var apis []models.SysApi
+
+	// 根据是否为树形结构，生成不同的API
+	if isTree {
+		// 树形结构：生成 tree API，不生成 list API
+		treeApi := models.SysApi{
+			Title:    "树形列表",
+			Path:     "/api/plugins/" + dirName + "/" + fileName + "/tree",
+			Method:   "GET",
+			ApiGroup: comment, // 使用表注释作为API分组
+		}
+		apis = []models.SysApi{treeApi}
+	} else {
+		// 普通结构：生成 list API
+		listApi := models.SysApi{
+			Title:    "列表查询",
+			Path:     "/api/plugins/" + dirName + "/" + fileName + "/list",
+			Method:   "GET",
+			ApiGroup: comment, // 使用表注释作为API分组
+		}
+		apis = []models.SysApi{listApi}
 	}
 
 	addApi := models.SysApi{
@@ -1216,8 +1385,8 @@ func (cgs *CodeGenService) generateMenuAndApiData(fileName, dirName, comment str
 		ApiGroup: comment, // 使用表注释作为API分组
 	}
 
-	// API列表
-	apis := []models.SysApi{listApi, addApi, editApi, deleteApi, getByIdApi}
+	// 添加通用API
+	apis = append(apis, addApi, editApi, deleteApi, getByIdApi)
 
 	return menus, apis, nil
 }
@@ -1237,7 +1406,7 @@ func (cgs *CodeGenService) generateMenuApiData(menus []models.SysMenu, apis []mo
 	if len(menus) > 0 && len(apis) > 0 {
 		menuApis = append(menuApis, models.SysMenuApi{
 			MenuID: menus[0].ID,
-			ApiID:  apis[0].ID, // 列表查询API
+			ApiID:  apis[0].ID, // 列表查询API或树形列表API
 		})
 	}
 

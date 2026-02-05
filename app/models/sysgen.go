@@ -20,6 +20,7 @@ type SysGen struct {
 	SysGenFields SysGenFieldList `gorm:"foreignKey:GenID;references:ID" json:"sysGenFields"`
 	IsCover      int             `gorm:"column:is_cover;default:0;comment:是否覆盖" json:"isCover"`
 	IsMenu       int             `gorm:"column:is_menu;default:0;comment:是否生成菜单" json:"isMenu"`
+	IsTree       int             `gorm:"column:is_tree;default:0;comment:是否生成树形数据" json:"isTree"`
 }
 
 // TableName 设置表名

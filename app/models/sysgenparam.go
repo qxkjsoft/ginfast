@@ -52,6 +52,7 @@ type SysGenUpdateRequest struct {
 	Describe     string                     `json:"describe" form:"describe" validate:"required" message:"描述不能为空"`       // 描述
 	IsCover      int                        `json:"isCover" form:"isCover" `
 	IsMenu       int                        `json:"isMenu" form:"isMenu" `
+	IsTree       int                        `json:"isTree" form:"isTree" `
 	FieldUpdates []SysGenFieldUpdateRequest `json:"sysGenFields" form:"sysGenFields" validate:"required" message:"字段更新列表不能为空"` // 字段更新列表
 }
 
