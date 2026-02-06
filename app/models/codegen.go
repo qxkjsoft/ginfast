@@ -36,6 +36,12 @@ type CodeGenContext struct {
 	IsTree        bool            `json:"isTree"`        // 是否生成树形结构
 	ParentIdField *ColumnTemplate `json:"parentIdField"` // 父ID字段（树形结构时使用）
 
+	// 关联树形分类相关
+	IsRelationTree             bool   `json:"isRelationTree"`             // 是否关联树形分类
+	RelationFieldJsonTag       string `json:"relationFieldJsonTag"`       // 关联字段的JsonTag（小驼峰）
+	RelationFieldJsonTagPascal string `json:"relationFieldJsonTagPascal"` // 关联字段的JsonTag（大驼峰）
+	RelationFieldDataName      string `json:"relationFieldDataName"`      // 关联字段的数据库名
+
 	// 扩展参数
 	ExtraParams map[string]interface{} `json:"extraParams"` // 额外参数
 }
@@ -104,6 +110,16 @@ type FrontendGenContext struct {
 	// 树形结构相关
 	IsTree        bool            `json:"isTree"`        // 是否生成树形结构
 	ParentIdField *ColumnTemplate `json:"parentIdField"` // 父ID字段（树形结构时使用）
+
+	// 关联树形分类相关
+	IsRelationTree         bool               `json:"isRelationTree"`         // 是否关联树形分类
+	RelationTreeDirName    string             `json:"relationTreeDirName"`    // 关联树形分类的目录名
+	RelationTreeFileName   string             `json:"relationTreeFileName"`   // 关联树形分类的文件名
+	RelationTreeStructName string             `json:"relationTreeStructName"` // 关联树形分类的结构体名
+	RelationFieldJsonTag   string             `json:"relationFieldJsonTag"`   // 关联字段的JsonTag
+	RelationFieldComment   string             `json:"relationFieldComment"`   // 关联字段的注释
+	RelationTreeColumns    ColumnTemplateList `json:"relationTreeColumns"`    // 关联树形分类的字段列表
+	RelationTreePrimaryKey *ColumnTemplate    `json:"relationTreePrimaryKey"` // 关联树形分类的主键
 
 	// 扩展参数
 	ExtraParams map[string]interface{} `json:"extraParams"` // 额外参数
@@ -531,9 +547,9 @@ func (c ColumnTemplateList) GetParentIdField(primaryKey *ColumnTemplate) *Column
 	if primaryKey == nil {
 		return nil
 	}
-	// 查找与主键类型相同的 pid 或 parent_id 字段
+	// 查找与主键类型相同的  parent_id 字段
 	for _, col := range c {
-		if (col.DataName == "pid" || col.DataName == "parent_id") && col.GoType == primaryKey.GoType {
+		if col.DataName == "parent_id" && col.GoType == primaryKey.GoType {
 			return &col
 		}
 	}

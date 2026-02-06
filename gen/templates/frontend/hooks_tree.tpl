@@ -65,13 +65,47 @@ export const use{{.StructName}}PluginHook = () => {
         treeDataList.value = data;
     };
 
-    // 加载树形数据
-    const loadTreeData = async () => {
+    // 过滤树形数据
+    const filterTreeData = (data: {{.StructName}}Data[], keyword: string): {{.StructName}}Data[] => {
+        const filtered: {{.StructName}}Data[] = [];
+        
+        for (const item of data) {
+            // 检查当前节点是否匹配
+            const matches = item.name.toLowerCase().includes(keyword.toLowerCase());
+            
+            // 检查子节点是否匹配
+            let filteredChildren: {{.StructName}}Data[] = [];
+            if (item.children && item.children.length > 0) {
+                filteredChildren = filterTreeData(item.children, keyword);
+            }
+            
+            // 如果当前节点匹配或有匹配的子节点，则包含该节点
+            if (matches || filteredChildren.length > 0) {
+                const newItem = { ...item };
+                if (filteredChildren.length > 0) {
+                    newItem.children = filteredChildren;
+                } else if (item.children && item.children.length > 0) {
+                    newItem.children = []; // 有子节点但都不匹配，清空
+                }
+                filtered.push(newItem);
+            }
+        }
+        
+        return filtered;
+    };
+
+    // 加载树形数据（包含过滤功能）
+    const loadTreeData = async (keyword?: string) => {
         loading.value = true;
         try {
             const response = await fetchTreeList();
             if (response && response.data && response.data.list) {
-                treeDataList.value = response.data.list;
+                // 根据搜索条件过滤数据
+                if (keyword) {
+                    treeDataList.value = filterTreeData(response.data.list, keyword);
+                } else {
+                    treeDataList.value = response.data.list;
+                }
             }
         } finally {
             loading.value = false;
@@ -94,6 +128,7 @@ export const use{{.StructName}}PluginHook = () => {
         getDetail,
         fetchTreeList,
         setTreeDataList,
+        filterTreeData,
         loadTreeData
     };
 };

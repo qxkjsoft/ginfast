@@ -129,7 +129,7 @@ func (cgc *CodeGenController) GenerateCode(ctx *gin.Context) {
 	// 使用service层获取代码生成配置详情
 	sysGen := models.NewSysGen()
 	err := sysGen.Find(ctx, func(db *gorm.DB) *gorm.DB {
-		return db.Where("id = ?", uint(genID)).Preload("SysGenFields")
+		return db.Where("id = ?", uint(genID)).Preload("SysGenFields").Preload("RelationTreeGen").Preload("RelationTreeGen.SysGenFields")
 	})
 	if err != nil {
 		cgc.FailAndAbort(ctx, "获取代码生成配置详情失败", err)
@@ -137,12 +137,27 @@ func (cgc *CodeGenController) GenerateCode(ctx *gin.Context) {
 	if sysGen.SysGenFields.PrimaryKeyCount() != 1 {
 		cgc.FailAndAbort(ctx, "表必须也只能包含一个主键", nil)
 	}
+
+	if sysGen.IsTree == 1 && sysGen.IsRelationTree == 1 {
+		cgc.FailAndAbort(ctx, "树形表和关联树形数据只能选择一个", nil)
+	}
+
 	// 检查树形结构配置
 	if sysGen.IsTree == 1 {
 		if !sysGen.SysGenFields.HasParentIDWithNumericType() {
-			cgc.FailAndAbort(ctx, "树形结构表必须包含parent_id或pid字段且类型与主键类型一致", nil)
+			cgc.FailAndAbort(ctx, "树形结构表必须包含parent_id字段且类型与主键类型一致", nil)
 		}
 	}
+
+	if sysGen.IsRelationTree == 1 {
+		if sysGen.GetRelationFieldObj() == nil {
+			cgc.FailAndAbort(ctx, "关联树形数据字段ID不存在", nil)
+		}
+		if sysGen.RelationTreeGen == nil {
+			cgc.FailAndAbort(ctx, "关联树形数据不存在", nil)
+		}
+	}
+
 	// 生成后端代码
 	err = cgc.service.GenerateBackendCodeFiles(ctx, sysGen)
 	if err != nil {

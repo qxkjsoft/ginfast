@@ -5,6 +5,7 @@ import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/utils/common"
 
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -111,7 +112,7 @@ func (list SysGenFieldList) PrimaryKeyCount() int {
 	return count
 }
 
-// HasParentIDWithNumericType 检查是否包含parent_id字段且类型为数值
+// HasParentIDWithNumericType 检查是否包含parent_id且类型与主键一致
 func (list SysGenFieldList) HasParentIDWithNumericType() bool {
 	// 获取主键的GoType
 	var primaryKeyGoType string
@@ -129,8 +130,29 @@ func (list SysGenFieldList) HasParentIDWithNumericType() bool {
 
 	// 检查parent_id字段的GoType是否与主键类型一致
 	for _, field := range list {
-		if field.DataName == "parent_id" || field.DataName == "pid" {
+		if field.DataName == "parent_id" {
+			app.ZapLog.Warn("parent_id字段的 GoType 与主键类型不一致", zap.String("parent_id GoType", field.GoType), zap.String("主键 GoType", primaryKeyGoType))
 			return field.GoType == primaryKeyGoType
+		}
+	}
+	return false
+}
+
+// HasNameField 检查是否包含name字段
+func (list SysGenFieldList) HasNameField() bool {
+	for _, field := range list {
+		if field.DataName == "name" {
+			return true
+		}
+	}
+	return false
+}
+
+// HasPrimaryKeyFieldNamedID 检查主键字段名称是否为id
+func (list SysGenFieldList) HasPrimaryKeyFieldNamedID() bool {
+	for _, field := range list {
+		if field.IsPrimary != nil && *field.IsPrimary == 1 {
+			return field.DataName == "id"
 		}
 	}
 	return false
@@ -167,8 +189,8 @@ func (list SysGenFieldList) ToColumnTemplate() ColumnTemplateList {
 		// 判断是否为主键
 		isPrimary := field.IsPrimary != nil && *field.IsPrimary == 1
 
-		// 判断是否为父级键（parent_id 或 pid，且类型与主键一致）
-		isParentKey := (field.DataName == "parent_id" || field.DataName == "pid") && field.GoType == primaryKeyGoType
+		// 判断是否为父级键（parent_id字段类型与主键一致）
+		isParentKey := field.DataName == "parent_id" && field.GoType == primaryKeyGoType
 
 		// 注释信息
 		comment := fieldName

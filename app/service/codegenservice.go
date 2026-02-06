@@ -512,7 +512,20 @@ func (cgs *CodeGenService) GenerateBackendCodeFiles(ctx context.Context, sysGen 
 
 	// 创建代码生成上下文
 	isTree := sysGen.IsTree == 1
+	isRelationTree := sysGen.IsRelationTree == 1
 	codeGenCtx := models.NewCodeGenContext(tableName, sysGen.ModuleName, sysGen.FileName, comment, columnTemplates, isTree)
+
+	// 处理关联树形分类
+	if isRelationTree {
+		// 获取关联字段信息
+		relationField := sysGen.GetRelationFieldObj()
+		if relationField != nil {
+			codeGenCtx.IsRelationTree = true
+			codeGenCtx.RelationFieldJsonTag = common.ToCamelCaseLower(relationField.DataName)
+			codeGenCtx.RelationFieldJsonTagPascal = common.ToCamelCase(relationField.DataName)
+			codeGenCtx.RelationFieldDataName = relationField.DataName
+		}
+	}
 
 	// 生成模型代码
 	var modelCode string
@@ -619,7 +632,35 @@ func (cgs *CodeGenService) GenerateFrontendCodeFiles(sysGen *models.SysGen) erro
 
 	// 创建前端代码生成上下文
 	isTree := sysGen.IsTree == 1
+	isRelationTree := sysGen.IsRelationTree == 1
 	frontendCtx := models.NewFrontendGenContext(tableName, sysGen.ModuleName, sysGen.FileName, columnTemplates, isTree)
+
+	// 处理关联树形分类
+	if isRelationTree {
+		// 获取关联树形分类信息
+		if sysGen.RelationTreeGen != nil {
+			relationTreeDirName := common.KeepLettersOnlyLower(sysGen.RelationTreeGen.ModuleName)
+			relationTreeFileName := common.KeepLettersOnlyLower(sysGen.RelationTreeGen.FileName)
+			relationTreeStructName := common.ToCamelCase(sysGen.RelationTreeGen.FileName)
+
+			// 获取关联字段信息
+			relationField := sysGen.GetRelationFieldObj()
+			if relationField != nil {
+				// 获取关联树形分类的字段信息
+				relationTreeColumns := sysGen.RelationTreeGen.SysGenFields.ToColumnTemplate()
+				relationTreePrimaryKey := relationTreeColumns.GetPrimaryKey()
+
+				frontendCtx.IsRelationTree = true
+				frontendCtx.RelationTreeDirName = relationTreeDirName
+				frontendCtx.RelationTreeFileName = relationTreeFileName
+				frontendCtx.RelationTreeStructName = relationTreeStructName
+				frontendCtx.RelationFieldJsonTag = common.ToCamelCaseLower(relationField.DataName)
+				frontendCtx.RelationFieldComment = relationField.DataComment
+				frontendCtx.RelationTreeColumns = relationTreeColumns
+				frontendCtx.RelationTreePrimaryKey = relationTreePrimaryKey
+			}
+		}
+	}
 
 	// 生成API代码
 	apiCode := cgs.generateFrontendAPICode(frontendCtx)
@@ -727,25 +768,35 @@ func (cgs *CodeGenService) generateFrontendHooksCode(ctx *models.FrontendGenCont
 func (cgs *CodeGenService) generateFrontendViewCode(ctx *models.FrontendGenContext) string {
 	// 创建模板数据
 	templateData := map[string]interface{}{
-		"StructName":      ctx.StructName,
-		"StructNameLower": ctx.StructNameLower,
-		"TableName":       ctx.TableName,
-		"DirName":         ctx.DirName,
-		"FileName":        ctx.FileName,
-		"Columns":         ctx.Columns,
-		"PrimaryKey":      ctx.PrimaryKey,
-		"IsTree":          ctx.IsTree,
-		"ParentIdField":   ctx.ParentIdField,
+		"StructName":             ctx.StructName,
+		"StructNameLower":        ctx.StructNameLower,
+		"TableName":              ctx.TableName,
+		"DirName":                ctx.DirName,
+		"FileName":               ctx.FileName,
+		"Columns":                ctx.Columns,
+		"PrimaryKey":             ctx.PrimaryKey,
+		"IsTree":                 ctx.IsTree,
+		"ParentIdField":          ctx.ParentIdField,
+		"IsRelationTree":         ctx.IsRelationTree,
+		"RelationTreeDirName":    ctx.RelationTreeDirName,
+		"RelationTreeFileName":   ctx.RelationTreeFileName,
+		"RelationTreeStructName": ctx.RelationTreeStructName,
+		"RelationFieldJsonTag":   ctx.RelationFieldJsonTag,
+		"RelationFieldComment":   ctx.RelationFieldComment,
+		"RelationTreeColumns":    ctx.RelationTreeColumns,
+		"RelationTreePrimaryKey": ctx.RelationTreePrimaryKey,
 	}
 
 	for key, value := range ctx.ExtraParams {
 		templateData[key] = value
 	}
 
-	// 根据是否为树形结构选择不同的模板
+	// 根据类型选择不同的模板
 	templateName := "frontend/views.tpl"
 	if ctx.IsTree {
 		templateName = "frontend/views_tree.tpl"
+	} else if ctx.IsRelationTree {
+		templateName = "frontend/views_relation_tree.tpl"
 	}
 
 	// 解析模板并生成代码
@@ -761,7 +812,7 @@ func (cgs *CodeGenService) PreviewCode(ctx context.Context, genID uint) (map[str
 	// 获取代码生成配置详情
 	sysGen := models.NewSysGen()
 	err := sysGen.Find(ctx, func(db *gorm.DB) *gorm.DB {
-		return db.Where("id = ?", genID).Preload("SysGenFields")
+		return db.Where("id = ?", genID).Preload("SysGenFields").Preload("RelationTreeGen").Preload("RelationTreeGen.SysGenFields")
 	})
 	if err != nil {
 		return nil, fmt.Errorf("获取代码生成配置详情失败: %v", err)
@@ -784,7 +835,20 @@ func (cgs *CodeGenService) PreviewCode(ctx context.Context, genID uint) (map[str
 
 	// 创建代码生成上下文
 	isTree := sysGen.IsTree == 1
+	isRelationTree := sysGen.IsRelationTree == 1
 	codeGenCtx := models.NewCodeGenContext(tableName, sysGen.ModuleName, sysGen.FileName, comment, columnTemplates, isTree)
+
+	// 处理关联树形分类
+	if isRelationTree {
+		// 获取关联字段信息
+		relationField := sysGen.GetRelationFieldObj()
+		if relationField != nil {
+			codeGenCtx.IsRelationTree = true
+			codeGenCtx.RelationFieldJsonTag = common.ToCamelCaseLower(relationField.DataName)
+			codeGenCtx.RelationFieldJsonTagPascal = common.ToCamelCase(relationField.DataName)
+			codeGenCtx.RelationFieldDataName = relationField.DataName
+		}
+	}
 
 	// 生成模型代码
 	var modelCode string
@@ -826,6 +890,34 @@ func (cgs *CodeGenService) PreviewCode(ctx context.Context, genID uint) (map[str
 
 	// 生成前端代码
 	frontendCtx := models.NewFrontendGenContext(tableName, sysGen.ModuleName, sysGen.FileName, columnTemplates, isTree)
+
+	// 处理关联树形分类
+	if isRelationTree {
+		// 获取关联树形分类信息
+		if sysGen.RelationTreeGen != nil {
+			relationTreeDirName := common.KeepLettersOnlyLower(sysGen.RelationTreeGen.ModuleName)
+			relationTreeFileName := common.KeepLettersOnlyLower(sysGen.RelationTreeGen.FileName)
+			relationTreeStructName := common.ToCamelCase(sysGen.RelationTreeGen.FileName)
+
+			// 获取关联字段信息
+			relationField := sysGen.GetRelationFieldObj()
+			if relationField != nil {
+				// 获取关联树形分类的字段信息
+				relationTreeColumns := sysGen.RelationTreeGen.SysGenFields.ToColumnTemplate()
+				relationTreePrimaryKey := relationTreeColumns.GetPrimaryKey()
+
+				frontendCtx.IsRelationTree = true
+				frontendCtx.RelationTreeDirName = relationTreeDirName
+				frontendCtx.RelationTreeFileName = relationTreeFileName
+				frontendCtx.RelationTreeStructName = relationTreeStructName
+				frontendCtx.RelationFieldJsonTag = common.ToCamelCaseLower(relationField.DataName)
+				frontendCtx.RelationFieldComment = relationField.DataComment
+				frontendCtx.RelationTreeColumns = relationTreeColumns
+				frontendCtx.RelationTreePrimaryKey = relationTreePrimaryKey
+			}
+		}
+	}
+
 	frontendApiCode := cgs.generateFrontendAPICode(frontendCtx)
 	frontendHooksCode := cgs.generateFrontendHooksCode(frontendCtx)
 	frontendViewCode := cgs.generateFrontendViewCode(frontendCtx)
@@ -886,11 +978,15 @@ func (cgs *CodeGenService) generateModelParamCode(ctx *models.CodeGenContext) st
 
 	// 创建模板数据
 	templateData := map[string]interface{}{
-		"StructName":   ctx.StructName,
-		"TableName":    ctx.TableName,
-		"Columns":      ctx.Columns,
-		"PrimaryKey":   primaryKey,
-		"HasTimeField": ctx.HasTimeFieldInQuery || ctx.HasTimeFieldInForm, // 使用細粒度判断
+		"StructName":                 ctx.StructName,
+		"TableName":                  ctx.TableName,
+		"Columns":                    ctx.Columns,
+		"PrimaryKey":                 primaryKey,
+		"HasTimeField":               ctx.HasTimeFieldInQuery || ctx.HasTimeFieldInForm, // 使用細粒度判断
+		"IsRelationTree":             ctx.IsRelationTree,
+		"RelationFieldJsonTag":       ctx.RelationFieldJsonTag,
+		"RelationFieldJsonTagPascal": ctx.RelationFieldJsonTagPascal,
+		"RelationFieldDataName":      ctx.RelationFieldDataName,
 	}
 
 	for key, value := range ctx.ExtraParams {

@@ -3,6 +3,11 @@
     <div class="snow-inner">
         <a-card :loading="loading" :bordered="false">
                 <a-space wrap>
+                    <!-- 查询表单-->
+                    <!-- 名称模糊查询 -->
+                    <a-input-search v-model="searchForm.name" placeholder="请输入名称搜索" style="width: 240px;" @search="handleSearch" allow-clear />
+                    <a-button type="primary" @click="handleSearch">查询</a-button>
+                    <a-button @click="handleReset">重置</a-button>
                     <a-button type="primary" @click="handleCreate" v-hasPerm="['plugins:{{.DirName}}{{.FileName}}:add']">
                         <template #icon>
                             <icon-plus />
@@ -206,6 +211,11 @@ const modalVisible = ref(false);
 const formRef = ref();
 const modalTitle = ref('');
 
+// 搜索表单
+const searchForm = reactive({
+    name: '',
+});
+
 const editingData = reactive<Partial<{{.StructName}}Data>>({
 {{- range .Columns}}
 {{- if and (not .IsPrimary) (not .Exclude)}}
@@ -258,6 +268,18 @@ const parentTreeData = computed(() => {
     const clonedData = JSON.parse(JSON.stringify(treeDataList.value)) as {{.StructName}}Data[];
     return filterTreeExclude(clonedData, editingData.{{if .PrimaryKey}}{{.PrimaryKey.JsonTag}}{{else}}id{{end}});
 });
+
+// 搜索处理
+const handleSearch = () => {
+    // 搜索时获取树形数据（搜索条件在前端过滤）
+    loadTreeData(searchForm.name);
+};
+
+// 重置搜索
+const handleReset = () => {
+    searchForm.name = '';
+    loadTreeData(); // 重置时获取树形数据
+};
 
 // 新增数据
 const handleCreate = () => {

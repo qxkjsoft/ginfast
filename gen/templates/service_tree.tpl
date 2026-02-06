@@ -3,6 +3,7 @@ package service
 import (
 	"gin-fast/plugins/{{.DirName}}/models"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 {{- if or .HasCreatedBy .HasTenantID}}
 	"gin-fast/app/utils/datascope"
 {{- end}}
@@ -86,7 +87,14 @@ func (s *{{.StructName}}Service) GetByID(c *gin.Context, id {{if .PrimaryKey}}{{
 // GetTreeList 获取{{.TableName}}树形列表
 func (s *{{.StructName}}Service) GetTreeList(c *gin.Context) (models.{{.StructName}}List, error) {
 	{{.StructNameLower}}List := models.New{{.StructName}}List()
-	err := {{.StructNameLower}}List.Find(c)
+	scopes := []func(*gorm.DB) *gorm.DB{}
+{{- if .HasCreatedBy}}
+	scopes = append(scopes, datascope.GetDataScope(c))
+{{- end}}
+{{- if .HasTenantID}}
+	scopes = append(scopes, tenanthelper.TenantScope(c))
+{{- end}}
+	err := {{.StructNameLower}}List.Find(c, scopes...)
 	if err != nil {
 		return nil, err
 	}

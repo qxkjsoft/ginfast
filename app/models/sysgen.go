@@ -10,17 +10,21 @@ import (
 // SysGen 代码生成配置模型
 type SysGen struct {
 	BaseModel
-	DbType       string          `gorm:"column:db_type;size:255;comment:数据库类型" json:"dbType"`
-	Database     string          `gorm:"column:database;size:255;comment:数据库名称" json:"database"`
-	Name         string          `gorm:"column:name;size:255;comment:表名" json:"name"`
-	ModuleName   string          `gorm:"column:module_name;size:255;comment:模块名称" json:"moduleName"`
-	FileName     string          `gorm:"column:file_name;size:255;comment:文件名" json:"fileName"`
-	Describe     string          `gorm:"column:describe;size:1000;comment:描述" json:"describe"`
-	CreatedBy    uint            `gorm:"column:created_by;comment:创建人" json:"createdBy"`
-	SysGenFields SysGenFieldList `gorm:"foreignKey:GenID;references:ID" json:"sysGenFields"`
-	IsCover      int             `gorm:"column:is_cover;default:0;comment:是否覆盖" json:"isCover"`
-	IsMenu       int             `gorm:"column:is_menu;default:0;comment:是否生成菜单" json:"isMenu"`
-	IsTree       int             `gorm:"column:is_tree;default:0;comment:是否生成树形数据" json:"isTree"`
+	DbType            string          `gorm:"column:db_type;size:255;comment:数据库类型" json:"dbType"`
+	Database          string          `gorm:"column:database;size:255;comment:数据库名称" json:"database"`
+	Name              string          `gorm:"column:name;size:255;comment:表名" json:"name"`
+	ModuleName        string          `gorm:"column:module_name;size:255;comment:模块名称" json:"moduleName"`
+	FileName          string          `gorm:"column:file_name;size:255;comment:文件名" json:"fileName"`
+	Describe          string          `gorm:"column:describe;size:1000;comment:描述" json:"describe"`
+	CreatedBy         uint            `gorm:"column:created_by;comment:创建人" json:"createdBy"`
+	SysGenFields      SysGenFieldList `gorm:"foreignKey:GenID;references:ID" json:"sysGenFields"`
+	IsCover           int             `gorm:"column:is_cover;default:0;comment:是否覆盖" json:"isCover"`
+	IsMenu            int             `gorm:"column:is_menu;default:0;comment:是否生成菜单" json:"isMenu"`
+	IsTree            int             `gorm:"column:is_tree;default:0;comment:是否生成树形数据" json:"isTree"`
+	IsRelationTree    int             `gorm:"column:is_relation_tree;default:0;comment:是否关联树形数据" json:"isRelationTree"`
+	RelationTreeTable uint            `gorm:"column:relation_tree_table;default:0;comment:关联树形数据表ID" json:"relationTreeTable"`
+	RelationField     uint            `gorm:"column:relation_field;default:0;comment:关联树形数据字段ID" json:"relationField"`
+	RelationTreeGen   *SysGen         `gorm:"foreignKey:RelationTreeTable;references:ID" json:"relationTreeGen"`
 }
 
 // TableName 设置表名
@@ -36,6 +40,16 @@ func NewSysGen() *SysGen {
 // IsEmpty 检查模型是否为空
 func (gen *SysGen) IsEmpty() bool {
 	return gen.ID == 0
+}
+
+// GetRelationFieldObj 获取关联树形数据字段对象
+func (gen *SysGen) GetRelationFieldObj() *SysGenField {
+	for _, field := range gen.SysGenFields {
+		if field.ID == gen.RelationField {
+			return field
+		}
+	}
+	return nil
 }
 
 // Find 查找单个代码生成配置

@@ -11,6 +11,7 @@ type SysGenListRequest struct {
 	Validator
 	Name       string `json:"name" form:"name"`             // 表名
 	ModuleName string `json:"moduleName" form:"moduleName"` // 模块名称
+	IsTree     int    `json:"isTree" form:"isTree"`         // 是否树形表
 }
 
 // Validate 验证请求参数
@@ -26,6 +27,9 @@ func (r *SysGenListRequest) Handle() func(db *gorm.DB) *gorm.DB {
 		}
 		if r.ModuleName != "" {
 			db = db.Where("module_name LIKE ?", "%"+r.ModuleName+"%")
+		}
+		if r.IsTree != 0 {
+			db = db.Where("is_tree = ?", r.IsTree)
 		}
 		return db
 	}
@@ -46,14 +50,17 @@ func (r *SysGenBatchInsertRequest) Validate(c *gin.Context) error {
 // SysGenUpdateRequest 代码生成配置更新请求参数
 type SysGenUpdateRequest struct {
 	Validator
-	ID           uint                       `json:"id" form:"id" validate:"required" message:"ID不能为空"`
-	ModuleName   string                     `json:"moduleName" form:"moduleName" validate:"required" message:"模块名称不能为空"` // 模块名称
-	FileName     string                     `json:"fileName" form:"fileName" validate:"required" message:"文件名不能为空"`      // 文件名
-	Describe     string                     `json:"describe" form:"describe" validate:"required" message:"描述不能为空"`       // 描述
-	IsCover      int                        `json:"isCover" form:"isCover" `
-	IsMenu       int                        `json:"isMenu" form:"isMenu" `
-	IsTree       int                        `json:"isTree" form:"isTree" `
-	FieldUpdates []SysGenFieldUpdateRequest `json:"sysGenFields" form:"sysGenFields" validate:"required" message:"字段更新列表不能为空"` // 字段更新列表
+	ID                uint                       `json:"id" form:"id" validate:"required" message:"ID不能为空"`
+	ModuleName        string                     `json:"moduleName" form:"moduleName" validate:"required" message:"模块名称不能为空"` // 模块名称
+	FileName          string                     `json:"fileName" form:"fileName" validate:"required" message:"文件名不能为空"`      // 文件名
+	Describe          string                     `json:"describe" form:"describe" validate:"required" message:"描述不能为空"`       // 描述
+	IsCover           int                        `json:"isCover" form:"isCover" `
+	IsMenu            int                        `json:"isMenu" form:"isMenu" `
+	IsTree            int                        `json:"isTree" form:"isTree" `
+	IsRelationTree    int                        `json:"isRelationTree" form:"isRelationTree" `                                     // 是否关联树形数据
+	RelationTreeTable uint                       `json:"relationTreeTable" form:"relationTreeTable"`                                // 关联树形数据表ID
+	RelationField     uint                       `json:"relationField" form:"relationField"`                                        // 关联树形数据字段ID
+	FieldUpdates      []SysGenFieldUpdateRequest `json:"sysGenFields" form:"sysGenFields" validate:"required" message:"字段更新列表不能为空"` // 字段更新列表
 }
 
 // Validate 验证更新请求参数
