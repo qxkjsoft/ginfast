@@ -132,7 +132,7 @@ func (sgc *SysGenController) GetByID(c *gin.Context) {
 	gen := models.NewSysGen()
 	gen.ID = uint(genID)
 	err = gen.Find(c, func(db *gorm.DB) *gorm.DB {
-		return db.Preload("SysGenFields") // 预加载字段信息
+		return db.Preload("SysGenFields").Preload("RelationTreeGen") // 预加载字段信息
 	})
 	if err != nil {
 		sgc.FailAndAbort(c, "查询代码生成配置失败", err)
@@ -168,7 +168,7 @@ func (sgc *SysGenController) Update(c *gin.Context) {
 	// 调用服务层方法进行更新
 	err := sgc.service.Update(c, &req)
 	if err != nil {
-		sgc.FailAndAbort(c, "更新代码生成配置失败", err)
+		sgc.FailAndAbort(c, err.Error(), err)
 	}
 
 	// 返回成功响应

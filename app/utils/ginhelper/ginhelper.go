@@ -1,9 +1,13 @@
 package ginhelper
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"gin-fast/app/global/app"
@@ -129,8 +133,44 @@ func GetPluginRouteFuncs() []PluginRouteFunc {
 	return pluginRouteFuncs
 }
 
-// StartServer 配置并启动HTTP服务器
+// PrintStartupBanner 打印启动横幅信息
+func PrintStartupBanner() {
+	// 从配置获取信息
+	port := app.ConfigYml.GetString("httpserver.port")
+	serverRoot := app.ConfigYml.GetString("httpserver.serverroot")
+	dbType := app.ConfigYml.GetString("gormv2.usedbtype")
+
+	// 获取数据库名称
+	dbName := app.ConfigYml.GetString("gormv2." + dbType + ".write.database")
+	if dbName == "" {
+		dbName = "unknown"
+	}
+
+	// 版本信息
+	version := app.AppVersion.Version
+	if version == "" {
+		version = "unknown"
+	}
+
+	// 打印启动信息（简洁纯文本格式）
+	fmt.Println()
+	fmt.Println("===========================================")
+	fmt.Println("  GinFast Framework")
+	fmt.Println("===========================================")
+	fmt.Printf("  Version    : %s\n", version)
+	fmt.Printf("  Port       : %s\n", port)
+	fmt.Printf("  ServerRoot : %s\n", serverRoot)
+	fmt.Printf("  DbType     : %s\n", dbType)
+	fmt.Printf("  Database   : %s\n", dbName)
+	fmt.Println("===========================================")
+	fmt.Println()
+}
+
+// StartServer 配置并启动HTTP服务器，支持优雅关闭
 func StartServer(engine *gin.Engine) error {
+	// 打印启动横幅
+	PrintStartupBanner()
+
 	// 配置HTTP服务器超时设置
 	server := &http.Server{
 		Addr:         app.ConfigYml.GetString("httpserver.port"),
@@ -140,6 +180,35 @@ func StartServer(engine *gin.Engine) error {
 		IdleTimeout:  time.Duration(app.ConfigYml.GetInt("httpserver.idle_timeout")) * time.Second,
 	}
 
-	// 启动服务器
-	return server.ListenAndServe()
+	// 在 goroutine 中启动服务器
+	go func() {
+		app.ZapLog.Info("服务器启动", zap.String("addr", server.Addr))
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			app.ZapLog.Fatal("服务器启动失败", zap.Error(err))
+		}
+	}()
+
+	// 监听系统信号
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit,
+		syscall.SIGINT,  // Ctrl+C
+		syscall.SIGTERM, // kill 命令
+		syscall.SIGQUIT, // Ctrl+\
+	)
+
+	sig := <-quit
+	app.ZapLog.Info("收到退出信号，开始优雅关闭...", zap.String("signal", sig.String()))
+
+	// 设置超时上下文，防止关闭时间过长
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// 优雅关闭服务器
+	if err := server.Shutdown(ctx); err != nil {
+		app.ZapLog.Error("服务器关闭失败", zap.Error(err))
+		return err
+	}
+
+	app.ZapLog.Info("服务器已优雅关闭")
+	return nil
 }

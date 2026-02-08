@@ -1358,16 +1358,20 @@ CREATE TABLE [sys_gen] (
     [created_by] INT,
     [is_cover] TINYINT DEFAULT 0,
     [is_menu] TINYINT DEFAULT 0,
+    [is_tree] TINYINT DEFAULT 0,
+    [is_relation_tree] TINYINT DEFAULT 0,
+    [relation_tree_table] INT DEFAULT 0,
+    [relation_field] INT DEFAULT 0
     PRIMARY KEY ([id])
 );
 
 
 -- Records of sys_gen
 SET IDENTITY_INSERT [sys_gen] ON;
-INSERT INTO [sys_gen] ([id], [db_type], [database], [name], [module_name], [file_name], [describe], [created_at], [updated_at], [deleted_at], [created_by], [is_cover], [is_menu]) VALUES ('23', 'mysql', 'gin-fast-tenant', 'demo_students', 'test_school', 'demo_students', '学员管理', '2025-11-13 15:17:27', '2025-11-17 16:31:43', NULL, '1', '1', '1');
+INSERT INTO [sys_gen] ([id], [db_type], [database], [name], [module_name], [file_name], [describe], [created_at], [updated_at], [deleted_at], [created_by], [is_cover], [is_menu], [is_tree], [is_relation_tree], [relation_tree_table], [relation_field]) VALUES ('23', 'mysql', 'gin-fast-tenant', 'demo_students', 'test_school', 'demo_students', '学员管理', '2025-11-13 15:17:27', '2025-11-17 16:31:43', NULL, '1', '1', '1' ,'0', '0', '0', '0');
 SET IDENTITY_INSERT [sys_gen] OFF;
 SET IDENTITY_INSERT [sys_gen] ON;
-INSERT INTO [sys_gen] ([id], [db_type], [database], [name], [module_name], [file_name], [describe], [created_at], [updated_at], [deleted_at], [created_by], [is_cover], [is_menu]) VALUES ('24', 'mysql', 'gin-fast-tenant', 'demo_teacher', 'test_school', 'demo_teacher', '教师表', '2025-11-13 15:17:27', '2025-11-17 17:29:28', NULL, '1', '1', '1');
+INSERT INTO [sys_gen] ([id], [db_type], [database], [name], [module_name], [file_name], [describe], [created_at], [updated_at], [deleted_at], [created_by], [is_cover], [is_menu], [is_tree], [is_relation_tree], [relation_tree_table], [relation_field]) VALUES ('24', 'mysql', 'gin-fast-tenant', 'demo_teacher', 'test_school', 'demo_teacher', '教师表', '2025-11-13 15:17:27', '2025-11-17 17:29:28', NULL, '1', '1', '1' ,'0', '0', '0', '0');
 SET IDENTITY_INSERT [sys_gen] OFF;
 -- Table structure for sys_gen_field
 IF OBJECT_ID('sys_gen_field', 'U') IS NOT NULL DROP TABLE [sys_gen_field];

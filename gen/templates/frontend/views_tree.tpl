@@ -4,36 +4,8 @@
         <a-card :loading="loading" :bordered="false">
                 <a-space wrap>
                     <!-- 查询表单-->
-{{- range .Columns}}
-{{- if .QueryShow}}
-                    {{- if and (eq .QueryType "BETWEEN") (eq .GoType "time.Time")}}
-                    <!-- {{.Comment}}范围查询（日期类型专用） -->
-                    <a-range-picker v-model="searchForm.{{.JsonTag}}Range" style="width: 240px;" @change="handleSearch" />
-                    {{- else if or (eq .FormType "radio") (eq .FormType "select") (eq .FormType "checkbox")}}
-                    <!-- {{.Comment}}选择框查询（radio/select/checkbox统一使用select） -->
-                    <a-select v-model="searchForm.{{.JsonTag}}" placeholder="请选择{{.Comment}}" style="width: 240px;" allow-clear>
-                        {{- if ne .DictType ""}}
-                        <a-option v-for="item in {{.JsonTag}}Option" :key="item.value" :value="{{if eq .FrontendType "number"}}Number(item.value){{else}}item.value{{end}}">{{`{{ item.name }}`}}</a-option>
-                        {{- end}}
-                    </a-select>
-                    {{- else if and (eq .QueryType "LIKE") (ne .FrontendType "number")}}
-                    <!-- {{.Comment}}模糊查询（仅非数值类型支持） -->
-                    <a-input-search v-model="searchForm.{{.JsonTag}}" placeholder="请输入{{.Comment}}搜索" style="width: 240px;" @search="handleSearch" allow-clear />
-                    {{- else if and (eq .QueryType "LIKE") (eq .FrontendType "number")}}
-                    <!-- {{.Comment}}数值类型不支持模糊查询，使用精确查询 -->
-                    <a-input-number v-model="searchForm.{{.JsonTag}}" placeholder="请输入{{.Comment}}" style="width: 240px;" @change="handleSearch" />
-                    {{- else}}
-                    <!-- {{.Comment}}精确查询 -->
-                    {{- if eq .FrontendType "number"}}
-                    <a-input-number v-model="searchForm.{{.JsonTag}}" placeholder="请输入{{.Comment}}" style="width: 240px;" />
-                    {{- else if eq .GoType "time.Time"}}
-                    <a-date-picker v-model="searchForm.{{.JsonTag}}" placeholder="请选择{{.Comment}}" style="width: 240px;" />
-                    {{- else}}
-                    <a-input v-model="searchForm.{{.JsonTag}}" placeholder="请输入{{.Comment}}" style="width: 240px;" />
-                    {{- end}}
-                    {{- end}}
-{{- end}}
-{{- end}}
+                    <!-- 名称模糊查询 -->
+                    <a-input-search v-model="searchForm.name" placeholder="请输入名称搜索" style="width: 240px;" @search="handleSearch" allow-clear />
                     <a-button type="primary" @click="handleSearch">查询</a-button>
                     <a-button @click="handleReset">重置</a-button>
                     <a-button type="primary" @click="handleCreate" v-hasPerm="['plugins:{{.DirName}}{{.FileName}}:add']">
@@ -44,9 +16,8 @@
                     </a-button>
                 </a-space>
 
-            <a-table :data="dataList" :loading="loading" :pagination="paginationConfig"
-                :bordered="{ wrapper: true, cell: true }" @page-change="handlePageChange"
-                @page-size-change="handlePageSizeChange">
+            <a-table :data="treeDataList" :loading="loading" :pagination="false"
+                :bordered="{ wrapper: true, cell: true }" :row-key="'{{if .PrimaryKey}}{{.PrimaryKey.JsonTag}}{{else}}id{{end}}'" :default-expand-all-rows="true">
                 <template #columns>
 {{- range .Columns}}
 {{- if .ListShow}}
@@ -61,9 +32,15 @@
                     {{- end}}
 {{- end}}
 {{- end}}
-                    <a-table-column title="操作" :width="200">
+                    <a-table-column title="操作" :width="280">
                         <template #cell="{ record }">
                             <a-space>
+                                <a-button size="small" @click="handleAddChild(record)" v-hasPerm="['plugins:{{.DirName}}{{.FileName}}:add']">
+                                    <template #icon>
+                                        <icon-plus />
+                                    </template>
+                                    新增子级
+                                </a-button>
                                 <a-button size="small" @click="handleEdit(record)" v-hasPerm="['plugins:{{.DirName}}{{.FileName}}:edit']">
                                     编辑
                                 </a-button>
@@ -81,11 +58,27 @@
         </a-card>
 
         <!-- 编辑/创建弹窗 -->
-        <a-modal v-model:visible="modalVisible" :title="editingData.{{if .PrimaryKey}}{{.PrimaryKey.JsonTag}}{{else}}id{{end}} ? '编辑数据' : '新增数据'" :on-before-ok="handleSave"
+        <a-modal v-model:visible="modalVisible" :title="modalTitle" :on-before-ok="handleSave"
             @cancel="handleCancel">
             <a-form :model="editingData" :rules="rules" ref="formRef">
+                {{- if .ParentIdField}}
+                <a-form-item field="{{.ParentIdField.JsonTag}}" label="父级">
+                    <a-tree-select
+                        v-model="editingData.{{.ParentIdField.JsonTag}}"
+                        :data="parentTreeData"
+                        :field-names="{
+                            key: '{{if .PrimaryKey}}{{.PrimaryKey.JsonTag}}{{else}}id{{end}}',
+                            title: 'name',
+                            children: 'children'
+                        }"
+                        allow-clear
+                        allow-search
+                        placeholder="请选择父级，未选择则默认为顶级节点"
+                    />
+                </a-form-item>
+                {{- end}}
 {{- range .Columns}}
-{{- if and (not .IsPrimary) (not .Exclude) .FormShow}}
+{{- if and (not .IsPrimary) (not .Exclude) (not .IsParentKey) .FormShow }}
                 <a-form-item field="{{.JsonTag}}" label="{{.Comment}}">
                     {{- if eq .FrontendType "number"}}
                     {{- if or (eq .FormType "") (eq .FormType "number")}}
@@ -162,7 +155,7 @@
             </a-form>
         </a-modal>
     </div>
-</div>  
+</div>
 </template>
 
 <script setup lang="ts">
@@ -199,39 +192,28 @@ import FileUpload from '@/components/upload/file-upload.vue';
 {{- end}}
 {{- range .Columns}}
 {{- if and (not .IsPrimary) (not .Exclude) (ne .DictType "")}}
-    {{- if or .FormShow .QueryShow}}
+    {{- if .FormShow}}
 const {{.JsonTag}}Option = ref(dictFilter("{{.DictType}}"));
     {{- end}}
 {{- end}}
 {{- end}}
 const {
-    dataList,
     loading,
-    total,
-    currentPage,
-    pageSize,
-    fetchDataList,
+    treeDataList,
     createData,
     updateData,
     deleteData,
     getDetail,
-    resetSearchParams
+    loadTreeData
 } = use{{.StructName}}PluginHook();
 
 const modalVisible = ref(false);
 const formRef = ref();
+const modalTitle = ref('');
 
 // 搜索表单
 const searchForm = reactive({
-{{- range .Columns}}
-{{- if .QueryShow}}
-    {{- if and (eq .QueryType "BETWEEN") (eq .GoType "time.Time")}}
-    {{.JsonTag}}Range: [],
-    {{- else}}
-    {{.JsonTag}}: {{if eq .FrontendType "string"}}''{{else if eq .FrontendType "number"}}undefined{{else}}''{{end}},
-    {{- end}}
-{{- end}}
-{{- end}}
+    name: '',
 });
 
 const editingData = reactive<Partial<{{.StructName}}Data>>({
@@ -244,97 +226,59 @@ const editingData = reactive<Partial<{{.StructName}}Data>>({
 {{- end}}
 });
 
-{{- range .Columns}}
-{{- if and (eq .GoType "string") (eq .FormType "images")}}
-// 计算属性：处理 {{.JsonTag}} JSON 字符串与数组的双向转换
-const {{.JsonTag}}List = computed({
-    get(): string[] {
-        if (!editingData.{{.JsonTag}} || typeof editingData.{{.JsonTag}} !== 'string') {
-            return [];
-        }
-        try {
-            const parsed = JSON.parse(editingData.{{.JsonTag}});
-            return Array.isArray(parsed) ? parsed : [];
-        } catch {
-            return [];
-        }
-    },
-    set(value: string[]) {
-        editingData.{{.JsonTag}} = JSON.stringify(value);
-    }
-});
-{{- end}}
-{{- end}}
-
 const rules = {
 {{- range .Columns}}
-{{- if and (not .IsPrimary) (not .Exclude) .Required}}
+{{- if and (not .IsPrimary) (not .Exclude) (not .IsParentKey) .Required }}
     {{.JsonTag}}: [{ required: true, message: '{{.Comment}}不能为空' }],
 {{- end}}
 {{- end}}
 };
 
-// 分页配置
-const paginationConfig = computed(() => ({
-    total: total.value,
-    current: currentPage.value,
-    pageSize: pageSize.value,
-    showTotal: true,
-    showJumper: true,
-    showPageSize: true,
-    pageSizeOptions: [10, 20, 30, 50],
-}));
-
-// 获取数据列表
-const loadData = async (pageNum: number = currentPage.value, pageSizeVal: number = pageSize.value) => {
-    const params: any = {
-        pageNum,
-        pageSize: pageSizeVal,
-    };
-{{- range .Columns}}
-{{- if .QueryShow}}
-    {{- if and (eq .QueryType "BETWEEN") (eq .GoType "time.Time")}}
-    if (searchForm.{{.JsonTag}}Range && searchForm.{{.JsonTag}}Range.length === 2) {
-        params.{{.JsonTag}} = searchForm.{{.JsonTag}}Range;
+/**
+ * 过滤树形数据，排除指定ID及其子节点
+ * @param nodes 树形节点
+ * @param excludeId 要排除的节点ID
+ * @returns 过滤后的树形数据
+ */
+const filterTreeExclude = (nodes: {{.StructName}}Data[], excludeId?: {{if .PrimaryKey}}{{.PrimaryKey.FrontendType}}{{else}}number{{end}}): {{.StructName}}Data[] => {
+    if (!excludeId) {
+        return nodes;
     }
-    {{- else}}
-    if (searchForm.{{.JsonTag}}) {
-        params.{{.JsonTag}} = searchForm.{{.JsonTag}};
-    }
-    {{- end}}
-{{- end}}
-{{- end}}
-    await fetchDataList(params);
+    return nodes
+        .filter((node) => node.{{if .PrimaryKey}}{{.PrimaryKey.JsonTag}}{{else}}id{{end}} !== excludeId)
+        .map((node) => {
+            const newNode = { ...node };
+            if (newNode.children && newNode.children.length > 0) {
+                const filteredChildren = filterTreeExclude(newNode.children, excludeId);
+                if (filteredChildren.length > 0) {
+                    newNode.children = filteredChildren;
+                } else {
+                    delete newNode.children;
+                }
+            }
+            return newNode;
+        });
 };
 
-// 处理分页变化
-const handlePageChange = (page: number) => {
-    loadData(page, pageSize.value);
-};
-
-// 处理页面大小变化
-const handlePageSizeChange = (size: number) => {
-    loadData(1, size); // 页码重置为1
-};
+/**
+ * 用于树形选择器的父级数据计算属性
+ * 自动根据当前编辑数据ID排除该节点及其子节点，避免循环引用
+ */
+const parentTreeData = computed(() => {
+    const clonedData = JSON.parse(JSON.stringify(treeDataList.value)) as {{.StructName}}Data[];
+    return filterTreeExclude(clonedData, editingData.{{if .PrimaryKey}}{{.PrimaryKey.JsonTag}}{{else}}id{{end}});
+});
 
 // 搜索处理
 const handleSearch = () => {
-    loadData(1); // 搜索时重置到第一页
+    // 搜索时获取树形数据（搜索条件在前端过滤）
+    loadTreeData(searchForm.name);
 };
 
 // 重置搜索
 const handleReset = () => {
-{{- range .Columns}}
-{{- if .QueryShow}}
-    {{- if and (eq .QueryType "BETWEEN") (eq .GoType "time.Time")}}
-    searchForm.{{.JsonTag}}Range = [];
-    {{- else}}
-    searchForm.{{.JsonTag}} = {{if eq .FrontendType "string"}}''{{else if eq .FrontendType "number"}}undefined{{else}}''{{end}};
-    {{- end}}
-{{- end}}
-{{- end}}
-    resetSearchParams();
-    loadData(1);
+    searchForm.name = '';
+    loadTreeData(); // 重置时获取树形数据
 };
 
 // 新增数据
@@ -349,6 +293,27 @@ const handleCreate = () => {
 {{- end}}
 {{- end}}
     });
+    modalTitle.value = '新增数据';
+    modalVisible.value = true;
+};
+
+// 新增子级数据
+const handleAddChild = (record: {{.StructName}}Data) => {
+    // 重置表单数据
+    Object.assign(editingData, {
+{{- range .Columns}}
+{{- if and (not .IsPrimary) (not .Exclude)}}
+        {{.JsonTag}}: undefined,
+{{- else if .IsPrimary}}
+        {{.JsonTag}}: undefined,
+{{- end}}
+{{- end}}
+    });
+    {{- if .ParentIdField}}
+    // 设置父级ID为当前行的ID
+    editingData.{{.ParentIdField.JsonTag}} = record.{{if .PrimaryKey}}{{.PrimaryKey.JsonTag}}{{else}}id{{end}};
+    {{- end}}
+    modalTitle.value = '新增子级数据';
     modalVisible.value = true;
 };
 
@@ -358,6 +323,7 @@ const handleEdit = async (record: {{.StructName}}Data) => {
     const detail = await getDetail(record.{{if .PrimaryKey}}{{.PrimaryKey.JsonTag}}{{else}}id{{end}});
     // 赋值给编辑数据
     Object.assign(editingData, detail.data);
+    modalTitle.value = '编辑数据';
     modalVisible.value = true;
 };
 
@@ -365,8 +331,8 @@ const handleEdit = async (record: {{.StructName}}Data) => {
 const handleDelete = async ({{if .PrimaryKey}}{{.PrimaryKey.JsonTag}}{{else}}id{{end}}: {{if .PrimaryKey}}{{.PrimaryKey.FrontendType}}{{else}}number{{end}}) => {
     try {
         await deleteData({{if .PrimaryKey}}{{.PrimaryKey.JsonTag}}{{else}}id{{end}});
-        // 重新加载当前页数据
-        await loadData();
+        // 重新加载树形数据
+        await loadTreeData();
         // 显示删除成功消息
         // 这里可以使用项目的消息提示机制
     } catch (error) {
@@ -388,8 +354,8 @@ const handleSave = async () => {
             // 创建数据
             await createData(dataToSave);
         }
-        // 重新加载数据
-        await loadData();
+        // 重新加载树形数据
+        await loadTreeData();
     } catch (error) {
         console.error('保存失败:', error);
         return false;
@@ -403,8 +369,8 @@ const handleCancel = () => {
 };
 
 onMounted(async () => {
-    // 初始化加载数据
-    await loadData();
+    // 初始化加载树形数据
+    await loadTreeData();
 })
 
 </script>

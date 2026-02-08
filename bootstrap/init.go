@@ -26,6 +26,10 @@ import (
 func init() {
 	// 检查必要的文件夹是否存在
 	checkRequiredFolders()
+	// 加载版本信息
+	if err := app.LoadVersionInfo(); err != nil {
+		log.Println("警告: 加载版本信息失败:", err)
+	}
 	// 配置文件
 	app.ConfigYml = ymlconfig.CreateYamlFactory(app.BasePath + "/config")
 	app.ConfigYml.ConfigFileChangeListen(func() {

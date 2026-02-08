@@ -254,6 +254,21 @@ func (sgs *SysGenService) Update(ctx context.Context, req *models.SysGenUpdateRe
 		return fmt.Errorf("字段更新列表不能为空")
 	}
 
+	// 数据验证：IsTree和IsRelationTree只能2选1
+	if req.IsTree == 1 && req.IsRelationTree == 1 {
+		return fmt.Errorf("树形表和关联树形数据只能选择一个")
+	}
+
+	// 数据验证：当IsRelationTree为1时，RelationTreeTable和RelationField不能为0
+	if req.IsRelationTree == 1 {
+		if req.RelationTreeTable == 0 {
+			return fmt.Errorf("关联树形数据时，关联树形数据表ID不能为空")
+		}
+		if req.RelationField == 0 {
+			return fmt.Errorf("关联树形数据时，关联树形数据字段ID不能为空")
+		}
+	}
+
 	// 开始事务
 	db := app.DB()
 	tx := db.WithContext(ctx).Begin()
@@ -266,6 +281,25 @@ func (sgs *SysGenService) Update(ctx context.Context, req *models.SysGenUpdateRe
 			app.ZapLog.Error("更新代码生成配置事务回滚", zap.Any("recover", r))
 		}
 	}()
+
+	// 当IsTree为1时，检查是否包含pid或parent_id字段且类型与主键类型一致，以及是否包含name字段
+	if req.IsTree == 1 {
+		var fieldList models.SysGenFieldList
+		if err := fieldList.Find(ctx, func(db *gorm.DB) *gorm.DB {
+			return db.Where("gen_id = ?", req.ID)
+		}); err != nil {
+			return fmt.Errorf("查询字段列表失败: %v", err)
+		}
+		if !fieldList.HasPrimaryKeyFieldNamedID() {
+			return fmt.Errorf("树形表主键字段名称必须为id")
+		}
+		if !fieldList.HasParentIDWithNumericType() {
+			return fmt.Errorf("树形表必须包含pid或parent_id字段，且字段类型必须与主键类型一致")
+		}
+		if !fieldList.HasNameField() {
+			return fmt.Errorf("树形表必须包含name字段")
+		}
+	}
 
 	// 更新sys_gen表的module_name、describe字段
 	gen := models.NewSysGen()
@@ -301,6 +335,24 @@ func (sgs *SysGenService) Update(ctx context.Context, req *models.SysGenUpdateRe
 	} else {
 		updates["is_menu"] = 0
 	}
+
+	if req.IsTree == 1 {
+		updates["is_tree"] = 1
+	} else {
+		updates["is_tree"] = 0
+	}
+
+	// 更新sys_gen表的is_relation_tree、relation_tree_table、relation_field字段
+	if req.IsRelationTree == 1 {
+		updates["is_relation_tree"] = 1
+		updates["relation_tree_table"] = req.RelationTreeTable
+		updates["relation_field"] = req.RelationField
+	} else {
+		updates["is_relation_tree"] = 0
+		updates["relation_tree_table"] = 0
+		updates["relation_field"] = 0
+	}
+
 	if len(updates) > 0 {
 		if err := tx.Model(gen).Updates(updates).Error; err != nil {
 			tx.Rollback()

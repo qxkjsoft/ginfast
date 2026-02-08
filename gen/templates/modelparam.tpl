@@ -23,6 +23,9 @@ type {{.StructName}}ListRequest struct {
 	{{- end}}
 	{{- end}}
 {{- end}}
+{{- if .IsRelationTree}}
+	{{.RelationFieldJsonTagPascal}}Ids []{{if eq .RelationFieldJsonTag ""}}int{{else}}string{{end}} `form:"{{.RelationFieldJsonTag}}Ids"` // 关联{{.RelationFieldJsonTag}}的ID列表
+{{- end}}
 }
 
 // Validate 验证请求参数
@@ -70,6 +73,12 @@ func (r *{{.StructName}}ListRequest) Handle() func(db *gorm.DB) *gorm.DB {
         }
             {{- end}}
 		{{- end}}
+{{- end}}
+{{- if .IsRelationTree}}
+        // 关联{{.RelationFieldJsonTag}}的IN查询
+        if len(r.{{.RelationFieldJsonTagPascal}}Ids) > 0 {
+            db = db.Where("{{.RelationFieldDataName}} IN ?", r.{{.RelationFieldJsonTagPascal}}Ids)
+        }
 {{- end}}
 		return db
 	}
