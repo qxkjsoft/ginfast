@@ -2,10 +2,10 @@ package models
 
 import (
 	"context"
+	"fmt"
 	"gin-fast/app/global/app"
 	"gin-fast/app/utils/common"
 
-	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -113,7 +113,7 @@ func (list SysGenFieldList) PrimaryKeyCount() int {
 }
 
 // HasParentIDWithNumericType 检查是否包含parent_id且类型与主键一致
-func (list SysGenFieldList) HasParentIDWithNumericType() bool {
+func (list SysGenFieldList) HasParentIDWithNumericType() (bool, error) {
 	// 获取主键的GoType
 	var primaryKeyGoType string
 	for _, field := range list {
@@ -125,17 +125,19 @@ func (list SysGenFieldList) HasParentIDWithNumericType() bool {
 
 	// 如果没有主键，返回false
 	if primaryKeyGoType == "" {
-		return false
+		return false, fmt.Errorf("找不到主键字段")
 	}
 
 	// 检查parent_id字段的GoType是否与主键类型一致
 	for _, field := range list {
 		if field.DataName == "parent_id" {
-			app.ZapLog.Warn("parent_id字段的 GoType 与主键类型不一致", zap.String("parent_id GoType", field.GoType), zap.String("主键 GoType", primaryKeyGoType))
-			return field.GoType == primaryKeyGoType
+			if field.GoType != primaryKeyGoType {
+				return false, fmt.Errorf("parent_id字段的 GoType(%s) 与主键类型(%s) 不一致", field.GoType, primaryKeyGoType)
+			}
+			return true, nil
 		}
 	}
-	return false
+	return false, fmt.Errorf("找不到parent_id字段")
 }
 
 // HasNameField 检查是否包含name字段

@@ -144,8 +144,16 @@ func (cgc *CodeGenController) GenerateCode(ctx *gin.Context) {
 
 	// 检查树形结构配置
 	if sysGen.IsTree == 1 {
-		if !sysGen.SysGenFields.HasParentIDWithNumericType() {
-			cgc.FailAndAbort(ctx, "树形结构表必须包含parent_id字段且类型与主键类型一致", nil)
+		if !sysGen.SysGenFields.HasPrimaryKeyFieldNamedID() {
+			cgc.FailAndAbort(ctx, "树形表主键字段名称必须为id", nil)
+		}
+		if !sysGen.SysGenFields.HasNameField() {
+			cgc.FailAndAbort(ctx, "树形表必须包含name字段", nil)
+		}
+		// 检查parent_id字段是否与主键类型一致
+		_, err = sysGen.SysGenFields.HasParentIDWithNumericType()
+		if err != nil {
+			cgc.FailAndAbort(ctx, err.Error(), err)
 		}
 	}
 

@@ -122,7 +122,7 @@
                                  />
                              </a-form-item>
 {{- range .Columns}}
-{{- if and (not .IsPrimary) (not .Exclude) .FormShow}}
+{{- if and (not .IsPrimary) (not .Exclude) .FormShow (ne .JsonTag $.RelationFieldJsonTag)}}
                              <a-form-item field="{{.JsonTag}}" label="{{.Comment}}">
                                  {{- if eq .FrontendType "number"}}
                                  {{- if or (eq .FormType "") (eq .FormType "number")}}

@@ -293,9 +293,12 @@ func (sgs *SysGenService) Update(ctx context.Context, req *models.SysGenUpdateRe
 		if !fieldList.HasPrimaryKeyFieldNamedID() {
 			return fmt.Errorf("树形表主键字段名称必须为id")
 		}
-		if !fieldList.HasParentIDWithNumericType() {
-			return fmt.Errorf("树形表必须包含pid或parent_id字段，且字段类型必须与主键类型一致")
+		// 检查parent_id字段是否与主键类型一致
+		_, err := fieldList.HasParentIDWithNumericType()
+		if err != nil {
+			return err
 		}
+
 		if !fieldList.HasNameField() {
 			return fmt.Errorf("树形表必须包含name字段")
 		}
