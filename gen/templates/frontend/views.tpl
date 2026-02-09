@@ -102,6 +102,10 @@
                         <a-radio v-for="item in {{.JsonTag}}Option" :key="item.value" :value="{{if eq .FrontendType "number"}}Number(item.value){{else}}item.value{{end}}">{{`{{ item.name }}`}}</a-radio>
                     {{- end}}
                     </a-radio-group>
+                    {{- else if eq .FormType "sysuser"}}
+                    <SelectUser v-model="editingData.{{.JsonTag}}" placeholder="请选择{{.Comment}}" />
+                    {{- else if eq .FormType "sysdep"}}
+                    <SelectDep v-model="editingData.{{.JsonTag}}" placeholder="请选择{{.Comment}}" />
                     {{- else}}
                     <a-input-number v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />{{- end}}
                     {{- else if eq .GoType "time.Time"}}
@@ -154,6 +158,10 @@
                     <MultiImageUpload v-model="{{.JsonTag}}List" title="{{.Comment}}" />
                     {{- else if eq .FormType "richtext"}}
                     <WangEditor v-model="editingData.{{.JsonTag}}" />
+                    {{- else if eq .FormType "sysuser"}}
+                    <SelectUser v-model="editingData.{{.JsonTag}}" placeholder="请选择{{.Comment}}" :multiple="true" />
+                    {{- else if eq .FormType "sysdep"}}
+                    <SelectDep v-model="editingData.{{.JsonTag}}" placeholder="请选择{{.Comment}}" :multiple="true" />
                     {{- else}}<a-input v-model="editingData.{{.JsonTag}}" placeholder="请输入{{.Comment}}" />{{- end}}
                     {{- end}}
                 </a-form-item>
@@ -195,6 +203,23 @@ import WangEditor from '@/components/wang-editor/index.vue';
 {{- $hasFileUpload = true}}
 import FileUpload from '@/components/upload/file-upload.vue';
 {{- end}}
+{{- end}}
+{{- end}}
+{{- $hasSelectUser := false}}
+{{- $hasSelectDep := false}}
+{{- range .Columns}}
+{{- if and (not .IsPrimary) (not .Exclude) .FormShow}}
+    {{- if eq .FormType "sysuser"}}
+    {{- if not $hasSelectUser}}
+    {{- $hasSelectUser = true}}
+import SelectUser from '@/components/select-user/index.vue';
+    {{- end}}
+    {{- else if eq .FormType "sysdep"}}
+    {{- if not $hasSelectDep}}
+    {{- $hasSelectDep = true}}
+import SelectDep from '@/components/select-department/index.vue';
+    {{- end}}
+    {{- end}}
 {{- end}}
 {{- end}}
 {{- range .Columns}}

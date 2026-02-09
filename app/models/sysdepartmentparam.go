@@ -85,7 +85,7 @@ func (r *SysDepartmentListRequest) Handler() func(db *gorm.DB) *gorm.DB {
 // SysDepartmentGetRequest 根据ID获取部门请求结构
 type SysDepartmentGetRequest struct {
 	Validator
-	ID uint `form:"id" validate:"required" message:"部门ID不能为空"`
+	ID uint `form:"id" uri:"id" validate:"required" message:"部门ID不能为空"`
 }
 
 func (r *SysDepartmentGetRequest) Validate(c *gin.Context) error {
