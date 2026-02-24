@@ -29,6 +29,8 @@ var sysUserTenantControllers = controllers.NewSysUserTenantController()     // �
 var codeGenControllers = controllers.NewCodeGenController()                 // 代码生成控制器
 var sysGenControllers = controllers.NewSysGenController()                   // 代码生成配置控制器
 var pluginsManagerControllers = controllers.NewPluginsManagerController()   // 插件管理控制器
+var sysJobsControllers = controllers.NewSysJobsController()                 // 定时任务控制器
+var sysJobResultsControllers = controllers.NewSysJobResultsController()     // 定时任务执行结果控制器
 
 // InitRoutes 初始化路由
 func InitRoutes(engine *gin.Engine) {
@@ -347,6 +349,38 @@ func InitRoutes(engine *gin.Engine) {
 				pluginsManager.POST("/import", pluginsManagerControllers.ImportPlugin)
 				// 卸载插件
 				pluginsManager.DELETE("/uninstall", pluginsManagerControllers.UninstallPlugin)
+			}
+
+			// 定时任务路由组
+			sysJobs := protected.Group("/sysJobs")
+			{
+				// 定时任务列表
+				sysJobs.GET("/list", sysJobsControllers.List)
+				// 根据ID获取定时任务信息
+				sysJobs.GET("/:id", sysJobsControllers.GetByID)
+				// 新增定时任务
+				sysJobs.POST("/add", sysJobsControllers.Create)
+				// 更新定时任务
+				sysJobs.PUT("/edit", sysJobsControllers.Update)
+				// 删除定时任务
+				sysJobs.DELETE("/delete", sysJobsControllers.Delete)
+				// 设置任务状态
+				sysJobs.PUT("/setStatus", sysJobsControllers.SetStatus)
+				// 立即执行任务
+				sysJobs.POST("/executeNow", sysJobsControllers.ExecuteNow)
+				// 获取所有执行器列表
+				sysJobs.GET("/executors", sysJobsControllers.ListExecutors)
+			}
+
+			// 定时任务执行结果路由组
+			sysJobResults := protected.Group("/sysJobResults")
+			{
+				// 定时任务执行结果列表（分页查询）
+				sysJobResults.GET("/list", sysJobResultsControllers.List)
+				// 根据ID获取定时任务执行结果信息
+				sysJobResults.GET("/:id", sysJobResultsControllers.GetByID)
+				// 删除定时任务执行结果
+				sysJobResults.DELETE("/delete", sysJobResultsControllers.Delete)
 			}
 		}
 	}

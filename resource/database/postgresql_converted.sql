@@ -24,19 +24,19 @@ CREATE TABLE demo_students (
     PRIMARY KEY (student_id)
 );
 
-COMMENT ON COLUMN demo_students.updated_at IS '更新时间';
-COMMENT ON COLUMN demo_students.deleted_at IS '删除时间';
 COMMENT ON COLUMN demo_students.created_by IS '创建人';
+COMMENT ON COLUMN demo_students.tenant_id IS '租户ID字段';
 COMMENT ON COLUMN demo_students.student_name IS '姓名';
 COMMENT ON COLUMN demo_students.age IS '年龄';
 COMMENT ON COLUMN demo_students.gender IS '性别';
-COMMENT ON COLUMN demo_students.admission_date IS '入学日期';
-COMMENT ON COLUMN demo_students.created_at IS '创建时间';
-COMMENT ON COLUMN demo_students.tenant_id IS '租户ID字段';
 COMMENT ON COLUMN demo_students.class_name IS '班级名称';
-COMMENT ON COLUMN demo_students.email IS ' 邮箱';
+COMMENT ON COLUMN demo_students.admission_date IS '入学日期';
 COMMENT ON COLUMN demo_students.phone IS '电话号码';
+COMMENT ON COLUMN demo_students.created_at IS '创建时间';
+COMMENT ON COLUMN demo_students.deleted_at IS '删除时间';
+COMMENT ON COLUMN demo_students.email IS ' 邮箱';
 COMMENT ON COLUMN demo_students.address IS '地址';
+COMMENT ON COLUMN demo_students.updated_at IS '更新时间';
 
 -- Records of demo_students
 -- Table structure for demo_teacher
@@ -60,21 +60,21 @@ CREATE TABLE demo_teacher (
     PRIMARY KEY (id)
 );
 
-COMMENT ON COLUMN demo_teacher.updated_at IS '更新时间';
-COMMENT ON COLUMN demo_teacher.id IS '主键ID';
 COMMENT ON COLUMN demo_teacher.name IS '教师姓名';
 COMMENT ON COLUMN demo_teacher.employee_id IS '工号';
-COMMENT ON COLUMN demo_teacher.gender IS '性别：0-未知 1-男 2-女';
-COMMENT ON COLUMN demo_teacher.email IS '邮箱';
 COMMENT ON COLUMN demo_teacher.subject IS '所教学科';
-COMMENT ON COLUMN demo_teacher.created_at IS '创建时间';
-COMMENT ON COLUMN demo_teacher.hire_date IS '入职日期';
-COMMENT ON COLUMN demo_teacher.created_by IS '创建人';
-COMMENT ON COLUMN demo_teacher.deleted_at IS '删除时间';
-COMMENT ON COLUMN demo_teacher.birth_date IS '出生日期';
-COMMENT ON COLUMN demo_teacher.phone IS '手机号';
-COMMENT ON COLUMN demo_teacher.title IS '职称';
 COMMENT ON COLUMN demo_teacher.status IS '状态：0-离职 1-在职';
+COMMENT ON COLUMN demo_teacher.created_by IS '创建人';
+COMMENT ON COLUMN demo_teacher.id IS '主键ID';
+COMMENT ON COLUMN demo_teacher.birth_date IS '出生日期';
+COMMENT ON COLUMN demo_teacher.gender IS '性别：0-未知 1-男 2-女';
+COMMENT ON COLUMN demo_teacher.hire_date IS '入职日期';
+COMMENT ON COLUMN demo_teacher.created_at IS '创建时间';
+COMMENT ON COLUMN demo_teacher.deleted_at IS '删除时间';
+COMMENT ON COLUMN demo_teacher.phone IS '手机号';
+COMMENT ON COLUMN demo_teacher.email IS '邮箱';
+COMMENT ON COLUMN demo_teacher.title IS '职称';
+COMMENT ON COLUMN demo_teacher.updated_at IS '更新时间';
 
 -- Records of demo_teacher
 -- Table structure for example
@@ -91,9 +91,9 @@ CREATE TABLE example (
     PRIMARY KEY (id)
 );
 
-COMMENT ON COLUMN example.name IS '名称';
 COMMENT ON COLUMN example.description IS '描述';
 COMMENT ON COLUMN example.tenant_id IS '租户ID字段';
+COMMENT ON COLUMN example.name IS '名称';
 
 -- Records of example
 INSERT INTO example VALUES ('1', '项目管理系统', '用于管理项目进度和任务分配的系统', '2024-01-15 09:30:00', '2024-01-20 14:25:00', NULL, '1', '1');
@@ -134,15 +134,15 @@ CREATE TABLE sys_affix (
 
 COMMENT ON COLUMN sys_affix.name IS '文件名';
 COMMENT ON COLUMN sys_affix.path IS '路径';
+COMMENT ON COLUMN sys_affix.url IS '文件url';
+COMMENT ON COLUMN sys_affix.suffix IS '文件后缀';
+COMMENT ON COLUMN sys_affix.thumbnail_name IS '缩略图名称';
+COMMENT ON COLUMN sys_affix.thumbnail_url IS '缩略图URL';
+COMMENT ON COLUMN sys_affix.id IS 'ID';
 COMMENT ON COLUMN sys_affix.size IS '文件大小';
 COMMENT ON COLUMN sys_affix.ftype IS '文件类型';
 COMMENT ON COLUMN sys_affix.tenant_id IS '租户ID字段';
-COMMENT ON COLUMN sys_affix.thumbnail_name IS '缩略图名称';
-COMMENT ON COLUMN sys_affix.id IS 'ID';
-COMMENT ON COLUMN sys_affix.url IS '文件url';
-COMMENT ON COLUMN sys_affix.suffix IS '文件后缀';
 COMMENT ON COLUMN sys_affix.thumbnail_path IS '缩略图路径';
-COMMENT ON COLUMN sys_affix.thumbnail_url IS '缩略图URL';
 
 -- Records of sys_affix
 -- Table structure for sys_api
@@ -160,10 +160,10 @@ CREATE TABLE sys_api (
     PRIMARY KEY (id)
 );
 
-COMMENT ON COLUMN sys_api.title IS '权限名称';
 COMMENT ON COLUMN sys_api.path IS '权限路径';
 COMMENT ON COLUMN sys_api.method IS '请求方法';
 COMMENT ON COLUMN sys_api.api_group IS '分组';
+COMMENT ON COLUMN sys_api.title IS '权限名称';
 
 -- Records of sys_api
 INSERT INTO sys_api VALUES ('1', '用户登录', '/api/login', 'POST', '认证管理', '2025-09-03 11:13:09', '2025-09-03 11:13:09', NULL, '1');
@@ -273,6 +273,16 @@ INSERT INTO sys_api VALUES ('199', '导出插件', '/api/pluginsmanager/export',
 INSERT INTO sys_api VALUES ('200', '导入插件', '/api/pluginsmanager/import', 'POST', '插件管理', '2025-12-08 16:47:11', '2025-12-08 16:47:11', NULL, '1');
 INSERT INTO sys_api VALUES ('201', '卸载插件', '/api/pluginsmanager/uninstall', 'DELETE', '插件管理', '2025-12-08 16:48:07', '2025-12-08 16:48:07', NULL, '1');
 INSERT INTO sys_api VALUES ('202', '切换租户', '/api/users/switchTenant/:tenantld', 'GET', '用户管理', '2026-01-09 16:29:37', '2026-01-09 16:29:37', NULL, '1');
+INSERT INTO sys_api VALUES ('203', '定时任务列表', '/api/sysjobs/list', 'GET', '任务调度', '2026-02-11 11:56:54', '2026-02-11 11:56:54', NULL, '1');
+INSERT INTO sys_api VALUES ('204', '定时任务获取所有执行器列表', '/api/sysjobs/executors', 'GET', '任务调度', '2026-02-12 17:57:47', '2026-02-12 17:57:47', NULL, '1');
+INSERT INTO sys_api VALUES ('205', '定时任务新增', '/api/sysjobs/add', 'POST', '任务调度', '2026-02-11 11:57:33', '2026-02-11 11:57:33', NULL, '1');
+INSERT INTO sys_api VALUES ('206', '定时任务编辑', '/api/sysjobs/edit', 'PUT', '任务调度', '2026-02-11 11:57:58', '2026-02-11 11:57:58', NULL, '1');
+INSERT INTO sys_api VALUES ('207', '定时任务获取数据', '/api/sysjobs/:id', 'GET', '任务调度', '2026-02-11 11:59:54', '2026-02-11 11:59:54', NULL, '1');
+INSERT INTO sys_api VALUES ('208', '定时任务设置任务状态', '/api/sysjobs/setStatus', 'PUT', '任务调度', '2026-02-12 17:56:33', '2026-02-12 17:56:33', NULL, '1');
+INSERT INTO sys_api VALUES ('209', '定时任务删除', '/api/sysjobs/delete', 'DELETE', '任务调度', '2026-02-11 11:59:05', '2026-02-11 11:59:05', NULL, '1');
+INSERT INTO sys_api VALUES ('210', '定时任务立即执行任务', '/api/sysjobs/executeNow', 'POST', '任务调度', '2026-02-12 17:57:07', '2026-02-12 17:57:07', NULL, '1');
+INSERT INTO sys_api VALUES ('211', '定时任务日志', '/api/sysJobResults/list', 'GET', '任务调度', '2026-02-11 12:00:54', '2026-02-11 12:00:54', NULL, '1');
+INSERT INTO sys_api VALUES ('212', '定时任务日志删除', '/api/sysJobResults/delete', 'DELETE', '任务调度', '2026-02-11 12:01:22', '2026-02-11 12:01:22', NULL, '1');
 -- Table structure for sys_casbin_rule
 DROP TABLE IF EXISTS sys_casbin_rule;
 CREATE TABLE sys_casbin_rule (
@@ -291,95 +301,96 @@ CREATE TABLE sys_casbin_rule (
 -- Records of sys_casbin_rule
 INSERT INTO sys_casbin_rule VALUES ('6266', 'g', 'user_1', 'role_1', '*', '', '', '');
 INSERT INTO sys_casbin_rule VALUES ('4189', 'g', 'user_4', 'role_2', '*', '', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7045', 'p', 'role_1', '/api/codegen/generate', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7092', 'p', 'role_1', '/api/codegen/insertmenuandapi', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7091', 'p', 'role_1', '/api/codegen/preview', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7025', 'p', 'role_1', '/api/codegen/tables', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7037', 'p', 'role_1', '/api/config/get', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7107', 'p', 'role_1', '/api/config/update', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7100', 'p', 'role_1', '/api/config/viewCache', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7111', 'p', 'role_1', '/api/plugins/example/:id', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7032', 'p', 'role_1', '/api/plugins/example/add', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7048', 'p', 'role_1', '/api/plugins/example/delete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7082', 'p', 'role_1', '/api/plugins/example/edit', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7110', 'p', 'role_1', '/api/plugins/example/list', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7065', 'p', 'role_1', '/api/pluginsmanager/export', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7098', 'p', 'role_1', '/api/pluginsmanager/exports', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7087', 'p', 'role_1', '/api/pluginsmanager/import', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7103', 'p', 'role_1', '/api/pluginsmanager/uninstall', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7096', 'p', 'role_1', '/api/sysAffix/delete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7066', 'p', 'role_1', '/api/sysAffix/download/:id', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7029', 'p', 'role_1', '/api/sysAffix/list', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7099', 'p', 'role_1', '/api/sysAffix/updateName', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7095', 'p', 'role_1', '/api/sysAffix/upload', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7052', 'p', 'role_1', '/api/sysApi/:id', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7056', 'p', 'role_1', '/api/sysApi/add', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7072', 'p', 'role_1', '/api/sysApi/delete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7071', 'p', 'role_1', '/api/sysApi/edit', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7075', 'p', 'role_1', '/api/sysApi/list', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7053', 'p', 'role_1', '/api/sysDepartment/add', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7073', 'p', 'role_1', '/api/sysDepartment/delete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7042', 'p', 'role_1', '/api/sysDepartment/edit', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7069', 'p', 'role_1', '/api/sysDepartment/getDivision', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7085', 'p', 'role_1', '/api/sysDict/add', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7077', 'p', 'role_1', '/api/sysDict/delete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7089', 'p', 'role_1', '/api/sysDict/edit', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7083', 'p', 'role_1', '/api/sysDict/getAllDicts', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7070', 'p', 'role_1', '/api/sysDict/list', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7074', 'p', 'role_1', '/api/sysDictItem/add', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7036', 'p', 'role_1', '/api/sysDictItem/delete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7090', 'p', 'role_1', '/api/sysDictItem/edit', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7078', 'p', 'role_1', '/api/sysDictItem/getByDictId/:dictId', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7046', 'p', 'role_1', '/api/sysGen/:id', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7064', 'p', 'role_1', '/api/sysGen/:id', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7057', 'p', 'role_1', '/api/sysGen/batchInsert', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7049', 'p', 'role_1', '/api/sysGen/list', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7054', 'p', 'role_1', '/api/sysGen/refreshFields', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7031', 'p', 'role_1', '/api/sysGen/update', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7094', 'p', 'role_1', '/api/sysMenu/add', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7035', 'p', 'role_1', '/api/sysMenu/apis/:id', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7055', 'p', 'role_1', '/api/sysMenu/batchDelete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7076', 'p', 'role_1', '/api/sysMenu/delete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7034', 'p', 'role_1', '/api/sysMenu/edit', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7079', 'p', 'role_1', '/api/sysMenu/export', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7104', 'p', 'role_1', '/api/sysMenu/getMenuList', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7051', 'p', 'role_1', '/api/sysMenu/getRouters', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7043', 'p', 'role_1', '/api/sysMenu/import', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7060', 'p', 'role_1', '/api/sysMenu/setApis', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7039', 'p', 'role_1', '/api/sysOperationLog/delete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7101', 'p', 'role_1', '/api/sysOperationLog/export', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7027', 'p', 'role_1', '/api/sysOperationLog/list', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7028', 'p', 'role_1', '/api/sysRole/add', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7084', 'p', 'role_1', '/api/sysRole/addRoleMenu', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7109', 'p', 'role_1', '/api/sysRole/dataScope', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7059', 'p', 'role_1', '/api/sysRole/delete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7058', 'p', 'role_1', '/api/sysRole/edit', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7088', 'p', 'role_1', '/api/sysRole/getRoles', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7105', 'p', 'role_1', '/api/sysRole/getUserPermission/:roleId', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7030', 'p', 'role_1', '/api/sysTenant/:id', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7062', 'p', 'role_1', '/api/sysTenant/:id', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7102', 'p', 'role_1', '/api/sysTenant/add', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7108', 'p', 'role_1', '/api/sysTenant/edit', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7061', 'p', 'role_1', '/api/sysTenant/list', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7097', 'p', 'role_1', '/api/sysUserTenant/batchAdd', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7080', 'p', 'role_1', '/api/sysUserTenant/batchDelete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7086', 'p', 'role_1', '/api/sysUserTenant/get', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7081', 'p', 'role_1', '/api/sysUserTenant/getRolesAll', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7106', 'p', 'role_1', '/api/sysUserTenant/getUserRoleIDs', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7063', 'p', 'role_1', '/api/sysUserTenant/list', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7113', 'p', 'role_1', '/api/sysUserTenant/setUserRoles', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7112', 'p', 'role_1', '/api/sysUserTenant/userListAll', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7067', 'p', 'role_1', '/api/users/:id', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7033', 'p', 'role_1', '/api/users/add', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7041', 'p', 'role_1', '/api/users/delete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7040', 'p', 'role_1', '/api/users/edit', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7093', 'p', 'role_1', '/api/users/list', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7047', 'p', 'role_1', '/api/users/logout', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7050', 'p', 'role_1', '/api/users/profile', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7068', 'p', 'role_1', '/api/users/switchTenant/:tenantld', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7038', 'p', 'role_1', '/api/users/updateAccount', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7044', 'p', 'role_1', '/api/users/updateBasicInfo', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7026', 'p', 'role_1', '/api/users/uploadAvatar', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7386', 'p', 'role_1', '/api/codegen/generate', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7425', 'p', 'role_1', '/api/codegen/insertmenuandapi', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7443', 'p', 'role_1', '/api/codegen/preview', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7412', 'p', 'role_1', '/api/codegen/tables', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7384', 'p', 'role_1', '/api/config/get', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7452', 'p', 'role_1', '/api/config/update', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7442', 'p', 'role_1', '/api/config/viewCache', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7469', 'p', 'role_1', '/api/plugins/example/:id', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7463', 'p', 'role_1', '/api/plugins/example/add', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7464', 'p', 'role_1', '/api/plugins/example/delete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7403', 'p', 'role_1', '/api/plugins/example/edit', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7421', 'p', 'role_1', '/api/plugins/example/list', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7431', 'p', 'role_1', '/api/pluginsmanager/export', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7426', 'p', 'role_1', '/api/pluginsmanager/exports', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7459', 'p', 'role_1', '/api/pluginsmanager/import', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7454', 'p', 'role_1', '/api/pluginsmanager/uninstall', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7420', 'p', 'role_1', '/api/sysAffix/delete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7410', 'p', 'role_1', '/api/sysAffix/download/:id', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7419', 'p', 'role_1', '/api/sysAffix/list', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7402', 'p', 'role_1', '/api/sysAffix/updateName', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7462', 'p', 'role_1', '/api/sysAffix/upload', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7423', 'p', 'role_1', '/api/sysApi/:id', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7461', 'p', 'role_1', '/api/sysApi/add', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7456', 'p', 'role_1', '/api/sysApi/delete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7392', 'p', 'role_1', '/api/sysApi/edit', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7467', 'p', 'role_1', '/api/sysApi/list', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7432', 'p', 'role_1', '/api/sysDepartment/:id', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7417', 'p', 'role_1', '/api/sysDepartment/add', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7446', 'p', 'role_1', '/api/sysDepartment/delete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7393', 'p', 'role_1', '/api/sysDepartment/edit', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7429', 'p', 'role_1', '/api/sysDepartment/getDivision', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7447', 'p', 'role_1', '/api/sysDict/add', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7468', 'p', 'role_1', '/api/sysDict/delete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7418', 'p', 'role_1', '/api/sysDict/edit', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7455', 'p', 'role_1', '/api/sysDict/getAllDicts', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7449', 'p', 'role_1', '/api/sysDict/list', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7457', 'p', 'role_1', '/api/sysDictItem/add', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7409', 'p', 'role_1', '/api/sysDictItem/delete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7401', 'p', 'role_1', '/api/sysDictItem/edit', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7433', 'p', 'role_1', '/api/sysDictItem/getByDictId/:dictId', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7414', 'p', 'role_1', '/api/sysGen/:id', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7413', 'p', 'role_1', '/api/sysGen/:id', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7453', 'p', 'role_1', '/api/sysGen/batchInsert', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7411', 'p', 'role_1', '/api/sysGen/list', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7424', 'p', 'role_1', '/api/sysGen/refreshFields', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7382', 'p', 'role_1', '/api/sysGen/update', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7441', 'p', 'role_1', '/api/sysMenu/add', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7391', 'p', 'role_1', '/api/sysMenu/apis/:id', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7390', 'p', 'role_1', '/api/sysMenu/batchDelete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7451', 'p', 'role_1', '/api/sysMenu/delete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7395', 'p', 'role_1', '/api/sysMenu/edit', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7435', 'p', 'role_1', '/api/sysMenu/export', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7445', 'p', 'role_1', '/api/sysMenu/getMenuList', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7399', 'p', 'role_1', '/api/sysMenu/getRouters', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7458', 'p', 'role_1', '/api/sysMenu/import', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7396', 'p', 'role_1', '/api/sysMenu/setApis', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7428', 'p', 'role_1', '/api/sysOperationLog/delete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7397', 'p', 'role_1', '/api/sysOperationLog/export', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7383', 'p', 'role_1', '/api/sysOperationLog/list', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7450', 'p', 'role_1', '/api/sysRole/add', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7408', 'p', 'role_1', '/api/sysRole/addRoleMenu', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7434', 'p', 'role_1', '/api/sysRole/dataScope', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7389', 'p', 'role_1', '/api/sysRole/delete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7400', 'p', 'role_1', '/api/sysRole/edit', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7415', 'p', 'role_1', '/api/sysRole/getRoles', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7416', 'p', 'role_1', '/api/sysRole/getUserPermission/:roleId', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7430', 'p', 'role_1', '/api/sysTenant/:id', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7398', 'p', 'role_1', '/api/sysTenant/:id', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7385', 'p', 'role_1', '/api/sysTenant/add', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7436', 'p', 'role_1', '/api/sysTenant/edit', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7404', 'p', 'role_1', '/api/sysTenant/list', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7405', 'p', 'role_1', '/api/sysUserTenant/batchAdd', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7422', 'p', 'role_1', '/api/sysUserTenant/batchDelete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7438', 'p', 'role_1', '/api/sysUserTenant/get', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7406', 'p', 'role_1', '/api/sysUserTenant/getRolesAll', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7381', 'p', 'role_1', '/api/sysUserTenant/getUserRoleIDs', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7437', 'p', 'role_1', '/api/sysUserTenant/list', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7439', 'p', 'role_1', '/api/sysUserTenant/setUserRoles', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7470', 'p', 'role_1', '/api/sysUserTenant/userListAll', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7444', 'p', 'role_1', '/api/users/:id', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7387', 'p', 'role_1', '/api/users/add', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7388', 'p', 'role_1', '/api/users/delete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7460', 'p', 'role_1', '/api/users/edit', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7466', 'p', 'role_1', '/api/users/list', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7440', 'p', 'role_1', '/api/users/logout', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7427', 'p', 'role_1', '/api/users/profile', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7407', 'p', 'role_1', '/api/users/switchTenant/:tenantld', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7394', 'p', 'role_1', '/api/users/updateAccount', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7465', 'p', 'role_1', '/api/users/updateBasicInfo', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7448', 'p', 'role_1', '/api/users/uploadAvatar', 'POST', '*', '', '');
 INSERT INTO sys_casbin_rule VALUES ('4148', 'p', 'role_10', '/api/config/get', 'GET', '*', '', '');
 INSERT INTO sys_casbin_rule VALUES ('4155', 'p', 'role_10', '/api/config/update', 'PUT', '*', '', '');
 INSERT INTO sys_casbin_rule VALUES ('4162', 'p', 'role_10', '/api/config/viewCache', 'GET', '*', '', '');
@@ -443,95 +454,96 @@ INSERT INTO sys_casbin_rule VALUES ('4170', 'p', 'role_10', '/api/users/logout',
 INSERT INTO sys_casbin_rule VALUES ('4183', 'p', 'role_10', '/api/users/profile', 'GET', '*', '', '');
 INSERT INTO sys_casbin_rule VALUES ('4138', 'p', 'role_10', '/api/users/updateAccount', 'PUT', '*', '', '');
 INSERT INTO sys_casbin_rule VALUES ('4171', 'p', 'role_10', '/api/users/uploadAvatar', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7118', 'p', 'role_2', '/api/codegen/generate', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7132', 'p', 'role_2', '/api/codegen/insertmenuandapi', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7183', 'p', 'role_2', '/api/codegen/preview', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7117', 'p', 'role_2', '/api/codegen/tables', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7129', 'p', 'role_2', '/api/config/get', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7163', 'p', 'role_2', '/api/config/update', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7188', 'p', 'role_2', '/api/config/viewCache', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7130', 'p', 'role_2', '/api/plugins/example/:id', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7147', 'p', 'role_2', '/api/plugins/example/add', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7156', 'p', 'role_2', '/api/plugins/example/delete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7155', 'p', 'role_2', '/api/plugins/example/edit', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7149', 'p', 'role_2', '/api/plugins/example/list', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7152', 'p', 'role_2', '/api/pluginsmanager/export', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7126', 'p', 'role_2', '/api/pluginsmanager/exports', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7136', 'p', 'role_2', '/api/pluginsmanager/import', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7198', 'p', 'role_2', '/api/pluginsmanager/uninstall', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7196', 'p', 'role_2', '/api/sysAffix/delete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7140', 'p', 'role_2', '/api/sysAffix/download/:id', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7115', 'p', 'role_2', '/api/sysAffix/list', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7162', 'p', 'role_2', '/api/sysAffix/updateName', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7154', 'p', 'role_2', '/api/sysAffix/upload', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7121', 'p', 'role_2', '/api/sysApi/:id', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7128', 'p', 'role_2', '/api/sysApi/add', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7187', 'p', 'role_2', '/api/sysApi/delete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7145', 'p', 'role_2', '/api/sysApi/edit', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7144', 'p', 'role_2', '/api/sysApi/list', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7139', 'p', 'role_2', '/api/sysDepartment/add', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7170', 'p', 'role_2', '/api/sysDepartment/delete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7122', 'p', 'role_2', '/api/sysDepartment/edit', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7173', 'p', 'role_2', '/api/sysDepartment/getDivision', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7195', 'p', 'role_2', '/api/sysDict/add', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7123', 'p', 'role_2', '/api/sysDict/delete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7133', 'p', 'role_2', '/api/sysDict/edit', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7119', 'p', 'role_2', '/api/sysDict/getAllDicts', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7191', 'p', 'role_2', '/api/sysDict/list', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7146', 'p', 'role_2', '/api/sysDictItem/add', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7181', 'p', 'role_2', '/api/sysDictItem/delete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7202', 'p', 'role_2', '/api/sysDictItem/edit', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7134', 'p', 'role_2', '/api/sysDictItem/getByDictId/:dictId', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7148', 'p', 'role_2', '/api/sysGen/:id', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7143', 'p', 'role_2', '/api/sysGen/:id', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7197', 'p', 'role_2', '/api/sysGen/batchInsert', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7135', 'p', 'role_2', '/api/sysGen/list', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7169', 'p', 'role_2', '/api/sysGen/refreshFields', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7172', 'p', 'role_2', '/api/sysGen/update', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7194', 'p', 'role_2', '/api/sysMenu/add', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7180', 'p', 'role_2', '/api/sysMenu/apis/:id', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7186', 'p', 'role_2', '/api/sysMenu/batchDelete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7175', 'p', 'role_2', '/api/sysMenu/delete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7114', 'p', 'role_2', '/api/sysMenu/edit', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7141', 'p', 'role_2', '/api/sysMenu/export', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7201', 'p', 'role_2', '/api/sysMenu/getMenuList', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7184', 'p', 'role_2', '/api/sysMenu/getRouters', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7131', 'p', 'role_2', '/api/sysMenu/import', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7138', 'p', 'role_2', '/api/sysMenu/setApis', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7189', 'p', 'role_2', '/api/sysOperationLog/delete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7182', 'p', 'role_2', '/api/sysOperationLog/export', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7120', 'p', 'role_2', '/api/sysOperationLog/list', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7137', 'p', 'role_2', '/api/sysRole/add', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7179', 'p', 'role_2', '/api/sysRole/addRoleMenu', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7176', 'p', 'role_2', '/api/sysRole/dataScope', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7166', 'p', 'role_2', '/api/sysRole/delete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7127', 'p', 'role_2', '/api/sysRole/edit', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7161', 'p', 'role_2', '/api/sysRole/getRoles', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7174', 'p', 'role_2', '/api/sysRole/getUserPermission/:roleId', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7190', 'p', 'role_2', '/api/sysTenant/:id', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7167', 'p', 'role_2', '/api/sysTenant/:id', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7150', 'p', 'role_2', '/api/sysTenant/add', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7164', 'p', 'role_2', '/api/sysTenant/edit', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7124', 'p', 'role_2', '/api/sysTenant/list', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7151', 'p', 'role_2', '/api/sysUserTenant/batchAdd', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7168', 'p', 'role_2', '/api/sysUserTenant/batchDelete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7177', 'p', 'role_2', '/api/sysUserTenant/get', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7171', 'p', 'role_2', '/api/sysUserTenant/getRolesAll', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7116', 'p', 'role_2', '/api/sysUserTenant/getUserRoleIDs', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7125', 'p', 'role_2', '/api/sysUserTenant/list', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7178', 'p', 'role_2', '/api/sysUserTenant/setUserRoles', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7142', 'p', 'role_2', '/api/sysUserTenant/userListAll', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7158', 'p', 'role_2', '/api/users/:id', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7185', 'p', 'role_2', '/api/users/add', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7193', 'p', 'role_2', '/api/users/delete', 'DELETE', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7192', 'p', 'role_2', '/api/users/edit', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7153', 'p', 'role_2', '/api/users/list', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7199', 'p', 'role_2', '/api/users/logout', 'POST', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7200', 'p', 'role_2', '/api/users/profile', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7160', 'p', 'role_2', '/api/users/switchTenant/:tenantld', 'GET', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7157', 'p', 'role_2', '/api/users/updateAccount', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7165', 'p', 'role_2', '/api/users/updateBasicInfo', 'PUT', '*', '', '');
-INSERT INTO sys_casbin_rule VALUES ('7159', 'p', 'role_2', '/api/users/uploadAvatar', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7481', 'p', 'role_2', '/api/codegen/generate', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7540', 'p', 'role_2', '/api/codegen/insertmenuandapi', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7539', 'p', 'role_2', '/api/codegen/preview', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7497', 'p', 'role_2', '/api/codegen/tables', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7550', 'p', 'role_2', '/api/config/get', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7553', 'p', 'role_2', '/api/config/update', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7472', 'p', 'role_2', '/api/config/viewCache', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7532', 'p', 'role_2', '/api/plugins/example/:id', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7473', 'p', 'role_2', '/api/plugins/example/add', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7512', 'p', 'role_2', '/api/plugins/example/delete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7549', 'p', 'role_2', '/api/plugins/example/edit', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7541', 'p', 'role_2', '/api/plugins/example/list', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7524', 'p', 'role_2', '/api/pluginsmanager/export', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7523', 'p', 'role_2', '/api/pluginsmanager/exports', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7486', 'p', 'role_2', '/api/pluginsmanager/import', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7525', 'p', 'role_2', '/api/pluginsmanager/uninstall', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7480', 'p', 'role_2', '/api/sysAffix/delete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7506', 'p', 'role_2', '/api/sysAffix/download/:id', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7552', 'p', 'role_2', '/api/sysAffix/list', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7521', 'p', 'role_2', '/api/sysAffix/updateName', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7556', 'p', 'role_2', '/api/sysAffix/upload', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7529', 'p', 'role_2', '/api/sysApi/:id', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7518', 'p', 'role_2', '/api/sysApi/add', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7479', 'p', 'role_2', '/api/sysApi/delete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7484', 'p', 'role_2', '/api/sysApi/edit', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7476', 'p', 'role_2', '/api/sysApi/list', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7500', 'p', 'role_2', '/api/sysDepartment/:id', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7530', 'p', 'role_2', '/api/sysDepartment/add', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7519', 'p', 'role_2', '/api/sysDepartment/delete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7560', 'p', 'role_2', '/api/sysDepartment/edit', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7510', 'p', 'role_2', '/api/sysDepartment/getDivision', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7547', 'p', 'role_2', '/api/sysDict/add', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7520', 'p', 'role_2', '/api/sysDict/delete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7531', 'p', 'role_2', '/api/sysDict/edit', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7534', 'p', 'role_2', '/api/sysDict/getAllDicts', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7475', 'p', 'role_2', '/api/sysDict/list', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7502', 'p', 'role_2', '/api/sysDictItem/add', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7548', 'p', 'role_2', '/api/sysDictItem/delete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7495', 'p', 'role_2', '/api/sysDictItem/edit', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7501', 'p', 'role_2', '/api/sysDictItem/getByDictId/:dictId', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7522', 'p', 'role_2', '/api/sysGen/:id', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7498', 'p', 'role_2', '/api/sysGen/:id', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7538', 'p', 'role_2', '/api/sysGen/batchInsert', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7490', 'p', 'role_2', '/api/sysGen/list', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7517', 'p', 'role_2', '/api/sysGen/refreshFields', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7558', 'p', 'role_2', '/api/sysGen/update', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7505', 'p', 'role_2', '/api/sysMenu/add', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7491', 'p', 'role_2', '/api/sysMenu/apis/:id', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7535', 'p', 'role_2', '/api/sysMenu/batchDelete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7478', 'p', 'role_2', '/api/sysMenu/delete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7483', 'p', 'role_2', '/api/sysMenu/edit', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7485', 'p', 'role_2', '/api/sysMenu/export', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7559', 'p', 'role_2', '/api/sysMenu/getMenuList', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7527', 'p', 'role_2', '/api/sysMenu/getRouters', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7507', 'p', 'role_2', '/api/sysMenu/import', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7546', 'p', 'role_2', '/api/sysMenu/setApis', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7533', 'p', 'role_2', '/api/sysOperationLog/delete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7513', 'p', 'role_2', '/api/sysOperationLog/export', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7544', 'p', 'role_2', '/api/sysOperationLog/list', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7511', 'p', 'role_2', '/api/sysRole/add', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7487', 'p', 'role_2', '/api/sysRole/addRoleMenu', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7471', 'p', 'role_2', '/api/sysRole/dataScope', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7528', 'p', 'role_2', '/api/sysRole/delete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7482', 'p', 'role_2', '/api/sysRole/edit', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7551', 'p', 'role_2', '/api/sysRole/getRoles', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7477', 'p', 'role_2', '/api/sysRole/getUserPermission/:roleId', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7555', 'p', 'role_2', '/api/sysTenant/:id', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7508', 'p', 'role_2', '/api/sysTenant/:id', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7514', 'p', 'role_2', '/api/sysTenant/add', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7554', 'p', 'role_2', '/api/sysTenant/edit', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7503', 'p', 'role_2', '/api/sysTenant/list', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7515', 'p', 'role_2', '/api/sysUserTenant/batchAdd', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7496', 'p', 'role_2', '/api/sysUserTenant/batchDelete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7537', 'p', 'role_2', '/api/sysUserTenant/get', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7474', 'p', 'role_2', '/api/sysUserTenant/getRolesAll', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7504', 'p', 'role_2', '/api/sysUserTenant/getUserRoleIDs', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7536', 'p', 'role_2', '/api/sysUserTenant/list', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7516', 'p', 'role_2', '/api/sysUserTenant/setUserRoles', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7557', 'p', 'role_2', '/api/sysUserTenant/userListAll', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7488', 'p', 'role_2', '/api/users/:id', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7493', 'p', 'role_2', '/api/users/add', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7494', 'p', 'role_2', '/api/users/delete', 'DELETE', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7545', 'p', 'role_2', '/api/users/edit', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7543', 'p', 'role_2', '/api/users/list', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7526', 'p', 'role_2', '/api/users/logout', 'POST', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7499', 'p', 'role_2', '/api/users/profile', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7492', 'p', 'role_2', '/api/users/switchTenant/:tenantld', 'GET', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7489', 'p', 'role_2', '/api/users/updateAccount', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7509', 'p', 'role_2', '/api/users/updateBasicInfo', 'PUT', '*', '', '');
+INSERT INTO sys_casbin_rule VALUES ('7542', 'p', 'role_2', '/api/users/uploadAvatar', 'POST', '*', '', '');
 INSERT INTO sys_casbin_rule VALUES ('2966', 'p', 'role_4', '/api/sysAffix/list', 'GET', '*', '', '');
 INSERT INTO sys_casbin_rule VALUES ('2971', 'p', 'role_4', '/api/sysDict/getAllDicts', 'GET', '*', '', '');
 INSERT INTO sys_casbin_rule VALUES ('2970', 'p', 'role_4', '/api/sysMenu/getRouters', 'GET', '*', '', '');
@@ -559,15 +571,15 @@ CREATE TABLE sys_department (
     PRIMARY KEY (id)
 );
 
-COMMENT ON COLUMN sys_department.name IS '部门名称';
 COMMENT ON COLUMN sys_department.phone IS '联系电话';
 COMMENT ON COLUMN sys_department.email IS '邮箱';
+COMMENT ON COLUMN sys_department.sort IS '排序';
+COMMENT ON COLUMN sys_department.parent_id IS '父级';
 COMMENT ON COLUMN sys_department.describe IS '描述';
 COMMENT ON COLUMN sys_department.tenant_id IS '租户ID字段';
-COMMENT ON COLUMN sys_department.parent_id IS '父级';
+COMMENT ON COLUMN sys_department.name IS '部门名称';
 COMMENT ON COLUMN sys_department.status IS '状态： 0 停用 1 启用';
 COMMENT ON COLUMN sys_department.leader IS '负责人';
-COMMENT ON COLUMN sys_department.sort IS '排序';
 
 -- Records of sys_department
 INSERT INTO sys_department VALUES ('1', '0', '总部', '1', '张明', '13800000001', 'headquarters@company.com', '1', '公司总部管理部门', '2023-01-15 09:00:00', '2025-10-31 17:05:24', NULL, '1', '0');
@@ -586,10 +598,10 @@ CREATE TABLE sys_dict (
     PRIMARY KEY (id)
 );
 
-COMMENT ON COLUMN sys_dict.id IS 'ID';
-COMMENT ON COLUMN sys_dict.name IS '字典名称';
 COMMENT ON COLUMN sys_dict.code IS '字典编码';
 COMMENT ON COLUMN sys_dict.status IS '状态';
+COMMENT ON COLUMN sys_dict.id IS 'ID';
+COMMENT ON COLUMN sys_dict.name IS '字典名称';
 
 -- Records of sys_dict
 INSERT INTO sys_dict VALUES ('1', '性别', 'gender', '1', '这是一个性别字典', '2024-07-01 10:00:00', NULL, NULL, '1');
@@ -646,27 +658,26 @@ CREATE TABLE sys_gen (
     PRIMARY KEY (id)
 );
 
+COMMENT ON COLUMN sys_gen.created_by IS '创建人';
+COMMENT ON COLUMN sys_gen.relation_tree_table IS '关联的树形表';
+COMMENT ON COLUMN sys_gen.id IS 'ID';
+COMMENT ON COLUMN sys_gen.name IS '数据库表名';
+COMMENT ON COLUMN sys_gen.describe IS '描述';
+COMMENT ON COLUMN sys_gen.created_at IS '创建时间';
 COMMENT ON COLUMN sys_gen.db_type IS '数据库类型';
 COMMENT ON COLUMN sys_gen.module_name IS '模块名称';
-COMMENT ON COLUMN sys_gen.created_at IS '创建时间';
-COMMENT ON COLUMN sys_gen.updated_at IS '修改时间';
+COMMENT ON COLUMN sys_gen.is_menu IS '是否生成菜单';
+COMMENT ON COLUMN sys_gen.is_relation_tree IS '是否关联树形分类';
+COMMENT ON COLUMN sys_gen.relation_field IS '关联的字段ID';
 COMMENT ON COLUMN sys_gen.deleted_at IS '删除时间';
 COMMENT ON COLUMN sys_gen.is_cover IS '是否覆盖';
-COMMENT ON COLUMN sys_gen.is_menu IS '是否生成菜单';
-COMMENT ON COLUMN sys_gen.id IS 'ID';
 COMMENT ON COLUMN sys_gen.database IS '数据库';
-COMMENT ON COLUMN sys_gen.name IS '数据库表名';
 COMMENT ON COLUMN sys_gen.file_name IS '文件名称';
-COMMENT ON COLUMN sys_gen.describe IS '描述';
-COMMENT ON COLUMN sys_gen.created_by IS '创建人';
-COMMENT ON COLUMN sys_gen.is_tree IS '是否为树状结构';
-COMMENT ON COLUMN sys_gen.is_relation_tree IS '是否关联树形分类';
-COMMENT ON COLUMN sys_gen.relation_tree_table IS '关联的树形表';
-COMMENT ON COLUMN sys_gen.relation_field IS '关联的字段ID';
+COMMENT ON COLUMN sys_gen.updated_at IS '修改时间';
 
 -- Records of sys_gen
-INSERT INTO sys_gen VALUES ('23', 'mysql', 'gin-fast-tenant', 'demo_students', 'test_school', 'demo_students', '学员管理', '2025-11-13 15:17:27', '2025-11-17 16:31:43', NULL, '1', '1', '1', 0, 0, 0, 0);
-INSERT INTO sys_gen VALUES ('24', 'mysql', 'gin-fast-tenant', 'demo_teacher', 'test_school', 'demo_teacher', '教师表', '2025-11-13 15:17:27', '2025-11-17 17:29:28', NULL, '1', '1', '1', 0, 0, 0, 0);
+INSERT INTO sys_gen VALUES ('23', 'mysql', 'gin-fast-tenant', 'demo_students', 'test_school', 'demo_students', '学员管理', '2025-11-13 15:17:27', '2025-11-17 16:31:43', NULL, '1', '1', '1', NULL, '0', '0', '0');
+INSERT INTO sys_gen VALUES ('24', 'mysql', 'gin-fast-tenant', 'demo_teacher', 'test_school', 'demo_teacher', '教师表', '2025-11-13 15:17:27', '2025-11-17 17:29:28', NULL, '1', '1', '1', NULL, '0', '0', '0');
 -- Table structure for sys_gen_field
 DROP TABLE IF EXISTS sys_gen_field;
 CREATE TABLE sys_gen_field (
@@ -693,24 +704,24 @@ CREATE TABLE sys_gen_field (
     PRIMARY KEY (id)
 );
 
-COMMENT ON COLUMN sys_gen_field.list_show IS '列表显示';
-COMMENT ON COLUMN sys_gen_field.query_show IS '查询显示';
 COMMENT ON COLUMN sys_gen_field.data_type IS '数据类型';
 COMMENT ON COLUMN sys_gen_field.data_comment IS '列注释';
 COMMENT ON COLUMN sys_gen_field.data_extra IS '额外信息';
-COMMENT ON COLUMN sys_gen_field.data_column_key IS '列键信息';
-COMMENT ON COLUMN sys_gen_field.data_unsigned IS '是否为无符号类型';
+COMMENT ON COLUMN sys_gen_field.require IS '是否必填';
 COMMENT ON COLUMN sys_gen_field.query_type IS '查询方式\r\nEQ  等于\r\nNE 不等于\r\nGT 大于\r\nGTE 大于等于\r\nLT 小于\r\nLTE 小于等于\r\nLIKE 包含\r\nBETWEEN 范围';
-COMMENT ON COLUMN sys_gen_field.form_type IS '表单类型\r\ninput 文本框\r\ntextarea 文本域\r\nnumber 数字输入框\r\nselect 下拉框\r\nradio 单选框\r\ncheckbox 复选框\r\ndatetime 日期时间';
 COMMENT ON COLUMN sys_gen_field.dict_type IS '关联的字典';
-COMMENT ON COLUMN sys_gen_field.gorm_tag IS 'gorm标签';
-COMMENT ON COLUMN sys_gen_field.form_show IS '表单显示';
-COMMENT ON COLUMN sys_gen_field.data_name IS '列名';
 COMMENT ON COLUMN sys_gen_field.is_primary IS '是否主键';
 COMMENT ON COLUMN sys_gen_field.go_type IS 'go类型';
-COMMENT ON COLUMN sys_gen_field.front_type IS '前端类型';
 COMMENT ON COLUMN sys_gen_field.custom_name IS '自定义字段名称';
-COMMENT ON COLUMN sys_gen_field.require IS '是否必填';
+COMMENT ON COLUMN sys_gen_field.list_show IS '列表显示';
+COMMENT ON COLUMN sys_gen_field.data_unsigned IS '是否为无符号类型';
+COMMENT ON COLUMN sys_gen_field.front_type IS '前端类型';
+COMMENT ON COLUMN sys_gen_field.form_type IS '表单类型\r\ninput 文本框\r\ntextarea 文本域\r\nnumber 数字输入框\r\nselect 下拉框\r\nradio 单选框\r\ncheckbox 复选框\r\ndatetime 日期时间';
+COMMENT ON COLUMN sys_gen_field.gorm_tag IS 'gorm标签';
+COMMENT ON COLUMN sys_gen_field.data_name IS '列名';
+COMMENT ON COLUMN sys_gen_field.data_column_key IS '列键信息';
+COMMENT ON COLUMN sys_gen_field.form_show IS '表单显示';
+COMMENT ON COLUMN sys_gen_field.query_show IS '查询显示';
 
 -- Records of sys_gen_field
 INSERT INTO sys_gen_field VALUES ('185', '23', 'student_id', 'int', 'ID', 'auto_increment', 'PRI', '1', '1', 'uint', 'number', 'stu_id', '1', '0', '0', '1', 'EQ', '', '', 'column:student_id;primaryKey;not NULL;autoIncrement');
@@ -742,6 +753,77 @@ INSERT INTO sys_gen_field VALUES ('210', '24', 'created_at', 'datetime', '创建
 INSERT INTO sys_gen_field VALUES ('211', '24', 'updated_at', 'datetime', '更新时间', '', '', '0', '0', 'time.Time', 'string', 'updated_at', NULL, NULL, NULL, NULL, '', '', '', 'column:updated_at');
 INSERT INTO sys_gen_field VALUES ('212', '24', 'deleted_at', 'datetime', '删除时间', '', '', '0', '0', 'time.Time', 'string', 'deleted_at', NULL, NULL, NULL, NULL, '', '', '', 'column:deleted_at');
 INSERT INTO sys_gen_field VALUES ('213', '24', 'created_by', 'int', '创建人', '', '', '1', '0', 'uint', 'number', 'created_by', NULL, NULL, NULL, NULL, '', '', '', 'column:created_by');
+-- Table structure for sys_jobs
+DROP TABLE IF EXISTS sys_jobs;
+CREATE TABLE sys_jobs (
+    id VARCHAR(255) NOT NULL,
+    group VARCHAR(100) NOT NULL,
+    name VARCHAR(200) NOT NULL,
+    description TEXT,
+    executor_name VARCHAR(100) NOT NULL,
+    execution_policy SMALLINT NOT NULL DEFAULT '1',
+    status SMALLINT NOT NULL DEFAULT '1',
+    cron_expression VARCHAR(100) NOT NULL,
+    parameters JSON,
+    blocking_policy SMALLINT NOT NULL DEFAULT '0',
+    timeout BIGINT NOT NULL DEFAULT '30000000000',
+    max_retry INTEGER NOT NULL DEFAULT '0',
+    retry_interval BIGINT NOT NULL DEFAULT '10000000000',
+    parallel_num INTEGER NOT NULL DEFAULT '1',
+    running_count INTEGER NOT NULL DEFAULT '0',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP,
+    created_by INTEGER,
+    PRIMARY KEY (id)
+);
+
+COMMENT ON COLUMN sys_jobs.parameters IS '任务参数(JSON格式)';
+COMMENT ON COLUMN sys_jobs.retry_interval IS '重试间隔(纳秒)';
+COMMENT ON COLUMN sys_jobs.running_count IS '当前运行中的任务数';
+COMMENT ON COLUMN sys_jobs.blocking_policy IS '阻塞策略: 0=丢弃, 1=覆盖, 2=并行';
+COMMENT ON COLUMN sys_jobs.timeout IS '超时时间(纳秒)';
+COMMENT ON COLUMN sys_jobs.created_at IS '创建时间';
+COMMENT ON COLUMN sys_jobs.name IS '任务名称';
+COMMENT ON COLUMN sys_jobs.executor_name IS '执行器名称';
+COMMENT ON COLUMN sys_jobs.max_retry IS '最大重试次数';
+COMMENT ON COLUMN sys_jobs.parallel_num IS '并行数';
+COMMENT ON COLUMN sys_jobs.updated_at IS '更新时间';
+COMMENT ON COLUMN sys_jobs.group IS '任务分组名称';
+COMMENT ON COLUMN sys_jobs.id IS '任务ID';
+COMMENT ON COLUMN sys_jobs.description IS '任务描述';
+COMMENT ON COLUMN sys_jobs.execution_policy IS '执行策略: 0=单次执行, 1=重复执行';
+COMMENT ON COLUMN sys_jobs.status IS '任务状态: 0=禁用, 1=启用';
+COMMENT ON COLUMN sys_jobs.cron_expression IS 'Cron表达式';
+
+-- Records of sys_jobs
+-- Table structure for sys_job_results
+DROP TABLE IF EXISTS sys_job_results;
+CREATE TABLE sys_job_results (
+    id BIGSERIAL NOT NULL,
+    job_id VARCHAR(255) NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    error TEXT,
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP NOT NULL,
+    duration BIGINT NOT NULL,
+    retry_count INTEGER NOT NULL DEFAULT '0',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT TEXT
+);
+
+COMMENT ON COLUMN sys_job_results.end_time IS '结束时间';
+COMMENT ON COLUMN sys_job_results.duration IS '执行时长(纳秒)';
+COMMENT ON COLUMN sys_job_results.created_at IS '记录创建时间';
+COMMENT ON COLUMN sys_job_results.id IS '自增主键';
+COMMENT ON COLUMN sys_job_results.job_id IS '任务ID';
+COMMENT ON COLUMN sys_job_results.status IS '执行状态: SUCCESS, FAILED, PANIC';
+COMMENT ON COLUMN sys_job_results.error IS '错误信息';
+COMMENT ON COLUMN sys_job_results.retry_count IS '重试次数';
+COMMENT ON COLUMN sys_job_results.start_time IS '开始时间';
+
+-- Records of sys_job_results
 -- Table structure for sys_menu
 DROP TABLE IF EXISTS sys_menu;
 CREATE TABLE sys_menu (
@@ -772,28 +854,28 @@ CREATE TABLE sys_menu (
     PRIMARY KEY (id)
 );
 
-COMMENT ON COLUMN sys_menu.keep_alive IS '是否缓存：0-否，1-是';
 COMMENT ON COLUMN sys_menu.link IS '外链地址';
+COMMENT ON COLUMN sys_menu.svg_icon IS 'svg图标名称';
 COMMENT ON COLUMN sys_menu.icon IS '普通图标名称';
-COMMENT ON COLUMN sys_menu.permission IS '权限标识';
+COMMENT ON COLUMN sys_menu.is_link IS '是否外链';
 COMMENT ON COLUMN sys_menu.created_at IS '创建时间';
+COMMENT ON COLUMN sys_menu.name IS '路由名称';
+COMMENT ON COLUMN sys_menu.keep_alive IS '是否缓存：0-否，1-是';
+COMMENT ON COLUMN sys_menu.type IS '类型：1-目录，2-菜单，3-按钮';
+COMMENT ON COLUMN sys_menu.permission IS '权限标识';
 COMMENT ON COLUMN sys_menu.updated_at IS '更新时间';
 COMMENT ON COLUMN sys_menu.id IS '路由ID';
-COMMENT ON COLUMN sys_menu.name IS '路由名称';
-COMMENT ON COLUMN sys_menu.title IS '菜单标题，国际化key';
-COMMENT ON COLUMN sys_menu.affix IS '是否固定：0-否，1-是';
-COMMENT ON COLUMN sys_menu.svg_icon IS 'svg图标名称';
-COMMENT ON COLUMN sys_menu.type IS '类型：1-目录，2-菜单，3-按钮';
-COMMENT ON COLUMN sys_menu.parent_id IS '父级路由ID，顶层为0';
-COMMENT ON COLUMN sys_menu.redirect IS '重定向';
-COMMENT ON COLUMN sys_menu.component IS '组件文件路径';
-COMMENT ON COLUMN sys_menu.is_full IS '是否全屏显示：0-否，1-是';
-COMMENT ON COLUMN sys_menu.sort IS '排序字段';
 COMMENT ON COLUMN sys_menu.path IS '路由路径';
-COMMENT ON COLUMN sys_menu.iframe IS '是否内嵌：0-否，1-是';
-COMMENT ON COLUMN sys_menu.is_link IS '是否外链';
-COMMENT ON COLUMN sys_menu.hide IS '是否隐藏：0-否，1-是';
+COMMENT ON COLUMN sys_menu.title IS '菜单标题，国际化key';
 COMMENT ON COLUMN sys_menu.disable IS '是否停用：0-否，1-是';
+COMMENT ON COLUMN sys_menu.sort IS '排序字段';
+COMMENT ON COLUMN sys_menu.redirect IS '重定向';
+COMMENT ON COLUMN sys_menu.is_full IS '是否全屏显示：0-否，1-是';
+COMMENT ON COLUMN sys_menu.hide IS '是否隐藏：0-否，1-是';
+COMMENT ON COLUMN sys_menu.iframe IS '是否内嵌：0-否，1-是';
+COMMENT ON COLUMN sys_menu.parent_id IS '父级路由ID，顶层为0';
+COMMENT ON COLUMN sys_menu.component IS '组件文件路径';
+COMMENT ON COLUMN sys_menu.affix IS '是否固定：0-否，1-是';
 
 -- Records of sys_menu
 INSERT INTO sys_menu VALUES ('1', '0', '/home', 'home', NULL, 'home/home', 'home', '0', '0', '0', '0', '1', '', '0', 'home', '', '0', '2', '0', '', '2025-08-27 09:09:44', '2025-08-27 09:09:44', NULL, '1');
@@ -867,6 +949,14 @@ INSERT INTO sys_menu VALUES ('140336', '10', '/system/pluginsmanager', 'SystemPl
 INSERT INTO sys_menu VALUES ('140338', '140336', '', '', '', '', '导出插件', '0', '0', '0', '1', '0', '', '0', '', '', '0', '3', '0', 'system:pluginsmanager:export', '2025-12-08 16:33:32', '2025-12-08 16:33:32', NULL, '1');
 INSERT INTO sys_menu VALUES ('140339', '140336', '', '', '', '', '导入插件', '0', '0', '0', '1', '0', '', '0', '', '', '0', '3', '0', 'system:pluginsmanager:import', '2025-12-08 16:33:51', '2025-12-08 16:33:51', NULL, '1');
 INSERT INTO sys_menu VALUES ('140340', '140336', '', '', '', '', '插件卸载', '0', '0', '0', '1', '0', '', '0', '', '', '0', '3', '0', 'system:pluginsmanager:uninstall', '2025-12-08 16:34:53', '2025-12-08 16:34:53', NULL, '1');
+INSERT INTO sys_menu VALUES ('140341', '0', '/sysjobs', 'Sysjobs', '', '', 'sysjobs', '0', '0', '0', '1', '0', '', '0', 'functions', '', '0', '1', '0', '', '2026-02-11 11:29:40', '2026-02-11 11:38:29', NULL, '1');
+INSERT INTO sys_menu VALUES ('140342', '140341', '/system/sysjobslist', 'SystemSysjobslist', '', 'system/sysjobs/sysjobslist', 'jobslist', '0', '0', '0', '1', '0', '', '0', '', 'IconList', '0', '2', '0', '', '2026-02-11 11:36:54', '2026-02-11 11:36:54', NULL, '1');
+INSERT INTO sys_menu VALUES ('140343', '140342', '', '', '', '', '新增', '0', '0', '0', '1', '0', '', '0', '', '', '0', '3', '0', 'system:sysjobs:add', '2026-02-11 11:43:35', '2026-02-11 11:43:35', NULL, '1');
+INSERT INTO sys_menu VALUES ('140344', '140342', '', '', '', '', '编辑', '0', '0', '0', '1', '0', '', '0', '', '', '0', '3', '0', 'system:sysjobs:edit', '2026-02-11 11:44:00', '2026-02-11 11:44:00', NULL, '1');
+INSERT INTO sys_menu VALUES ('140345', '140342', '', '', '', '', '删除', '0', '0', '0', '1', '0', '', '0', '', '', '0', '3', '0', 'system:sysjobs:delete', '2026-02-11 11:44:22', '2026-02-11 11:44:22', NULL, '1');
+INSERT INTO sys_menu VALUES ('140346', '140342', '', '', '', '', '执行一次', '0', '0', '0', '1', '0', '', '0', '', '', '0', '3', '0', 'system:sysjobs:executeNow', '2026-02-12 17:59:02', '2026-02-12 17:59:02', NULL, '1');
+INSERT INTO sys_menu VALUES ('140347', '140341', '/system/joblog', 'SystemJoblog', '', 'system/sysjobresults/sysjobresultslist', 'joblog', '0', '0', '0', '1', '0', '', '0', '', 'IconHistory', '0', '2', '0', '', '2026-02-11 11:41:27', '2026-02-11 11:41:27', NULL, '1');
+INSERT INTO sys_menu VALUES ('140348', '140347', '', '', '', '', '删除', '0', '0', '0', '1', '0', '', '0', '', '', '0', '3', '0', 'system:sysjobresults:delete', '2026-02-11 11:45:18', '2026-02-11 11:45:18', NULL, '1');
 -- Table structure for sys_menu_api
 DROP TABLE IF EXISTS sys_menu_api;
 CREATE TABLE sys_menu_api (
@@ -884,12 +974,14 @@ INSERT INTO sys_menu_api VALUES ('10', '12');
 INSERT INTO sys_menu_api VALUES ('10', '27');
 INSERT INTO sys_menu_api VALUES ('10', '54');
 INSERT INTO sys_menu_api VALUES ('10', '202');
+INSERT INTO sys_menu_api VALUES ('1001', '7');
 INSERT INTO sys_menu_api VALUES ('1001', '8');
 INSERT INTO sys_menu_api VALUES ('1001', '18');
 INSERT INTO sys_menu_api VALUES ('1001', '19');
 INSERT INTO sys_menu_api VALUES ('1002', '19');
 INSERT INTO sys_menu_api VALUES ('1003', '13');
 INSERT INTO sys_menu_api VALUES ('1004', '18');
+INSERT INTO sys_menu_api VALUES ('1004', '37');
 INSERT INTO sys_menu_api VALUES ('1005', '41');
 INSERT INTO sys_menu_api VALUES ('1006', '70');
 INSERT INTO sys_menu_api VALUES ('1007', '6');
@@ -972,6 +1064,16 @@ INSERT INTO sys_menu_api VALUES ('140336', '198');
 INSERT INTO sys_menu_api VALUES ('140338', '199');
 INSERT INTO sys_menu_api VALUES ('140339', '200');
 INSERT INTO sys_menu_api VALUES ('140340', '201');
+INSERT INTO sys_menu_api VALUES ('140342', '203');
+INSERT INTO sys_menu_api VALUES ('140342', '204');
+INSERT INTO sys_menu_api VALUES ('140343', '205');
+INSERT INTO sys_menu_api VALUES ('140344', '206');
+INSERT INTO sys_menu_api VALUES ('140344', '207');
+INSERT INTO sys_menu_api VALUES ('140344', '208');
+INSERT INTO sys_menu_api VALUES ('140345', '209');
+INSERT INTO sys_menu_api VALUES ('140346', '210');
+INSERT INTO sys_menu_api VALUES ('140347', '211');
+INSERT INTO sys_menu_api VALUES ('140348', '212');
 -- Table structure for sys_operation_logs
 DROP TABLE IF EXISTS sys_operation_logs;
 CREATE TABLE sys_operation_logs (
@@ -997,21 +1099,21 @@ CREATE TABLE sys_operation_logs (
     PRIMARY KEY (id)
 );
 
-COMMENT ON COLUMN sys_operation_logs.username IS '操作用户名';
+COMMENT ON COLUMN sys_operation_logs.error_msg IS '错误信息';
 COMMENT ON COLUMN sys_operation_logs.operation IS '操作类型';
 COMMENT ON COLUMN sys_operation_logs.method IS '请求方法';
-COMMENT ON COLUMN sys_operation_logs.request_data IS '请求参数';
-COMMENT ON COLUMN sys_operation_logs.duration IS '操作耗时(毫秒)';
+COMMENT ON COLUMN sys_operation_logs.path IS '请求路径';
 COMMENT ON COLUMN sys_operation_logs.tenant_id IS '租户ID字段';
-COMMENT ON COLUMN sys_operation_logs.user_id IS '操作用户ID';
-COMMENT ON COLUMN sys_operation_logs.error_msg IS '错误信息';
+COMMENT ON COLUMN sys_operation_logs.request_data IS '请求参数';
 COMMENT ON COLUMN sys_operation_logs.location IS '操作地点';
-COMMENT ON COLUMN sys_operation_logs.ip IS '客户端IP';
+COMMENT ON COLUMN sys_operation_logs.duration IS '操作耗时(毫秒)';
+COMMENT ON COLUMN sys_operation_logs.username IS '操作用户名';
+COMMENT ON COLUMN sys_operation_logs.module IS '操作模块';
 COMMENT ON COLUMN sys_operation_logs.user_agent IS '用户代理';
 COMMENT ON COLUMN sys_operation_logs.response_data IS '响应数据';
-COMMENT ON COLUMN sys_operation_logs.module IS '操作模块';
-COMMENT ON COLUMN sys_operation_logs.path IS '请求路径';
 COMMENT ON COLUMN sys_operation_logs.status_code IS '响应状态码';
+COMMENT ON COLUMN sys_operation_logs.user_id IS '操作用户ID';
+COMMENT ON COLUMN sys_operation_logs.ip IS '客户端IP';
 
 -- Records of sys_operation_logs
 -- Table structure for sys_role
@@ -1033,13 +1135,13 @@ CREATE TABLE sys_role (
     PRIMARY KEY (id)
 );
 
-COMMENT ON COLUMN sys_role.checked_depts IS '数据权限关联的部门';
-COMMENT ON COLUMN sys_role.tenant_id IS '租户ID字段';
 COMMENT ON COLUMN sys_role.name IS '角色名称';
 COMMENT ON COLUMN sys_role.sort IS '排序';
 COMMENT ON COLUMN sys_role.status IS '状态';
 COMMENT ON COLUMN sys_role.description IS '描述';
 COMMENT ON COLUMN sys_role.data_scope IS '数据权限';
+COMMENT ON COLUMN sys_role.checked_depts IS '数据权限关联的部门';
+COMMENT ON COLUMN sys_role.tenant_id IS '租户ID字段';
 
 -- Records of sys_role
 INSERT INTO sys_role VALUES ('1', '系统管理员', '0', '1', '最高权限管理员角色', '0', '2025-09-01 17:32:12', '2025-09-30 15:53:24', NULL, '1', '1', '', '0');
@@ -1214,14 +1316,14 @@ CREATE TABLE sys_tenants (
     PRIMARY KEY (id)
 );
 
-COMMENT ON COLUMN sys_tenants.description IS '租户描述';
-COMMENT ON COLUMN sys_tenants.status IS '状态 0停用 1启用';
 COMMENT ON COLUMN sys_tenants.domain IS '租户域名';
 COMMENT ON COLUMN sys_tenants.platform_domain IS '主域名';
 COMMENT ON COLUMN sys_tenants.menu_permission IS '菜单权限';
 COMMENT ON COLUMN sys_tenants.created_by IS '创建人';
 COMMENT ON COLUMN sys_tenants.name IS '租户名称';
 COMMENT ON COLUMN sys_tenants.code IS '租户编码';
+COMMENT ON COLUMN sys_tenants.description IS '租户描述';
+COMMENT ON COLUMN sys_tenants.status IS '状态 0停用 1启用';
 
 -- Records of sys_tenants
 INSERT INTO sys_tenants VALUES ('1', '2025-11-03 11:16:45', '2026-01-09 16:31:23', NULL, '1', '测试租户1', 'dom1', '', '1', '', '', '1,10,1001,140214,140215,140216,1002,140218,140219,140220,140221,140244,1003,140222,140223,140224,140225,140257,140258,1004,140229,140230,140231,1006,140255,140256,1007,140252,140264,140239,140240,140241,140242,140243,140254');
@@ -1247,18 +1349,18 @@ CREATE TABLE sys_users (
     PRIMARY KEY (id)
 );
 
-COMMENT ON COLUMN sys_users.status IS '是否启用 0停用 1启用';
-COMMENT ON COLUMN sys_users.dept_id IS '部门ID';
+COMMENT ON COLUMN sys_users.avatar IS '头像';
+COMMENT ON COLUMN sys_users.username IS '用户名';
 COMMENT ON COLUMN sys_users.phone IS '电话';
 COMMENT ON COLUMN sys_users.sex IS '性别';
-COMMENT ON COLUMN sys_users.avatar IS '头像';
-COMMENT ON COLUMN sys_users.description IS '描述';
-COMMENT ON COLUMN sys_users.username IS '用户名';
 COMMENT ON COLUMN sys_users.nick_name IS '昵称';
+COMMENT ON COLUMN sys_users.description IS '描述';
 COMMENT ON COLUMN sys_users.created_by IS '创建人';
 COMMENT ON COLUMN sys_users.tenant_id IS '租户ID字段';
 COMMENT ON COLUMN sys_users.password IS '密码';
 COMMENT ON COLUMN sys_users.email IS '邮箱';
+COMMENT ON COLUMN sys_users.status IS '是否启用 0停用 1启用';
+COMMENT ON COLUMN sys_users.dept_id IS '部门ID';
 
 -- Records of sys_users
 INSERT INTO sys_users VALUES ('1', 'admin', '$2a$10$0aS9FxWlOz/PXiqzsBr7huy.Dqdwucyb795qiWcA6fsn0Lu.GLA.C', 'admin@example.com', '1', '1', '18800000006', '1', '超级管理员', '/public/uploads/2025-11-04/20251104_0945787a-8536-45fc-ba75-e94c8daaec06.jpeg', '超级管理员', '2025-08-18 14:55:05', '2025-11-17 17:38:01', NULL, '0', '0');
@@ -1271,8 +1373,8 @@ CREATE TABLE sys_user_role (
     PRIMARY KEY (user_id,role_id)
 );
 
-COMMENT ON COLUMN sys_user_role.user_id IS '用户ID';
 COMMENT ON COLUMN sys_user_role.role_id IS '角色ID';
+COMMENT ON COLUMN sys_user_role.user_id IS '用户ID';
 
 -- Records of sys_user_role
 INSERT INTO sys_user_role VALUES ('1', '1');
@@ -1287,41 +1389,51 @@ CREATE TABLE sys_user_tenant (
     PRIMARY KEY (user_id,tenant_id)
 );
 
+COMMENT ON COLUMN sys_user_tenant.is_default IS '是否默认租户';
 COMMENT ON COLUMN sys_user_tenant.user_id IS '用户ID';
 COMMENT ON COLUMN sys_user_tenant.tenant_id IS '租户id';
-COMMENT ON COLUMN sys_user_tenant.is_default IS '是否默认租户';
 
 -- Records of sys_user_tenant
 
 -- 创建索引
-CREATE UNIQUE INDEX idx_casbin_rule ON sys_casbin_rule (ptype, v0, v1, v2, v3, v4, v5);
-CREATE INDEX idx_sys_operation_logs_deleted_at ON sys_operation_logs (deleted_at);
-CREATE INDEX idx_user_id ON sys_operation_logs (user_id);
-CREATE UNIQUE INDEX username ON sys_users (username);
-CREATE UNIQUE INDEX code ON sys_tenants (code);
-CREATE UNIQUE INDEX domain ON sys_tenants (domain);
-CREATE INDEX idx_sys_tenants_deleted_at ON sys_tenants (deleted_at);
+CREATE INDEX idx_job_id ON sys_job_results (job_id);
+CREATE INDEX idx_status ON sys_job_results (status);
+CREATE INDEX idx_start_time ON sys_job_results (start_time);
+CREATE INDEX idx_created_at ON sys_job_results (created_at);
 CREATE INDEX idx_parent_id ON sys_menu (parent_id);
 CREATE INDEX idx_sort ON sys_menu (sort);
 CREATE INDEX idx_type ON sys_menu (type);
+CREATE UNIQUE INDEX username ON sys_users (username);
+CREATE UNIQUE INDEX idx_casbin_rule ON sys_casbin_rule (ptype, v0, v1, v2, v3, v4, v5);
+CREATE UNIQUE INDEX idx_sys_casbin_rule ON sys_casbin_rule (ptype, v0, v1, v2, v3, v4, v5);
+CREATE INDEX idx_group ON sys_jobs (group);
+CREATE INDEX idx_status ON sys_jobs (status);
+CREATE INDEX idx_executor_name ON sys_jobs (executor_name);
+CREATE INDEX idx_created_at ON sys_jobs (created_at);
+CREATE INDEX idx_sys_operation_logs_deleted_at ON sys_operation_logs (deleted_at);
+CREATE INDEX idx_user_id ON sys_operation_logs (user_id);
+CREATE UNIQUE INDEX code ON sys_tenants (code);
+CREATE UNIQUE INDEX domain ON sys_tenants (domain);
+CREATE INDEX idx_sys_tenants_deleted_at ON sys_tenants (deleted_at);
 
 -- 设置序列值
--- 表 demo_teacher 的列 id 没有数据，序列 demo_teacher_id_seq 将保持默认起始值
-SELECT setval('example_id_seq', 15, true);
--- 表 sys_operation_logs 的列 id 没有数据，序列 sys_operation_logs_id_seq 将保持默认起始值
-SELECT setval('sys_role_id_seq', 2, true);
-SELECT setval('sys_users_id_seq', 4, true);
-SELECT setval('sys_gen_field_id_seq', 213, true);
-SELECT setval('sys_tenants_id_seq', 1, true);
-SELECT setval('sys_api_id_seq', 202, true);
-SELECT setval('sys_dict_item_id_seq', 42, true);
-SELECT setval('sys_gen_id_seq', 24, true);
-SELECT setval('sys_menu_id_seq', 140340, true);
--- 表 demo_students 的列 student_id 没有数据，序列 demo_students_student_id_seq 将保持默认起始值
--- 表 sys_affix 的列 id 没有数据，序列 sys_affix_id_seq 将保持默认起始值
-SELECT setval('sys_casbin_rule_id_seq', 7202, true);
+SELECT setval('sys_casbin_rule_id_seq', 7560, true);
 SELECT setval('sys_department_id_seq', 1, true);
 SELECT setval('sys_dict_id_seq', 4, true);
+SELECT setval('sys_gen_id_seq', 24, true);
+SELECT setval('example_id_seq', 15, true);
+-- 表 sys_affix 的列 id 没有数据，序列 sys_affix_id_seq 将保持默认起始值
+SELECT setval('sys_api_id_seq', 212, true);
+-- 表 sys_operation_logs 的列 id 没有数据，序列 sys_operation_logs_id_seq 将保持默认起始值
+SELECT setval('sys_role_id_seq', 2, true);
+SELECT setval('sys_tenants_id_seq', 1, true);
+-- 表 demo_teacher 的列 id 没有数据，序列 demo_teacher_id_seq 将保持默认起始值
+SELECT setval('sys_dict_item_id_seq', 42, true);
+-- 表 sys_job_results 的列 id 没有数据，序列 sys_job_results_id_seq 将保持默认起始值
+-- 表 demo_students 的列 student_id 没有数据，序列 demo_students_student_id_seq 将保持默认起始值
+SELECT setval('sys_gen_field_id_seq', 213, true);
+SELECT setval('sys_menu_id_seq', 140348, true);
+SELECT setval('sys_users_id_seq', 4, true);
 
 
 SET session_replication_role = DEFAULT;

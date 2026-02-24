@@ -45,6 +45,7 @@ github地址：[https://github.com/qxkjsoft/ginfast-ui](https://github.com/qxkjs
 - 👥 **租户用户管理**：支持用户与租户的灵活关联，一个用户可关联多个租户
 - 🤖 **代码生成**：强大的代码生成器，支持根据数据库表一键生成完整的后端和前端代码，包括模型、控制器、服务和视图层
 - 🔌 **插件管理**：完整的插件管理系统，支持插件打包、导入、导出、卸载等功能，支持版本管理和依赖检查
+- ⏰ **任务调度**：基于Cron表达式的任务调度系统，支持多种执行策略、阻塞策略、超时控制和自动重试机制
 
 ## 技术栈
 
@@ -62,6 +63,7 @@ github地址：[https://github.com/qxkjsoft/ginfast-ui](https://github.com/qxkjs
 - **性能监控**：Pprof
 - **API文档**：Swagger (swaggo)
 - **代码生成**：Go text/template（支持后端和前端代码生成）
+- **任务调度**：robfig/cron（基于Cron表达式的任务调度）
 
 ## 项目结构
 
@@ -82,6 +84,8 @@ ginfast-tenant/
 │   │   ├── sysrole.go      # 角色管理控制器
 │   │   ├── systenant.go    # 租户管理控制器
 │   │   ├── sysusertenant.go # 用户租户关联控制器
+│   │   ├── sysjobs.go      # 任务调度管理控制器
+│   │   ├── sysjobresults.go # 任务执行结果控制器
 │   │   └── pluginsmanager.go # 插件管理控制器
 │   ├── global/             # 全局变量和接口
 │   │   ├── app/            # 全局应用接口
@@ -113,6 +117,10 @@ ginfast-tenant/
 │   │   └── *param.go       # 各种参数模型
 │   ├── routes/             # 路由配置
 │   │   └── routes.go       # 路由定义
+│   ├── scheduler/          # 任务调度模块
+│   │   ├── register.go     # 执行器注册和任务加载
+│   │   ├── result_handler.go # 任务结果处理器
+│   │   └── executors/      # 任务执行器
 │   ├── service/            # 服务层
 │   │   ├── casbinservice.go # 权限服务
 │   │   ├── codegenservice.go # 代码生成服务
@@ -879,6 +887,257 @@ plugins/
    - 在插件根目录创建plugin_export.json文件
    - 完整列举所有需要导出的目录和数据库表
    - 配置菜单和依赖信息便于自动化导入导出
+
+## 任务调度系统
+
+本项目集成了强大的任务调度系统，基于Cron表达式实现定时任务的调度和管理，支持多种执行策略、阻塞策略、超时控制和自动重试机制。
+
+### 核心特性
+
+- ⏰ **Cron表达式支持**：支持秒级Cron表达式，灵活配置任务执行时间
+- 🔄 **执行策略**：支持重复执行和单次执行两种策略
+- 🚫 **阻塞策略**：提供丢弃、覆盖、并行三种阻塞处理策略
+- ⏱️ **超时控制**：支持任务执行超时自动终止
+- 🔁 **重试机制**：支持任务失败后自动重试，可配置重试次数和间隔
+- 📊 **结果记录**：任务执行结果自动保存到数据库，便于追踪和分析
+- 📝 **日志记录**：独立的调度器日志系统，按日期轮转
+- 🔌 **执行器扩展**：支持自定义执行器，灵活实现各种业务逻辑
+
+### 任务状态
+
+| 状态 | 常量 | 值 | 说明 |
+|------|------|-----|------|
+| 启用 | `StatusEnabled` | 1 | 任务将被调度执行 |
+| 禁用 | `StatusDisabled` | 0 | 任务不会被调度 |
+
+### 执行策略
+
+| 策略 | 常量 | 值 | 说明 |
+|------|------|-----|------|
+| 重复执行 | `PolicyRepeat` | 1 | 按照Cron表达式重复执行 |
+| 单次执行 | `PolicyOnce` | 0 | 仅执行一次后自动禁用 |
+
+### 阻塞策略
+
+当任务执行时间超过调度间隔时，可配置以下阻塞策略：
+
+| 策略 | 常量 | 值 | 说明 |
+|------|------|-----|------|
+| 丢弃 | `BlockDiscard` | 0 | 如果任务正在执行，跳过本次执行 |
+| 并行 | `BlockParallel` | 1 | 允许多个实例并行执行（受ParallelNum限制） |
+
+### 配置说明
+
+在 `config/config.yml` 中配置任务调度器：
+
+```yaml
+# 任务调度器配置
+scheduler:
+  # 日志配置
+  log:
+    dir: "/resource/logs/scheduler"  # 日志目录
+    level: "info"                     # 日志级别: debug, info, warn, error, fatal
+  # 任务结果通道缓冲大小
+  job_results_buffer_size: 1000       # 任务结果通道缓冲大小，默认1000
+```
+
+### 任务数据模型
+
+任务信息存储在 `sys_jobs` 表中，主要字段包括：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | string | 任务ID（主键） |
+| group | string | 任务分组名称 |
+| name | string | 任务名称 |
+| description | string | 任务描述 |
+| executor_name | string | 执行器名称 |
+| execution_policy | int | 执行策略（0:单次 1:重复） |
+| status | int | 任务状态（0:禁用 1:启用） |
+| cron_expression | string | Cron表达式 |
+| parameters | string | 任务参数（JSON格式） |
+| blocking_policy | int | 阻塞策略（0:丢弃 1:并行） |
+| timeout | int64 | 超时时间（纳秒） |
+| max_retry | int | 最大重试次数 |
+| retry_interval | int64 | 重试间隔（纳秒） |
+| parallel_num | int | 并行数 |
+
+### Cron表达式格式
+
+支持6位Cron表达式（秒 分 时 日 月 周）：
+
+```
+格式: 秒 分 时 日 月 周
+示例: 0/5 * * * * *  (每5秒执行一次)
+     0 0 2 * * *     (每天凌晨2点执行)
+     0 0 0 * * 1     (每周一凌晨执行)
+     0 0 12 1 * *    (每月1号中午12点执行)
+```
+
+### API接口
+
+#### 任务管理接口
+
+所有任务管理接口需要JWT认证，路由前缀为 `/api/sysjobs`
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| /api/sysjobs/add | POST | 创建任务 |
+| /api/sysjobs/edit | PUT | 更新任务 |
+| /api/sysjobs/delete | DELETE | 删除任务 |
+| /api/sysjobs/getByID | GET | 根据ID获取任务 |
+| /api/sysjobs/list | GET | 获取任务列表（分页） |
+| /api/sysjobs/enable | PUT | 启用任务 |
+| /api/sysjobs/disable | PUT | 禁用任务 |
+| /api/sysjobs/executeNow | POST | 立即执行任务 |
+
+#### 任务结果查询接口
+
+路由前缀为 `/api/sysjobresults`
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| /api/sysjobresults/list | GET | 获取任务执行结果列表（分页） |
+| /api/sysjobresults/getByID | GET | 根据ID获取执行结果 |
+
+### 执行器开发
+
+执行器是任务的具体执行逻辑实现，需要实现 [`Executor`](app/utils/schedulerhelper/executor.go) 接口：
+
+```go
+type Executor interface {
+    // Execute 执行任务
+    Execute(ctx context.Context, job *Job) error
+    
+    // Name 返回执行器名称
+    Name() string
+}
+```
+
+#### 执行器示例
+
+```go
+package executors
+
+import (
+    "context"
+    "log"
+    "gin-fast/app/utils/schedulerhelper"
+)
+
+// MyExecutor 自定义执行器
+type MyExecutor struct{}
+
+func (e *MyExecutor) Execute(ctx context.Context, job *schedulerhelper.Job) error {
+    log.Printf("执行任务: %s, 参数: %v", job.Name, job.Parameters)
+    
+    // 实现您的业务逻辑
+    // ...
+    
+    return nil
+}
+
+func (e *MyExecutor) Name() string {
+    return "my-executor"
+}
+```
+
+#### 注册执行器
+
+在 [`app/scheduler/register.go`](app/scheduler/register.go:18) 中注册执行器：
+
+```go
+func RegisterExecutors() {
+    // 注册演示执行器
+    app.JobScheduler.RegisterExecutor(&executors.DemoExecutor{})
+    
+    // 注册自定义执行器
+    app.JobScheduler.RegisterExecutor(&executors.MyExecutor{})
+}
+```
+
+### 任务调度流程
+
+1. **应用启动**
+   - 在 [`bootstrap/init.go`](bootstrap/init.go:62) 中初始化任务调度器
+   - 调用 [`RegisterExecutors()`](app/scheduler/register.go:18) 注册所有执行器
+   - 调用 [`LoadJobsFromDB()`](app/scheduler/register.go:26) 从数据库加载启用的任务
+
+2. **任务调度**
+   - 调度器根据Cron表达式触发任务执行
+   - 根据阻塞策略决定是否执行任务
+   - 执行器执行任务逻辑
+   - 任务结果通过结果通道返回
+
+3. **结果处理**
+   - [`StartResultHandler()`](app/scheduler/result_handler.go) 监听任务结果
+   - 将执行结果保存到 `sys_job_results` 表
+   - 记录执行状态、耗时、错误信息等
+
+### 任务结果数据模型
+
+任务执行结果存储在 `sys_job_results` 表中，主要字段包括：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | uint | 结果ID（主键） |
+| job_id | string | 关联的任务ID |
+| job_name | string | 任务名称 |
+| executor_name | string | 执行器名称 |
+| status | string | 执行状态（success/failed/timeout） |
+| error_message | string | 错误信息 |
+| duration | int64 | 执行耗时（纳秒） |
+| executed_at | time.Time | 执行时间 |
+
+### 开发建议
+
+1. **执行器设计**
+   - 执行器应保持幂等性，避免重复执行导致数据问题
+   - 使用上下文超时控制，防止任务长时间阻塞
+   - 合理处理错误，记录详细的日志信息
+
+2. **任务配置**
+   - 根据业务特点选择合适的阻塞策略
+   - 设置合理的超时时间，避免长时间占用资源
+   - 配置适当的重试次数和间隔
+
+3. **监控和日志**
+   - 定期查看任务执行结果，及时发现异常
+   - 通过调度器日志追踪任务执行过程
+   - 对失败任务进行分析和优化
+
+### 插件中的任务调度
+
+插件也可以定义自己的任务执行器，参考 [`plugins/example/scheduler/`](plugins/example/scheduler/) 目录：
+
+```go
+// plugins/example/scheduler/executors/example_executor.go
+package executors
+
+type ExampleExecutor struct{}
+
+func (e *ExampleExecutor) Execute(ctx context.Context, job *schedulerhelper.Job) error {
+    // 插件任务逻辑
+    return nil
+}
+
+func (e *ExampleExecutor) Name() string {
+    return "example-executor"
+}
+
+// plugins/example/scheduler/register.go
+package scheduler
+
+import (
+    "gin-fast/app/global/app"
+    "gin-fast/plugins/example/scheduler/executors"
+)
+
+func init() {
+    // 注册插件执行器
+    app.JobScheduler.RegisterExecutor(&executors.ExampleExecutor{})
+}
+```
 
 ## 部署说明
 

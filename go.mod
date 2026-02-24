@@ -22,6 +22,7 @@ require (
 	github.com/mojocn/base64Captcha v1.3.8
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/qiniu/go-sdk/v7 v7.16.0
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/sony/sonyflake v1.3.0
 	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/files v1.0.1

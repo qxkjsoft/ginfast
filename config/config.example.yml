@@ -198,3 +198,12 @@ upload:
 gen:
   # 前端代码生成路径
   dir: "../ginfast-tenant-ui"
+
+# 任务调度器配置
+scheduler:
+  # 日志配置
+  log:
+    dir: "/resource/logs/scheduler"  # 日志目录
+    level: "info"                     # 日志级别: debug, info, warn, error, fatal
+  # 任务结果通道缓冲大小
+  job_results_buffer_size: 1000       # 任务结果通道缓冲大小，默认1000
