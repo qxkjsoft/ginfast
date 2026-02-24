@@ -7,21 +7,21 @@ SET client_min_messages TO WARNING;
 -- Table structure for demo_students
 DROP TABLE IF EXISTS demo_students;
 CREATE TABLE demo_students (
-    student_id SERIAL NOT NULL,
-    student_name VARCHAR(50) NOT NULL,
-    age INTEGER NOT NULL DEFAULT '18',
-    gender VARCHAR(50) NOT NULL DEFAULT '',
-    class_name VARCHAR(20) NOT NULL,
-    admission_date TIMESTAMP NOT NULL,
-    email VARCHAR(100),
-    phone VARCHAR(20),
-    address TEXT,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    deleted_at TIMESTAMP,
-    created_by INTEGER DEFAULT '0',
-    tenant_id INTEGER DEFAULT '0',
-    PRIMARY KEY (student_id)
+                               student_id SERIAL NOT NULL,
+                               student_name VARCHAR(50) NOT NULL,
+                               age INTEGER NOT NULL DEFAULT '18',
+                               gender VARCHAR(50) NOT NULL DEFAULT '',
+                               class_name VARCHAR(20) NOT NULL,
+                               admission_date TIMESTAMPTZ NOT NULL,
+                               email VARCHAR(100),
+                               phone VARCHAR(20),
+                               address TEXT,
+                               created_at TIMESTAMPTZ,
+                               updated_at TIMESTAMPTZ,
+                               deleted_at TIMESTAMPTZ,
+                               created_by INTEGER DEFAULT '0',
+                               tenant_id INTEGER DEFAULT '0',
+                               PRIMARY KEY (student_id)
 );
 
 COMMENT ON COLUMN demo_students.created_by IS '创建人';
@@ -42,22 +42,22 @@ COMMENT ON COLUMN demo_students.updated_at IS '更新时间';
 -- Table structure for demo_teacher
 DROP TABLE IF EXISTS demo_teacher;
 CREATE TABLE demo_teacher (
-    id SERIAL NOT NULL,
-    name VARCHAR(50) NOT NULL,
-    employee_id VARCHAR(20),
-    gender SMALLINT DEFAULT '0',
-    phone VARCHAR(20),
-    email VARCHAR(100),
-    subject VARCHAR(50),
-    title VARCHAR(50),
-    status SMALLINT DEFAULT '1',
-    hire_date DATE,
-    birth_date DATE,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    deleted_at TIMESTAMP,
-    created_by INTEGER DEFAULT '0',
-    PRIMARY KEY (id)
+                              id SERIAL NOT NULL,
+                              name VARCHAR(50) NOT NULL,
+                              employee_id VARCHAR(20),
+                              gender SMALLINT DEFAULT '0',
+                              phone VARCHAR(20),
+                              email VARCHAR(100),
+                              subject VARCHAR(50),
+                              title VARCHAR(50),
+                              status SMALLINT DEFAULT '1',
+                              hire_date DATE,
+                              birth_date DATE,
+                              created_at TIMESTAMPTZ,
+                              updated_at TIMESTAMPTZ,
+                              deleted_at TIMESTAMPTZ,
+                              created_by INTEGER DEFAULT '0',
+                              PRIMARY KEY (id)
 );
 
 COMMENT ON COLUMN demo_teacher.name IS '教师姓名';
@@ -80,15 +80,15 @@ COMMENT ON COLUMN demo_teacher.updated_at IS '更新时间';
 -- Table structure for example
 DROP TABLE IF EXISTS example;
 CREATE TABLE example (
-    id SERIAL NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    description VARCHAR(255),
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP,
-    deleted_at TIMESTAMP,
-    created_by INTEGER,
-    tenant_id INTEGER DEFAULT '0',
-    PRIMARY KEY (id)
+                         id SERIAL NOT NULL,
+                         name VARCHAR(255) NOT NULL,
+                         description VARCHAR(255),
+                         created_at TIMESTAMPTZ NOT NULL,
+                         updated_at TIMESTAMPTZ,
+                         deleted_at TIMESTAMPTZ,
+                         created_by INTEGER,
+                         tenant_id INTEGER DEFAULT '0',
+                         PRIMARY KEY (id)
 );
 
 COMMENT ON COLUMN example.description IS '描述';
@@ -114,22 +114,22 @@ INSERT INTO example VALUES ('15', '数据分析平台', '大数据处理和分�
 -- Table structure for sys_affix
 DROP TABLE IF EXISTS sys_affix;
 CREATE TABLE sys_affix (
-    id SERIAL NOT NULL,
-    name VARCHAR(255),
-    path VARCHAR(255),
-    url VARCHAR(255),
-    size INTEGER,
-    ftype VARCHAR(100),
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    deleted_at TIMESTAMP,
-    created_by INTEGER,
-    suffix VARCHAR(100),
-    tenant_id INTEGER DEFAULT '0',
-    thumbnail_path VARCHAR(255),
-    thumbnail_name VARCHAR(255),
-    thumbnail_url VARCHAR(255),
-    PRIMARY KEY (id)
+                           id SERIAL NOT NULL,
+                           name VARCHAR(255),
+                           path VARCHAR(255),
+                           url VARCHAR(255),
+                           size INTEGER,
+                           ftype VARCHAR(100),
+                           created_at TIMESTAMPTZ,
+                           updated_at TIMESTAMPTZ,
+                           deleted_at TIMESTAMPTZ,
+                           created_by INTEGER,
+                           suffix VARCHAR(100),
+                           tenant_id INTEGER DEFAULT '0',
+                           thumbnail_path VARCHAR(255),
+                           thumbnail_name VARCHAR(255),
+                           thumbnail_url VARCHAR(255),
+                           PRIMARY KEY (id)
 );
 
 COMMENT ON COLUMN sys_affix.name IS '文件名';
@@ -148,16 +148,16 @@ COMMENT ON COLUMN sys_affix.thumbnail_path IS '缩略图路径';
 -- Table structure for sys_api
 DROP TABLE IF EXISTS sys_api;
 CREATE TABLE sys_api (
-    id SERIAL NOT NULL,
-    title VARCHAR(255),
-    path VARCHAR(255),
-    method VARCHAR(32),
-    api_group VARCHAR(255),
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    deleted_at TIMESTAMP,
-    created_by INTEGER,
-    PRIMARY KEY (id)
+                         id SERIAL NOT NULL,
+                         title VARCHAR(255),
+                         path VARCHAR(255),
+                         method VARCHAR(32),
+                         api_group VARCHAR(255),
+                         created_at TIMESTAMPTZ,
+                         updated_at TIMESTAMPTZ,
+                         deleted_at TIMESTAMPTZ,
+                         created_by INTEGER,
+                         PRIMARY KEY (id)
 );
 
 COMMENT ON COLUMN sys_api.path IS '权限路径';
@@ -286,15 +286,15 @@ INSERT INTO sys_api VALUES ('212', '定时任务日志删除', '/api/sysJobResul
 -- Table structure for sys_casbin_rule
 DROP TABLE IF EXISTS sys_casbin_rule;
 CREATE TABLE sys_casbin_rule (
-    id SERIAL NOT NULL,
-    ptype VARCHAR(100),
-    v0 VARCHAR(100),
-    v1 VARCHAR(100),
-    v2 VARCHAR(100),
-    v3 VARCHAR(100),
-    v4 VARCHAR(100),
-    v5 VARCHAR(100),
-    PRIMARY KEY (id)
+                                 id SERIAL NOT NULL,
+                                 ptype VARCHAR(100),
+                                 v0 VARCHAR(100),
+                                 v1 VARCHAR(100),
+                                 v2 VARCHAR(100),
+                                 v3 VARCHAR(100),
+                                 v4 VARCHAR(100),
+                                 v5 VARCHAR(100),
+                                 PRIMARY KEY (id)
 );
 
 
@@ -554,21 +554,21 @@ INSERT INTO sys_casbin_rule VALUES ('2965', 'p', 'role_4', '/api/users/uploadAva
 -- Table structure for sys_department
 DROP TABLE IF EXISTS sys_department;
 CREATE TABLE sys_department (
-    id SERIAL NOT NULL,
-    parent_id INTEGER DEFAULT '0',
-    name VARCHAR(255),
-    status SMALLINT,
-    leader VARCHAR(255),
-    phone VARCHAR(255),
-    email VARCHAR(255),
-    sort INTEGER DEFAULT '0',
-    describe VARCHAR(255),
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    deleted_at TIMESTAMP,
-    created_by INTEGER,
-    tenant_id INTEGER DEFAULT '0',
-    PRIMARY KEY (id)
+                                id SERIAL NOT NULL,
+                                parent_id INTEGER DEFAULT '0',
+                                name VARCHAR(255),
+                                status SMALLINT,
+                                leader VARCHAR(255),
+                                phone VARCHAR(255),
+                                email VARCHAR(255),
+                                sort INTEGER DEFAULT '0',
+                                describe VARCHAR(255),
+                                created_at TIMESTAMPTZ,
+                                updated_at TIMESTAMPTZ,
+                                deleted_at TIMESTAMPTZ,
+                                created_by INTEGER,
+                                tenant_id INTEGER DEFAULT '0',
+                                PRIMARY KEY (id)
 );
 
 COMMENT ON COLUMN sys_department.phone IS '联系电话';
@@ -586,16 +586,16 @@ INSERT INTO sys_department VALUES ('1', '0', '总部', '1', '张明', '138000000
 -- Table structure for sys_dict
 DROP TABLE IF EXISTS sys_dict;
 CREATE TABLE sys_dict (
-    id SERIAL NOT NULL,
-    name VARCHAR(255),
-    code VARCHAR(255),
-    status SMALLINT,
-    description VARCHAR(500),
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    deleted_at TIMESTAMP,
-    created_by INTEGER,
-    PRIMARY KEY (id)
+                          id SERIAL NOT NULL,
+                          name VARCHAR(255),
+                          code VARCHAR(255),
+                          status SMALLINT,
+                          description VARCHAR(500),
+                          created_at TIMESTAMPTZ,
+                          updated_at TIMESTAMPTZ,
+                          deleted_at TIMESTAMPTZ,
+                          created_by INTEGER,
+                          PRIMARY KEY (id)
 );
 
 COMMENT ON COLUMN sys_dict.code IS '字典编码';
@@ -611,12 +611,12 @@ INSERT INTO sys_dict VALUES ('4', '任务状态', 'taskStatus', '1', '任务状�
 -- Table structure for sys_dict_item
 DROP TABLE IF EXISTS sys_dict_item;
 CREATE TABLE sys_dict_item (
-    id SERIAL NOT NULL,
-    name VARCHAR(255),
-    value VARCHAR(255),
-    status SMALLINT,
-    dict_id INTEGER,
-    PRIMARY KEY (id)
+                               id SERIAL NOT NULL,
+                               name VARCHAR(255),
+                               value VARCHAR(255),
+                               status SMALLINT,
+                               dict_id INTEGER,
+                               PRIMARY KEY (id)
 );
 
 COMMENT ON COLUMN sys_dict_item.status IS '状态';
@@ -638,24 +638,24 @@ INSERT INTO sys_dict_item VALUES ('42', '成功', '1', '1', '4');
 -- Table structure for sys_gen
 DROP TABLE IF EXISTS sys_gen;
 CREATE TABLE sys_gen (
-    id SERIAL NOT NULL,
-    db_type VARCHAR(255),
-    database VARCHAR(255),
-    name VARCHAR(255),
-    module_name VARCHAR(255),
-    file_name VARCHAR(255),
-    describe VARCHAR(1000),
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    deleted_at TIMESTAMP,
-    created_by INTEGER,
-    is_cover SMALLINT DEFAULT '0',
-    is_menu SMALLINT DEFAULT '0',
-    is_tree SMALLINT DEFAULT '0',
-    is_relation_tree SMALLINT DEFAULT '0',
-    relation_tree_table INTEGER DEFAULT '0',
-    relation_field INTEGER DEFAULT '0',
-    PRIMARY KEY (id)
+                         id SERIAL NOT NULL,
+                         db_type VARCHAR(255),
+                         database VARCHAR(255),
+                         name VARCHAR(255),
+                         module_name VARCHAR(255),
+                         file_name VARCHAR(255),
+                         describe VARCHAR(1000),
+                         created_at TIMESTAMPTZ,
+                         updated_at TIMESTAMPTZ,
+                         deleted_at TIMESTAMPTZ,
+                         created_by INTEGER,
+                         is_cover SMALLINT DEFAULT '0',
+                         is_menu SMALLINT DEFAULT '0',
+                         is_tree SMALLINT DEFAULT '0',
+                         is_relation_tree SMALLINT DEFAULT '0',
+                         relation_tree_table INTEGER DEFAULT '0',
+                         relation_field INTEGER DEFAULT '0',
+                         PRIMARY KEY (id)
 );
 
 COMMENT ON COLUMN sys_gen.created_by IS '创建人';
@@ -681,27 +681,27 @@ INSERT INTO sys_gen VALUES ('24', 'mysql', 'gin-fast-tenant', 'demo_teacher', 't
 -- Table structure for sys_gen_field
 DROP TABLE IF EXISTS sys_gen_field;
 CREATE TABLE sys_gen_field (
-    id SERIAL NOT NULL,
-    gen_id INTEGER,
-    data_name VARCHAR(255),
-    data_type VARCHAR(255),
-    data_comment VARCHAR(255),
-    data_extra VARCHAR(255),
-    data_column_key VARCHAR(255),
-    data_unsigned SMALLINT DEFAULT '0',
-    is_primary SMALLINT DEFAULT '0',
-    go_type VARCHAR(255),
-    front_type VARCHAR(255),
-    custom_name VARCHAR(255) DEFAULT '',
-    require SMALLINT DEFAULT '0',
-    list_show SMALLINT DEFAULT '0',
-    form_show SMALLINT DEFAULT '0',
-    query_show SMALLINT DEFAULT '0',
-    query_type VARCHAR(255),
-    form_type VARCHAR(255),
-    dict_type VARCHAR(255),
-    gorm_tag VARCHAR(255),
-    PRIMARY KEY (id)
+                               id SERIAL NOT NULL,
+                               gen_id INTEGER,
+                               data_name VARCHAR(255),
+                               data_type VARCHAR(255),
+                               data_comment VARCHAR(255),
+                               data_extra VARCHAR(255),
+                               data_column_key VARCHAR(255),
+                               data_unsigned SMALLINT DEFAULT '0',
+                               is_primary SMALLINT DEFAULT '0',
+                               go_type VARCHAR(255),
+                               front_type VARCHAR(255),
+                               custom_name VARCHAR(255) DEFAULT '',
+                               require SMALLINT DEFAULT '0',
+                               list_show SMALLINT DEFAULT '0',
+                               form_show SMALLINT DEFAULT '0',
+                               query_show SMALLINT DEFAULT '0',
+                               query_type VARCHAR(255),
+                               form_type VARCHAR(255),
+                               dict_type VARCHAR(255),
+                               gorm_tag VARCHAR(255),
+                               PRIMARY KEY (id)
 );
 
 COMMENT ON COLUMN sys_gen_field.data_type IS '数据类型';
@@ -756,26 +756,26 @@ INSERT INTO sys_gen_field VALUES ('213', '24', 'created_by', 'int', '创建人',
 -- Table structure for sys_jobs
 DROP TABLE IF EXISTS sys_jobs;
 CREATE TABLE sys_jobs (
-    id VARCHAR(255) NOT NULL,
-    "group" VARCHAR(100) NOT NULL,
-    name VARCHAR(200) NOT NULL,
-    description TEXT,
-    executor_name VARCHAR(100) NOT NULL,
-    execution_policy SMALLINT NOT NULL DEFAULT '1',
-    status SMALLINT NOT NULL DEFAULT '1',
-    cron_expression VARCHAR(100) NOT NULL,
-    parameters JSON,
-    blocking_policy SMALLINT NOT NULL DEFAULT '0',
-    timeout BIGINT NOT NULL DEFAULT '30000000000',
-    max_retry INTEGER NOT NULL DEFAULT '0',
-    retry_interval BIGINT NOT NULL DEFAULT '10000000000',
-    parallel_num INTEGER NOT NULL DEFAULT '1',
-    running_count INTEGER NOT NULL DEFAULT '0',
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP,
-    created_by INTEGER,
-    PRIMARY KEY (id)
+                          id VARCHAR(255) NOT NULL,
+                          "group" VARCHAR(100) NOT NULL,
+                          name VARCHAR(200) NOT NULL,
+                          description TEXT,
+                          executor_name VARCHAR(100) NOT NULL,
+                          execution_policy SMALLINT NOT NULL DEFAULT '1',
+                          status SMALLINT NOT NULL DEFAULT '1',
+                          cron_expression VARCHAR(100) NOT NULL,
+                          parameters JSON,
+                          blocking_policy SMALLINT NOT NULL DEFAULT '0',
+                          timeout BIGINT NOT NULL DEFAULT '30000000000',
+                          max_retry INTEGER NOT NULL DEFAULT '0',
+                          retry_interval BIGINT NOT NULL DEFAULT '10000000000',
+                          parallel_num INTEGER NOT NULL DEFAULT '1',
+                          running_count INTEGER NOT NULL DEFAULT '0',
+                          created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          deleted_at TIMESTAMPTZ,
+                          created_by INTEGER,
+                          PRIMARY KEY (id)
 );
 
 COMMENT ON COLUMN sys_jobs.parameters IS '任务参数(JSON格式)';
@@ -800,16 +800,16 @@ COMMENT ON COLUMN sys_jobs.cron_expression IS 'Cron表达式';
 -- Table structure for sys_job_results
 DROP TABLE IF EXISTS sys_job_results;
 CREATE TABLE sys_job_results (
-    id BIGSERIAL NOT NULL,
-    job_id VARCHAR(255) NOT NULL,
-    status VARCHAR(20) NOT NULL,
-    error TEXT,
-    start_time TIMESTAMP NOT NULL,
-    end_time TIMESTAMP NOT NULL,
-    duration BIGINT NOT NULL,
-    retry_count INTEGER NOT NULL DEFAULT '0',
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
+                                 id BIGSERIAL NOT NULL,
+                                 job_id VARCHAR(255) NOT NULL,
+                                 status VARCHAR(20) NOT NULL,
+                                 error TEXT,
+                                 start_time TIMESTAMPTZ NOT NULL,
+                                 end_time TIMESTAMPTZ NOT NULL,
+                                 duration BIGINT NOT NULL,
+                                 retry_count INTEGER NOT NULL DEFAULT '0',
+                                 created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                 PRIMARY KEY (id)
 );
 
 COMMENT ON COLUMN sys_job_results.end_time IS '结束时间';
@@ -826,31 +826,31 @@ COMMENT ON COLUMN sys_job_results.start_time IS '开始时间';
 -- Table structure for sys_menu
 DROP TABLE IF EXISTS sys_menu;
 CREATE TABLE sys_menu (
-    id SERIAL NOT NULL,
-    parent_id INTEGER NOT NULL DEFAULT '0',
-    path VARCHAR(255) NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    redirect VARCHAR(255),
-    component VARCHAR(255),
-    title VARCHAR(100),
-    is_full SMALLINT DEFAULT '0',
-    hide SMALLINT DEFAULT '0',
-    disable SMALLINT DEFAULT '0',
-    keep_alive SMALLINT DEFAULT '0',
-    affix SMALLINT DEFAULT '0',
-    link VARCHAR(500) DEFAULT '',
-    iframe SMALLINT DEFAULT '0',
-    svg_icon VARCHAR(100) DEFAULT '',
-    icon VARCHAR(100) DEFAULT '',
-    sort INTEGER DEFAULT '0',
-    type SMALLINT DEFAULT '2',
-    is_link SMALLINT DEFAULT '0',
-    permission VARCHAR(255) DEFAULT '',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP,
-    created_by INTEGER,
-    PRIMARY KEY (id)
+                          id SERIAL NOT NULL,
+                          parent_id INTEGER NOT NULL DEFAULT '0',
+                          path VARCHAR(255) NOT NULL,
+                          name VARCHAR(100) NOT NULL,
+                          redirect VARCHAR(255),
+                          component VARCHAR(255),
+                          title VARCHAR(100),
+                          is_full SMALLINT DEFAULT '0',
+                          hide SMALLINT DEFAULT '0',
+                          disable SMALLINT DEFAULT '0',
+                          keep_alive SMALLINT DEFAULT '0',
+                          affix SMALLINT DEFAULT '0',
+                          link VARCHAR(500) DEFAULT '',
+                          iframe SMALLINT DEFAULT '0',
+                          svg_icon VARCHAR(100) DEFAULT '',
+                          icon VARCHAR(100) DEFAULT '',
+                          sort INTEGER DEFAULT '0',
+                          type SMALLINT DEFAULT '2',
+                          is_link SMALLINT DEFAULT '0',
+                          permission VARCHAR(255) DEFAULT '',
+                          created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                          updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                          deleted_at TIMESTAMPTZ,
+                          created_by INTEGER,
+                          PRIMARY KEY (id)
 );
 
 COMMENT ON COLUMN sys_menu.link IS '外链地址';
@@ -959,9 +959,9 @@ INSERT INTO sys_menu VALUES ('140348', '140347', '', '', '', '', '删除', '0', 
 -- Table structure for sys_menu_api
 DROP TABLE IF EXISTS sys_menu_api;
 CREATE TABLE sys_menu_api (
-    menu_id INTEGER NOT NULL,
-    api_id INTEGER NOT NULL,
-    PRIMARY KEY (menu_id,api_id)
+                              menu_id INTEGER NOT NULL,
+                              api_id INTEGER NOT NULL,
+                              PRIMARY KEY (menu_id,api_id)
 );
 
 
@@ -1076,26 +1076,26 @@ INSERT INTO sys_menu_api VALUES ('140348', '212');
 -- Table structure for sys_operation_logs
 DROP TABLE IF EXISTS sys_operation_logs;
 CREATE TABLE sys_operation_logs (
-    id BIGSERIAL NOT NULL,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    deleted_at TIMESTAMP,
-    user_id BIGINT,
-    username VARCHAR(50),
-    module VARCHAR(100),
-    operation VARCHAR(100),
-    method VARCHAR(10),
-    path VARCHAR(500),
-    ip VARCHAR(50),
-    user_agent VARCHAR(500),
-    request_data TEXT,
-    response_data TEXT,
-    status_code INTEGER,
-    duration BIGINT,
-    error_msg TEXT,
-    location VARCHAR(100),
-    tenant_id INTEGER DEFAULT '0',
-    PRIMARY KEY (id)
+                                    id BIGSERIAL NOT NULL,
+                                    created_at TIMESTAMPTZ,
+                                    updated_at TIMESTAMPTZ,
+                                    deleted_at TIMESTAMPTZ,
+                                    user_id BIGINT,
+                                    username VARCHAR(50),
+                                    module VARCHAR(100),
+                                    operation VARCHAR(100),
+                                    method VARCHAR(10),
+                                    path VARCHAR(500),
+                                    ip VARCHAR(50),
+                                    user_agent VARCHAR(500),
+                                    request_data TEXT,
+                                    response_data TEXT,
+                                    status_code INTEGER,
+                                    duration BIGINT,
+                                    error_msg TEXT,
+                                    location VARCHAR(100),
+                                    tenant_id INTEGER DEFAULT '0',
+                                    PRIMARY KEY (id)
 );
 
 COMMENT ON COLUMN sys_operation_logs.error_msg IS '错误信息';
@@ -1118,20 +1118,20 @@ COMMENT ON COLUMN sys_operation_logs.ip IS '客户端IP';
 -- Table structure for sys_role
 DROP TABLE IF EXISTS sys_role;
 CREATE TABLE sys_role (
-    id SERIAL NOT NULL,
-    name VARCHAR(255) DEFAULT '',
-    sort INTEGER DEFAULT '0',
-    status SMALLINT DEFAULT '0',
-    description VARCHAR(255),
-    parent_id INTEGER DEFAULT '0',
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    deleted_at TIMESTAMP,
-    created_by INTEGER,
-    data_scope INTEGER DEFAULT '0',
-    checked_depts VARCHAR(1000),
-    tenant_id INTEGER DEFAULT '0',
-    PRIMARY KEY (id)
+                          id SERIAL NOT NULL,
+                          name VARCHAR(255) DEFAULT '',
+                          sort INTEGER DEFAULT '0',
+                          status SMALLINT DEFAULT '0',
+                          description VARCHAR(255),
+                          parent_id INTEGER DEFAULT '0',
+                          created_at TIMESTAMPTZ,
+                          updated_at TIMESTAMPTZ,
+                          deleted_at TIMESTAMPTZ,
+                          created_by INTEGER,
+                          data_scope INTEGER DEFAULT '0',
+                          checked_depts VARCHAR(1000),
+                          tenant_id INTEGER DEFAULT '0',
+                          PRIMARY KEY (id)
 );
 
 COMMENT ON COLUMN sys_role.name IS '角色名称';
@@ -1148,9 +1148,9 @@ INSERT INTO sys_role VALUES ('2', '演示', '0', '1', '', '0', '2025-10-14 15:12
 -- Table structure for sys_role_menu
 DROP TABLE IF EXISTS sys_role_menu;
 CREATE TABLE sys_role_menu (
-    role_id INTEGER NOT NULL,
-    menu_id INTEGER NOT NULL,
-    PRIMARY KEY (role_id,menu_id)
+                               role_id INTEGER NOT NULL,
+                               menu_id INTEGER NOT NULL,
+                               PRIMARY KEY (role_id,menu_id)
 );
 
 
@@ -1300,19 +1300,19 @@ INSERT INTO sys_role_menu VALUES ('2', '140340');
 -- Table structure for sys_tenants
 DROP TABLE IF EXISTS sys_tenants;
 CREATE TABLE sys_tenants (
-    id SERIAL NOT NULL,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    deleted_at TIMESTAMP,
-    created_by INTEGER NOT NULL DEFAULT '0',
-    name VARCHAR(100) NOT NULL,
-    code VARCHAR(50) NOT NULL,
-    description VARCHAR(500),
-    status SMALLINT NOT NULL DEFAULT '1',
-    domain VARCHAR(255),
-    platform_domain VARCHAR(255),
-    menu_permission VARCHAR(1000),
-    PRIMARY KEY (id)
+                             id SERIAL NOT NULL,
+                             created_at TIMESTAMPTZ,
+                             updated_at TIMESTAMPTZ,
+                             deleted_at TIMESTAMPTZ,
+                             created_by INTEGER NOT NULL DEFAULT '0',
+                             name VARCHAR(100) NOT NULL,
+                             code VARCHAR(50) NOT NULL,
+                             description VARCHAR(500),
+                             status SMALLINT NOT NULL DEFAULT '1',
+                             domain VARCHAR(255),
+                             platform_domain VARCHAR(255),
+                             menu_permission VARCHAR(1000),
+                             PRIMARY KEY (id)
 );
 
 COMMENT ON COLUMN sys_tenants.domain IS '租户域名';
@@ -1329,23 +1329,23 @@ INSERT INTO sys_tenants VALUES ('1', '2025-11-03 11:16:45', '2026-01-09 16:31:23
 -- Table structure for sys_users
 DROP TABLE IF EXISTS sys_users;
 CREATE TABLE sys_users (
-    id SERIAL NOT NULL,
-    username VARCHAR(50) NOT NULL DEFAULT '',
-    password VARCHAR(255) NOT NULL DEFAULT '',
-    email VARCHAR(100) DEFAULT '',
-    status SMALLINT DEFAULT '1',
-    dept_id INTEGER DEFAULT '0',
-    phone VARCHAR(64) DEFAULT '',
-    sex VARCHAR(64) DEFAULT '',
-    nick_name VARCHAR(100) DEFAULT '',
-    avatar VARCHAR(255) DEFAULT '',
-    description VARCHAR(500),
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    deleted_at TIMESTAMP,
-    created_by INTEGER DEFAULT '0',
-    tenant_id INTEGER DEFAULT '0',
-    PRIMARY KEY (id)
+                           id SERIAL NOT NULL,
+                           username VARCHAR(50) NOT NULL DEFAULT '',
+                           password VARCHAR(255) NOT NULL DEFAULT '',
+                           email VARCHAR(100) DEFAULT '',
+                           status SMALLINT DEFAULT '1',
+                           dept_id INTEGER DEFAULT '0',
+                           phone VARCHAR(64) DEFAULT '',
+                           sex VARCHAR(64) DEFAULT '',
+                           nick_name VARCHAR(100) DEFAULT '',
+                           avatar VARCHAR(255) DEFAULT '',
+                           description VARCHAR(500),
+                           created_at TIMESTAMPTZ,
+                           updated_at TIMESTAMPTZ,
+                           deleted_at TIMESTAMPTZ,
+                           created_by INTEGER DEFAULT '0',
+                           tenant_id INTEGER DEFAULT '0',
+                           PRIMARY KEY (id)
 );
 
 COMMENT ON COLUMN sys_users.avatar IS '头像';
@@ -1367,9 +1367,9 @@ INSERT INTO sys_users VALUES ('4', 'demo', '$2a$10$yxq80jnZCRPn/hhQYUffheRnDopYj
 -- Table structure for sys_user_role
 DROP TABLE IF EXISTS sys_user_role;
 CREATE TABLE sys_user_role (
-    user_id INTEGER NOT NULL DEFAULT '0',
-    role_id INTEGER NOT NULL DEFAULT '0',
-    PRIMARY KEY (user_id,role_id)
+                               user_id INTEGER NOT NULL DEFAULT '0',
+                               role_id INTEGER NOT NULL DEFAULT '0',
+                               PRIMARY KEY (user_id,role_id)
 );
 
 COMMENT ON COLUMN sys_user_role.role_id IS '角色ID';
@@ -1381,11 +1381,11 @@ INSERT INTO sys_user_role VALUES ('4', '2');
 -- Table structure for sys_user_tenant
 DROP TABLE IF EXISTS sys_user_tenant;
 CREATE TABLE sys_user_tenant (
-    user_id INTEGER NOT NULL DEFAULT '0',
-    tenant_id INTEGER NOT NULL DEFAULT '0',
-    is_default SMALLINT DEFAULT '0',
-    created_at TIMESTAMP,
-    PRIMARY KEY (user_id,tenant_id)
+                                 user_id INTEGER NOT NULL DEFAULT '0',
+                                 tenant_id INTEGER NOT NULL DEFAULT '0',
+                                 is_default SMALLINT DEFAULT '0',
+                                 created_at TIMESTAMPTZ,
+                                 PRIMARY KEY (user_id,tenant_id)
 );
 
 COMMENT ON COLUMN sys_user_tenant.is_default IS '是否默认租户';
@@ -1398,15 +1398,13 @@ COMMENT ON COLUMN sys_user_tenant.tenant_id IS '租户id';
 CREATE INDEX idx_job_id ON sys_job_results (job_id);
 CREATE INDEX idx_status ON sys_job_results (status);
 CREATE INDEX idx_start_time ON sys_job_results (start_time);
-CREATE INDEX idx_created_at ON sys_job_results (created_at);
 CREATE INDEX idx_parent_id ON sys_menu (parent_id);
 CREATE INDEX idx_sort ON sys_menu (sort);
 CREATE INDEX idx_type ON sys_menu (type);
 CREATE UNIQUE INDEX username ON sys_users (username);
 CREATE UNIQUE INDEX idx_casbin_rule ON sys_casbin_rule (ptype, v0, v1, v2, v3, v4, v5);
 CREATE UNIQUE INDEX idx_sys_casbin_rule ON sys_casbin_rule (ptype, v0, v1, v2, v3, v4, v5);
-CREATE INDEX idx_group ON sys_jobs (group);
-CREATE INDEX idx_status ON sys_jobs (status);
+CREATE INDEX idx_group ON sys_jobs ("group");
 CREATE INDEX idx_executor_name ON sys_jobs (executor_name);
 CREATE INDEX idx_created_at ON sys_jobs (created_at);
 CREATE INDEX idx_sys_operation_logs_deleted_at ON sys_operation_logs (deleted_at);
