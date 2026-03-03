@@ -4,6 +4,7 @@ import (
 	"errors"
 	"gin-fast/app/global/app"
 	"gin-fast/app/global/consts"
+	"gin-fast/app/utils/common"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -51,4 +52,24 @@ func (c Common) SuccessWithMessage(ctx *gin.Context, msg string, data ...interfa
 	} else {
 		app.Response.Success(ctx, nil, msg)
 	}
+}
+
+// GetAccessToken 获取access token
+func (c Common) GetAccessToken(ctx *gin.Context) (string, error) {
+	return common.GetAccessToken(ctx)
+}
+
+// GetClaims 从上下文获取 Claims
+func (c Common) GetClaims(ctx *gin.Context) *app.Claims {
+	return common.GetClaims(ctx)
+}
+
+// GetCurrentUserID 获取当前用户ID
+func (c Common) GetCurrentUserID(ctx *gin.Context) uint {
+	return common.GetCurrentUserID(ctx)
+}
+
+// GetCurrentTenantID 获取当前租户ID
+func (c Common) GetCurrentTenantID(ctx *gin.Context) uint {
+	return common.GetCurrentTenantID(ctx)
 }

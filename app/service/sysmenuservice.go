@@ -284,6 +284,7 @@ func (s *SysMenuService) Update(c *gin.Context, req models.SysMenuUpdateRequest)
 	if req.Type == 3 && req.ParentID == 0 {
 		return nil, fmt.Errorf("请选择父级菜单")
 	}
+	// 1: 目录 2: 菜单
 	if req.Type == 1 || req.Type == 2 {
 		// 检查菜单名称是否与其他菜单冲突（排除当前菜单）
 		existMenu := models.NewSysMenu()

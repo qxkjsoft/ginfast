@@ -244,7 +244,7 @@ func (sdc *SysDictController) Update(c *gin.Context) {
 	// 检查字典编码是否已被其他字典使用
 	existDict := models.NewSysDict()
 	err = app.DB().WithContext(c).Where("code = ? AND id != ?", req.Code, req.ID).First(existDict).Error
-	if err == nil {
+	if !existDict.IsEmpty() {
 		sdc.FailAndAbort(c, "字典编码已被其他字典使用", nil)
 	}
 
