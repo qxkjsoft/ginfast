@@ -36,6 +36,7 @@ require (
 )
 
 require (
+	github.com/ArtisanCloud/PowerSocialite/v3 v3.0.8 // indirect
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.5 // indirect

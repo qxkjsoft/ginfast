@@ -2,9 +2,11 @@ package uploadhelper
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"gin-fast/app/global/app"
 	"mime/multipart"
+	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
@@ -64,28 +66,11 @@ func (s *QiniuUploadService) HandleUpload(c *gin.Context, fileName string) (*app
 	}
 
 	// 上传文件
-	res, err := s.UploadFile(file)
-	if err != nil {
-		return nil, fmt.Errorf("上传文件失败: %v", err)
-	}
-
-	// 获取文件扩展名
-	fileExt := s.GetFileExtension(file.Filename)
-
-	// 构建响应
-	response := &app.UploadResponse{
-		Url:      res.Url,
-		FileName: file.Filename,
-		Size:     file.Size,
-		FileType: fileExt,
-		Path:     res.Path,
-	}
-
-	return response, nil
+	return s.UploadFile(file)
 }
 
 // UploadFile 上传文件
-func (s *QiniuUploadService) UploadFile(file *multipart.FileHeader) (*app.UploadFileResponse, error) {
+func (s *QiniuUploadService) UploadFile(file *multipart.FileHeader) (*app.UploadResponse, error) {
 	// 生成文件名
 	fileName := s.GenerateFileName(file.Filename)
 
@@ -95,10 +80,12 @@ func (s *QiniuUploadService) UploadFile(file *multipart.FileHeader) (*app.Upload
 	if err != nil {
 		return nil, err
 	}
-	return &app.UploadFileResponse{
+	return &app.UploadResponse{
 		Url:      url,
 		FileName: fileName,
 		Path:     "",
+		Size:     file.Size,
+		FileType: s.GetFileExtension(file.Filename),
 	}, nil
 }
 
@@ -272,4 +259,76 @@ func getZone(zoneName string) *storage.Zone {
 		// 默认使用华东区域
 		return &storage.ZoneHuadong
 	}
+}
+
+// DownloadAndSaveRemoteImage 下载并保存远程图片到七牛云
+func (s *QiniuUploadService) DownloadAndSaveRemoteImage(imageUrl string) (*app.UploadResponse, error) {
+	// 创建HTTP客户端，设置超时和跳过SSL验证（某些情况下需要）
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	// 发送HTTP请求下载图片
+	resp, err := client.Get(imageUrl)
+	if err != nil {
+		return nil, fmt.Errorf("下载图片失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// 检查响应状态码
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("下载图片失败，状态码: %d", resp.StatusCode)
+	}
+
+	// 检查Content-Type是否为图片
+	contentType := resp.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, "image/") {
+		return nil, fmt.Errorf("下载的文件不是图片类型: %s", contentType)
+	}
+
+	// 从Content-Type中获取文件扩展名
+	ext := ".jpg" // 默认扩展名
+	if strings.Contains(contentType, "png") {
+		ext = ".png"
+	} else if strings.Contains(contentType, "gif") {
+		ext = ".gif"
+	} else if strings.Contains(contentType, "webp") {
+		ext = ".webp"
+	} else if strings.Contains(contentType, "jpeg") {
+		ext = ".jpg"
+	}
+
+	// 生成文件名
+	fileName := s.GenerateFileName("image" + ext)
+
+	// 创建表单上传的对象
+	formUploader := storage.NewFormUploader(s.cfg)
+	ret := storage.PutRet{}
+
+	// 可选配置
+	putExtra := storage.PutExtra{}
+
+	// 上传文件
+	putPolicy := storage.PutPolicy{
+		Scope: s.bucket,
+	}
+	upToken := putPolicy.UploadToken(s.mac)
+	err = formUploader.Put(context.Background(), &ret, upToken, fileName, resp.Body, resp.ContentLength, &putExtra)
+	if err != nil {
+		return nil, fmt.Errorf("上传图片到七牛云失败: %v", err)
+	}
+
+	// 构建响应
+	response := &app.UploadResponse{
+		Url:      s.GetFileUrl(fileName),
+		FileName: fileName,
+		Size:     resp.ContentLength,
+		FileType: ext,
+		Path:     fileName,
+	}
+
+	return response, nil
 }

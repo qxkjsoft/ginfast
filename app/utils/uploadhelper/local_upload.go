@@ -1,10 +1,12 @@
 package uploadhelper
 
 import (
+	"crypto/tls"
 	"fmt"
 	"gin-fast/app/global/app"
 	"io"
 	"mime/multipart"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -29,7 +31,7 @@ func NewLocalUploadService() app.FileUploadService {
 }
 
 // UploadFile 上传文件
-func (s *LocalUploadService) UploadFile(file *multipart.FileHeader) (*app.UploadFileResponse, error) {
+func (s *LocalUploadService) UploadFile(file *multipart.FileHeader) (*app.UploadResponse, error) {
 	// 生成文件名
 	fileName := s.GenerateFileName(file.Filename)
 
@@ -50,10 +52,12 @@ func (s *LocalUploadService) UploadFile(file *multipart.FileHeader) (*app.Upload
 	}
 
 	// 返回文件URL，包含日期文件夹路径
-	return &app.UploadFileResponse{
+	return &app.UploadResponse{
 		Url:      s.GetFileUrl(fmt.Sprintf("%s/%s", dateFolder, fileName)),
 		Path:     filePath,
 		FileName: fileName,
+		Size:     file.Size,
+		FileType: s.GetFileExtension(file.Filename),
 	}, nil
 }
 
@@ -156,24 +160,7 @@ func (s *LocalUploadService) HandleUpload(c *gin.Context, fileName string) (*app
 	}
 
 	// 上传文件
-	res, err := s.UploadFile(file)
-	if err != nil {
-		return nil, fmt.Errorf("上传文件失败: %v", err)
-	}
-
-	// 获取文件扩展名
-	fileExt := s.GetFileExtension(file.Filename)
-
-	// 构建响应
-	response := &app.UploadResponse{
-		Url:      res.Url,
-		Path:     res.Path,
-		FileName: res.FileName,
-		Size:     file.Size,
-		FileType: fileExt,
-	}
-
-	return response, nil
+	return s.UploadFile(file)
 }
 
 // ValidateFile 验证文件
@@ -257,4 +244,92 @@ func (s *LocalUploadService) getFilePathFromUrl(relativePath string) string {
 
 	// 如果没有匹配到或文件不存在，返回空字符串
 	return ""
+}
+
+// DownloadAndSaveRemoteImage 下载并保存远程图片
+func (s *LocalUploadService) DownloadAndSaveRemoteImage(imageUrl string) (*app.UploadResponse, error) {
+	// 创建HTTP客户端，设置超时和跳过SSL验证（某些情况下需要）
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	// 发送HTTP请求下载图片
+	resp, err := client.Get(imageUrl)
+	if err != nil {
+		return nil, fmt.Errorf("下载图片失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// 检查响应状态码
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("下载图片失败，状态码: %d", resp.StatusCode)
+	}
+
+	// 检查Content-Type是否为图片
+	contentType := resp.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, "image/") {
+		return nil, fmt.Errorf("下载的文件不是图片类型: %s", contentType)
+	}
+
+	// 从URL或Content-Type中获取文件扩展名
+	ext := ".jpg" // 默认扩展名
+	if strings.Contains(contentType, "png") {
+		ext = ".png"
+	} else if strings.Contains(contentType, "gif") {
+		ext = ".gif"
+	} else if strings.Contains(contentType, "webp") {
+		ext = ".webp"
+	} else if strings.Contains(contentType, "jpeg") {
+		ext = ".jpg"
+	}
+
+	// 生成文件名
+	fileName := s.GenerateFileName("image" + ext)
+
+	// 获取当天日期作为文件夹名
+	dateFolder := time.Now().Format("2006-01-02")
+
+	// 构建文件保存路径
+	filePath := filepath.Join(s.config.LocalPath, dateFolder, fileName)
+
+	// 确保目录存在
+	if err := os.MkdirAll(filepath.Join(s.config.LocalPath, dateFolder), 0755); err != nil {
+		return nil, fmt.Errorf("创建目录失败: %v", err)
+	}
+
+	// 创建文件
+	out, err := os.Create(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("创建文件失败: %v", err)
+	}
+	defer out.Close()
+
+	// 复制下载的内容到文件
+	written, err := io.Copy(out, resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("保存图片失败: %v", err)
+	}
+
+	// 获取文件信息以获取文件大小
+	fileInfo, _ := out.Stat()
+	var fileSize int64
+	if fileInfo != nil {
+		fileSize = fileInfo.Size()
+	} else {
+		fileSize = written
+	}
+
+	// 构建响应
+	response := &app.UploadResponse{
+		Url:      s.GetFileUrl(fmt.Sprintf("%s/%s", dateFolder, fileName)),
+		FileName: fileName,
+		Size:     fileSize,
+		FileType: ext,
+		Path:     filePath,
+	}
+
+	return response, nil
 }
