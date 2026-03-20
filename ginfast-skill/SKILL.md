@@ -1,9 +1,6 @@
 ---
 name: ginfast-skill
-description: AI助手技能索引 - 当用户询问开发技能、查找指南、需要技术文档时使用。支持GinFast框架相关的模型、服务、控制器、路由、中间件、验证、响应、权限、多租户、定时任务、代码生成等开发场景。
-modeSlugs:
-  - code
-  - architect
+description: GinFast framework development skill. TRIGGER when writing/modifying Go files, implementing models, services, controllers, routes, middleware, validation, APIs, database operations, multi-tenant features, scheduled tasks, or code generation. DO NOT TRIGGER for frontend/shell scripts.
 ---
 
 # GinFast 技能索引
