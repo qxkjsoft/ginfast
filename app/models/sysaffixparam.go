@@ -69,3 +69,69 @@ type UpdateNameRequest struct {
 func (r *UpdateNameRequest) Validate(c *gin.Context) error {
 	return r.Validator.Check(c, r)
 }
+
+// ===== 分片上传请求参数 =====
+
+// ChunkInitRequest 分片上传初始化请求
+type ChunkInitRequest struct {
+	Validator
+	FileMd5     string `json:"fileMd5" validate:"required" message:"文件MD5不能为空"`
+	FileName    string `json:"fileName" validate:"required" message:"文件名不能为空"`
+	FileSize    int64  `json:"fileSize" validate:"required" message:"文件大小不能为空"`
+	ChunkSize   int    `json:"chunkSize" validate:"required" message:"分片大小不能为空"`
+	TotalChunks int    `json:"totalChunks" validate:"required" message:"分片总数不能为空"`
+}
+
+// Validate 验证请求参数
+func (r *ChunkInitRequest) Validate(c *gin.Context) error {
+	return r.Validator.Check(c, r)
+}
+
+// ChunkUploadRequest 分片上传请求（multipart/form-data）
+type ChunkUploadRequest struct {
+	Validator
+	File        *multipart.FileHeader `form:"file" validate:"required" message:"分片文件不能为空"`
+	UploadId    string                `form:"uploadId" validate:"required" message:"上传ID不能为空"`
+	ChunkIndex  int                   `form:"chunkIndex" validate:"required" message:"分片序号不能为空"`
+	ChunkMd5    string                `form:"chunkMd5" message:"分片MD5"`
+	FileMd5     string                `form:"fileMd5" message:"文件MD5"`
+	TotalChunks int                   `form:"totalChunks" validate:"required" message:"分片总数不能为空"`
+}
+
+// Validate 验证请求参数
+func (r *ChunkUploadRequest) Validate(c *gin.Context) error {
+	return r.Validator.Check(c, r)
+}
+
+// ChunkMergeRequest 合并分片请求
+type ChunkMergeRequest struct {
+	Validator
+	UploadId    string `json:"uploadId" validate:"required" message:"上传ID不能为空"`
+	FileMd5     string `json:"fileMd5" validate:"required" message:"文件MD5不能为空"`
+	FileName    string `json:"fileName" validate:"required" message:"文件名不能为空"`
+	FileSize    int64  `json:"fileSize" validate:"required" message:"文件大小不能为空"`
+	TotalChunks int    `json:"totalChunks" validate:"required" message:"分片总数不能为空"`
+}
+
+// Validate 验证请求参数
+func (r *ChunkMergeRequest) Validate(c *gin.Context) error {
+	return r.Validator.Check(c, r)
+}
+
+// ChunkCancelRequest 取消上传请求
+type ChunkCancelRequest struct {
+	Validator
+	UploadId string `json:"uploadId" validate:"required" message:"上传ID不能为空"`
+}
+
+// Validate 验证请求参数
+func (r *ChunkCancelRequest) Validate(c *gin.Context) error {
+	return r.Validator.Check(c, r)
+}
+
+// ChunkInitResult 分片上传初始化结果
+type ChunkInitResult struct {
+	UploadId       string
+	UploadedChunks []int
+	ExistFile      *SysAffix
+}

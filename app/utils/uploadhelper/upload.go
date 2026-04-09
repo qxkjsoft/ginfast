@@ -18,6 +18,11 @@ func GetUploadConfig() app.UploadConfig {
 	allowedTypes := app.ConfigYml.GetStringSlice("upload.allowed_types")
 	localPath := app.ConfigYml.GetString("upload.local_path")
 
+	// 分片上传配置
+	chunkMaxSize := app.ConfigYml.GetInt("upload.chunk_max_size")
+	maxChunkSize := app.ConfigYml.GetInt("upload.max_chunk_size")
+	chunkAllowedTypes := app.ConfigYml.GetStringSlice("upload.chunk_allowed_types")
+
 	// 获取七牛云配置
 	qiniuConfig := app.QiniuConfig{
 		AccessKey: app.ConfigYml.GetString("upload.qiniu_config.access_key"),
@@ -28,11 +33,14 @@ func GetUploadConfig() app.UploadConfig {
 	}
 
 	return app.UploadConfig{
-		UploadType:   uploadType,
-		MaxSize:      maxSize,
-		AllowedTypes: allowedTypes,
-		LocalPath:    localPath,
-		QiniuConfig:  qiniuConfig,
+		UploadType:        uploadType,
+		MaxSize:           maxSize,
+		AllowedTypes:      allowedTypes,
+		LocalPath:         localPath,
+		QiniuConfig:       qiniuConfig,
+		ChunkMaxSize:      chunkMaxSize,
+		MaxChunkSize:      maxChunkSize,
+		ChunkAllowedTypes: chunkAllowedTypes,
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/global/consts"
 	"gin-fast/app/models"
+	"gin-fast/app/service"
 	"gin-fast/app/utils/datascope"
 	"gin-fast/app/utils/filehelper"
 	"gin-fast/app/utils/imagehelper"
@@ -26,12 +27,14 @@ import (
 // @Router /sysAffix [get]
 type SysAffixController struct {
 	Common
+	affixService *service.SysAffixService
 }
 
 // NewSysAffixController 创建文件附件控制器
 func NewSysAffixController() *SysAffixController {
 	return &SysAffixController{
-		Common: Common{},
+		Common:       Common{},
+		affixService: service.NewSysAffixService(),
 	}
 }
 
@@ -340,4 +343,153 @@ func (ac *SysAffixController) Download(c *gin.Context) {
 		"url":  affix.Url,
 		"path": affix.Path,
 	})
+}
+
+// ChunkInit 初始化分片上传
+// @Summary 初始化分片上传
+// @Description 初始化大文件分片上传，支持秒传检测和断点续传
+// @Tags 文件附件管理
+// @Accept json
+// @Produce json
+// @Param body body models.ChunkInitRequest true "初始化参数"
+// @Success 200 {object} map[string]interface{}
+// @Router /sysAffix/chunk/init [post]
+// @Security ApiKeyAuth
+func (ac *SysAffixController) ChunkInit(c *gin.Context) {
+	var req models.ChunkInitRequest
+	if err := req.Validate(c); err != nil {
+		ac.FailAndAbort(c, err.Error(), err)
+	}
+
+	// 获取当前租户ID
+	tenantID := ac.GetCurrentTenantID(c)
+
+	// 调用 Service 处理初始化逻辑
+	result, err := ac.affixService.InitChunkUpload(c, &req, tenantID)
+	if err != nil {
+		ac.FailAndAbort(c, err.Error(), err)
+	}
+
+	// 秒传命中，返回已有文件信息
+	if result.ExistFile != nil {
+		ac.Success(c, gin.H{
+			"uploadId":       "",
+			"uploadedChunks": []int{},
+			"existFile": gin.H{
+				"id":     result.ExistFile.ID,
+				"name":   result.ExistFile.Name,
+				"path":   result.ExistFile.Path,
+				"size":   result.ExistFile.Size,
+				"ftype":  result.ExistFile.Ftype,
+				"url":    result.ExistFile.Url,
+				"suffix": result.ExistFile.Suffix,
+			},
+		})
+		return
+	}
+
+	// 返回初始化结果
+	ac.Success(c, gin.H{
+		"uploadId":       result.UploadId,
+		"uploadedChunks": result.UploadedChunks,
+		"existFile":      nil,
+	})
+}
+
+// ChunkUpload 上传单个分片
+// @Summary 上传分片
+// @Description 上传大文件的单个分片
+// @Tags 文件附件管理
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "分片文件"
+// @Param uploadId formData string true "上传会话ID"
+// @Param chunkIndex formData int true "分片序号"
+// @Param totalChunks formData int true "总分片数"
+// @Success 200 {object} map[string]interface{}
+// @Router /sysAffix/chunk/upload [post]
+// @Security ApiKeyAuth
+func (ac *SysAffixController) ChunkUpload(c *gin.Context) {
+	var req models.ChunkUploadRequest
+	if err := req.Validate(c); err != nil {
+		ac.FailAndAbort(c, err.Error(), err)
+	}
+
+	// 获取当前用户信息
+	userID := ac.GetCurrentUserID(c)
+	tenantID := ac.GetCurrentTenantID(c)
+
+	// 调用 Service 保存分片
+	if err := ac.affixService.SaveChunk(c, &req, userID, tenantID); err != nil {
+		ac.FailAndAbort(c, err.Error(), err)
+	}
+
+	ac.Success(c, gin.H{
+		"chunkIndex": req.ChunkIndex,
+		"received":   true,
+	})
+}
+
+// ChunkMerge 合并分片
+// @Summary 合并分片
+// @Description 合并所有已上传的分片为最终文件
+// @Tags 文件附件管理
+// @Accept json
+// @Produce json
+// @Param body body models.ChunkMergeRequest true "合并参数"
+// @Success 200 {object} map[string]interface{}
+// @Router /sysAffix/chunk/merge [post]
+// @Security ApiKeyAuth
+func (ac *SysAffixController) ChunkMerge(c *gin.Context) {
+	var req models.ChunkMergeRequest
+	if err := req.Validate(c); err != nil {
+		ac.FailAndAbort(c, err.Error(), err)
+	}
+
+	// 获取当前用户信息
+	userID := ac.GetCurrentUserID(c)
+	tenantID := ac.GetCurrentTenantID(c)
+
+	// 调用 Service 合并分片
+	affix, err := ac.affixService.MergeChunks(c, &req, userID, tenantID)
+	if err != nil {
+		ac.FailAndAbort(c, err.Error(), err)
+	}
+
+	ac.Success(c, gin.H{
+		"id":     affix.ID,
+		"name":   affix.Name,
+		"path":   affix.Path,
+		"size":   affix.Size,
+		"ftype":  affix.Ftype,
+		"url":    affix.Url,
+		"suffix": affix.Suffix,
+	})
+}
+
+// ChunkCancel 取消分片上传
+// @Summary 取消分片上传
+// @Description 取消分片上传并清理临时文件
+// @Tags 文件附件管理
+// @Accept json
+// @Produce json
+// @Param body body models.ChunkCancelRequest true "取消参数"
+// @Success 200 {object} map[string]interface{}
+// @Router /sysAffix/chunk/cancel [delete]
+// @Security ApiKeyAuth
+func (ac *SysAffixController) ChunkCancel(c *gin.Context) {
+	var req models.ChunkCancelRequest
+	if err := req.Validate(c); err != nil {
+		ac.FailAndAbort(c, err.Error(), err)
+	}
+
+	// 获取当前租户ID
+	tenantID := ac.GetCurrentTenantID(c)
+
+	// 调用 Service 取消上传
+	if err := ac.affixService.CancelChunkUpload(c, req.UploadId, tenantID); err != nil {
+		ac.FailAndAbort(c, err.Error(), err)
+	}
+
+	ac.SuccessWithMessage(c, "已取消上传", nil)
 }

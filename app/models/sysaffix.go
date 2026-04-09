@@ -17,6 +17,7 @@ type SysAffix struct {
 	CreatedBy     uint   `gorm:"type:int(11);comment:创建者ID" json:"createdBy"`
 	Suffix        string `gorm:"type:varchar(100);comment:文件后缀" json:"suffix"`
 	Url           string `gorm:"type:varchar(255);comment:文件访问URL" json:"url"`
+	FileMd5       string `gorm:"type:varchar(32);index;comment:文件MD5(秒传检测)" json:"fileMd5,omitempty"`
 	ThumbnailPath string `gorm:"type:varchar(255);comment:缩略图路径" json:"thumbnailPath,omitempty"`
 	ThumbnailName string `gorm:"type:varchar(255);comment:缩略图名称" json:"thumbnailName,omitempty"`
 	ThumbnailUrl  string `gorm:"type:varchar(255);comment:缩略图URL" json:"thumbnailUrl,omitempty"`

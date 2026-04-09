@@ -77,7 +77,7 @@ func (pms *PluginsManagerService) GetPluginsExportList() ([]models.PluginExport,
 }
 
 // ExportPluginToWriter 导出插件为压缩包，直接写入 io.Writer（流式传输）
-func (pms *PluginsManagerService) ExportPluginToWriter(pluginName string, writer io.Writer) (string, error) {
+func (pms *PluginsManagerService) ExportPluginToWriter(pluginName string, writer io.Writer, includeData bool) (string, error) {
 	if pluginName == "" {
 		return "", errors.New("插件名称不能为空")
 	}
@@ -248,7 +248,7 @@ func (pms *PluginsManagerService) ExportPluginToWriter(pluginName string, writer
 
 	// 处理数据库表导出
 	if len(pluginExport.DatabaseTable) > 0 {
-		sqlContent, err := pms.generateTableSQL(pluginExport.DatabaseTable)
+		sqlContent, err := pms.generateTableSQL(pluginExport.DatabaseTable, includeData)
 		if err != nil {
 			return "", fmt.Errorf("生成数据库SQL文件失败: %v", err)
 		}
@@ -328,7 +328,7 @@ func (pms *PluginsManagerService) addStringToZip(zipWriter *zip.Writer, fileName
 }
 
 // generateTableSQL 根据表名列表生成CREATE TABLE和INSERT SQL语句
-func (pms *PluginsManagerService) generateTableSQL(tableNames []string) (string, error) {
+func (pms *PluginsManagerService) generateTableSQL(tableNames []string, includeData bool) (string, error) {
 	// 获取数据库连接
 	dbType := app.ConfigYml.GetString("gormv2.usedbtype")
 	var db *gorm.DB
@@ -362,15 +362,15 @@ func (pms *PluginsManagerService) generateTableSQL(tableNames []string) (string,
 	for _, tableName := range tableNames {
 		switch dbType {
 		case "mysql":
-			if err := pms.generateMySQLTableSQL(sqlDB, tableName, &sqlContent); err != nil {
+			if err := pms.generateMySQLTableSQL(sqlDB, tableName, &sqlContent, includeData); err != nil {
 				return "", err
 			}
 		case "postgresql":
-			if err := pms.generatePostgreSQLTableSQL(sqlDB, tableName, &sqlContent); err != nil {
+			if err := pms.generatePostgreSQLTableSQL(sqlDB, tableName, &sqlContent, includeData); err != nil {
 				return "", err
 			}
 		case "sqlserver":
-			if err := pms.generateSQLServerTableSQL(sqlDB, tableName, &sqlContent); err != nil {
+			if err := pms.generateSQLServerTableSQL(sqlDB, tableName, &sqlContent, includeData); err != nil {
 				return "", err
 			}
 		}
@@ -380,7 +380,7 @@ func (pms *PluginsManagerService) generateTableSQL(tableNames []string) (string,
 }
 
 // generateMySQLTableSQL 生成MySQL的建表和数据插入SQL
-func (pms *PluginsManagerService) generateMySQLTableSQL(sqlDB *sql.DB, tableName string, sqlContent *strings.Builder) error {
+func (pms *PluginsManagerService) generateMySQLTableSQL(sqlDB *sql.DB, tableName string, sqlContent *strings.Builder, includeData bool) error {
 	// 获取建表语句
 	var createTableSQL string
 	err := sqlDB.QueryRow(fmt.Sprintf("SHOW CREATE TABLE `%s`", tableName)).Scan(&tableName, &createTableSQL)
@@ -392,6 +392,11 @@ func (pms *PluginsManagerService) generateMySQLTableSQL(sqlDB *sql.DB, tableName
 	sqlContent.WriteString(fmt.Sprintf("DROP TABLE IF EXISTS `%s`;\n", tableName))
 	sqlContent.WriteString(createTableSQL)
 	sqlContent.WriteString(";\n\n")
+
+	// 如果不需要包含数据，则直接返回
+	if !includeData {
+		return nil
+	}
 
 	// 获取表中的数据
 	rows, err := sqlDB.Query(fmt.Sprintf("SELECT * FROM `%s`", tableName))
@@ -448,7 +453,7 @@ func (pms *PluginsManagerService) generateMySQLTableSQL(sqlDB *sql.DB, tableName
 }
 
 // generatePostgreSQLTableSQL 生成PostgreSQL的建表和数据插入SQL
-func (pms *PluginsManagerService) generatePostgreSQLTableSQL(sqlDB *sql.DB, tableName string, sqlContent *strings.Builder) error {
+func (pms *PluginsManagerService) generatePostgreSQLTableSQL(sqlDB *sql.DB, tableName string, sqlContent *strings.Builder, includeData bool) error {
 	// 获取建表语句
 	rows, err := sqlDB.Query(`
 		SELECT 
@@ -475,6 +480,11 @@ func (pms *PluginsManagerService) generatePostgreSQLTableSQL(sqlDB *sql.DB, tabl
 		sqlContent.WriteString(fmt.Sprintf("DROP TABLE IF EXISTS %s;\n", tableName))
 		sqlContent.WriteString(createTableSQL)
 		sqlContent.WriteString(";\n\n")
+	}
+
+	// 如果不需要包含数据，则直接返回
+	if !includeData {
+		return nil
 	}
 
 	// 获取表中的数据
@@ -529,7 +539,7 @@ func (pms *PluginsManagerService) generatePostgreSQLTableSQL(sqlDB *sql.DB, tabl
 }
 
 // generateSQLServerTableSQL 生成SQL Server的建表和数据插入SQL
-func (pms *PluginsManagerService) generateSQLServerTableSQL(sqlDB *sql.DB, tableName string, sqlContent *strings.Builder) error {
+func (pms *PluginsManagerService) generateSQLServerTableSQL(sqlDB *sql.DB, tableName string, sqlContent *strings.Builder, includeData bool) error {
 	// 获取建表语句
 	var createTableSQL string
 	err := sqlDB.QueryRow(`
@@ -553,6 +563,11 @@ func (pms *PluginsManagerService) generateSQLServerTableSQL(sqlDB *sql.DB, table
 		sqlContent.WriteString(fmt.Sprintf("DROP TABLE IF EXISTS [%s];\n", tableName))
 		sqlContent.WriteString(createTableSQL)
 		sqlContent.WriteString(";\n\n")
+	}
+
+	// 如果不需要包含数据，则直接返回
+	if !includeData {
+		return nil
 	}
 
 	// 获取表中的数据

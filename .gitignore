@@ -91,3 +91,7 @@ __debug_bin.exe*
 /plugins/*
 !/plugins/example/
 !/plugins/exampleinit.go
+/plans
+/AGENTS.md
+/scripts/mysql2postgres
+/scripts/mysql2sqlserver

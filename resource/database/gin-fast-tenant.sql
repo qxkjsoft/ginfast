@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50726
 File Encoding         : 65001
 
-Date: 2026-02-24 09:10:10
+Date: 2026-04-09 17:24:03
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -112,6 +112,7 @@ CREATE TABLE `sys_affix` (
   `name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '文件名',
   `path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '路径',
   `url` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '文件url',
+  `file_md5` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '文件MD5(秒传检测)',
   `size` int(10) DEFAULT NULL COMMENT '文件大小',
   `ftype` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '文件类型',
   `created_at` datetime DEFAULT NULL,
@@ -123,11 +124,41 @@ CREATE TABLE `sys_affix` (
   `thumbnail_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '缩略图路径',
   `thumbnail_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '缩略图名称',
   `thumbnail_url` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '缩略图URL',
-  PRIMARY KEY (`id`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_sys_affix_file_md5` (`file_md5`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_affix
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for sys_affix_chunk
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_affix_chunk`;
+CREATE TABLE `sys_affix_chunk` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `upload_id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '上传会话ID',
+  `file_md5` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '文件MD5',
+  `file_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '原始文件名',
+  `file_size` bigint(20) DEFAULT NULL COMMENT '文件总大小',
+  `chunk_size` int(11) DEFAULT NULL COMMENT '分片大小',
+  `total_chunks` int(11) DEFAULT NULL COMMENT '总分片数',
+  `chunk_index` int(11) NOT NULL COMMENT '当前分片序号',
+  `chunk_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '分片文件路径',
+  `status` tinyint(4) DEFAULT '0' COMMENT '0-上传中 1-已合并 2-已取消',
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL COMMENT '创建者ID',
+  `tenant_id` int(11) unsigned DEFAULT '0' COMMENT '租户ID',
+  PRIMARY KEY (`id`),
+  KEY `idx_upload_id` (`upload_id`),
+  KEY `idx_file_md5` (`file_md5`)
+) ENGINE=InnoDB AUTO_INCREMENT=165 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_affix_chunk
 -- ----------------------------
 
 -- ----------------------------
@@ -145,7 +176,7 @@ CREATE TABLE `sys_api` (
   `deleted_at` datetime DEFAULT NULL,
   `created_by` int(11) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=213 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=217 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_api
@@ -183,7 +214,6 @@ INSERT INTO `sys_api` VALUES ('30', '根据ID获取API信息', '/api/sysApi/:id'
 INSERT INTO `sys_api` VALUES ('31', '新增API', '/api/sysApi/add', 'POST', 'API管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, '1');
 INSERT INTO `sys_api` VALUES ('32', '更新API', '/api/sysApi/edit', 'PUT', 'API管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, '1');
 INSERT INTO `sys_api` VALUES ('33', '删除API', '/api/sysApi/delete', 'DELETE', 'API管理', '2025-09-03 11:13:10', '2025-09-03 11:13:10', null, '1');
-INSERT INTO `sys_api` VALUES ('34', '测试11', '/api/sysTest/test', 'POST', 'test', '2025-09-03 11:14:23', '2025-09-03 11:30:19', null, '1');
 INSERT INTO `sys_api` VALUES ('35', '根据菜单ID获取API的ID集合', '/api/sysMenu/apis/:id', 'GET', '菜单管理', '2025-09-04 17:25:14', '2025-09-04 17:25:14', null, '1');
 INSERT INTO `sys_api` VALUES ('36', '设置菜单API权限', '/api/sysMenu/setApis', 'POST', '菜单管理', '2025-09-04 17:26:04', '2025-09-04 17:26:04', null, '1');
 INSERT INTO `sys_api` VALUES ('37', '根据ID获取部门信息', '/api/sysDepartment/:id', 'GET', '部门管理', '2025-09-12 14:46:42', '2025-09-12 14:46:42', null, '1');
@@ -220,7 +250,6 @@ INSERT INTO `sys_api` VALUES ('67', '修改', '/api/plugins/example/edit', 'PUT'
 INSERT INTO `sys_api` VALUES ('68', '删除', '/api/plugins/example/delete', 'DELETE', '插件示例', '2025-10-14 10:58:03', '2025-10-14 10:58:03', null, '1');
 INSERT INTO `sys_api` VALUES ('69', '查询单条数据', '/api/plugins/example/:id', 'GET', '插件示例', '2025-10-14 10:59:33', '2025-10-14 10:59:33', null, '1');
 INSERT INTO `sys_api` VALUES ('70', '日志列表', '/api/sysOperationLog/list', 'GET', '日志管理', '2025-10-20 10:10:58', '2025-10-20 10:10:58', null, '1');
-INSERT INTO `sys_api` VALUES ('71', '日志统计', '/api/sysOperationLog/stats', 'GET', '日志管理', '2025-10-20 10:12:01', '2025-10-20 10:12:01', '2025-10-20 10:45:07', '1');
 INSERT INTO `sys_api` VALUES ('72', '日志删除', '/api/sysOperationLog/delete', 'DELETE', '日志管理', '2025-10-20 10:13:19', '2025-10-20 10:13:19', null, '1');
 INSERT INTO `sys_api` VALUES ('73', '日志导出', '/api/sysOperationLog/export', 'GET', '日志管理', '2025-10-20 10:14:11', '2025-10-20 10:14:11', null, '1');
 INSERT INTO `sys_api` VALUES ('74', '导出菜单', '/api/sysMenu/export', 'GET', '菜单管理', '2025-10-20 17:17:07', '2025-10-20 17:17:07', null, '1');
@@ -257,16 +286,20 @@ INSERT INTO `sys_api` VALUES ('199', '导出插件', '/api/pluginsmanager/export
 INSERT INTO `sys_api` VALUES ('200', '导入插件', '/api/pluginsmanager/import', 'POST', '插件管理', '2025-12-08 16:47:11', '2025-12-08 16:47:11', null, '1');
 INSERT INTO `sys_api` VALUES ('201', '卸载插件', '/api/pluginsmanager/uninstall', 'DELETE', '插件管理', '2025-12-08 16:48:07', '2025-12-08 16:48:07', null, '1');
 INSERT INTO `sys_api` VALUES ('202', '切换租户', '/api/users/switchTenant/:tenantld', 'GET', '用户管理', '2026-01-09 16:29:37', '2026-01-09 16:29:37', null, '1');
-INSERT INTO `sys_api` VALUES ('203', '定时任务列表', '/api/sysJobs/list', 'GET', '任务调度', '2026-02-11 11:56:54', '2026-02-11 11:56:54', null, '1');
-INSERT INTO `sys_api` VALUES ('204', '定时任务获取所有执行器列表', '/api/sysJobs/executors', 'GET', '任务调度', '2026-02-12 17:57:47', '2026-02-12 17:57:47', null, '1');
-INSERT INTO `sys_api` VALUES ('205', '定时任务新增', '/api/sysJobs/add', 'POST', '任务调度', '2026-02-11 11:57:33', '2026-02-11 11:57:33', null, '1');
-INSERT INTO `sys_api` VALUES ('206', '定时任务编辑', '/api/sysJobs/edit', 'PUT', '任务调度', '2026-02-11 11:57:58', '2026-02-11 11:57:58', null, '1');
-INSERT INTO `sys_api` VALUES ('207', '定时任务获取数据', '/api/sysJobs/:id', 'GET', '任务调度', '2026-02-11 11:59:54', '2026-02-11 11:59:54', null, '1');
-INSERT INTO `sys_api` VALUES ('208', '定时任务设置任务状态', '/api/sysJobs/setStatus', 'PUT', '任务调度', '2026-02-12 17:56:33', '2026-02-12 17:56:33', null, '1');
-INSERT INTO `sys_api` VALUES ('209', '定时任务删除', '/api/sysJobs/delete', 'DELETE', '任务调度', '2026-02-11 11:59:05', '2026-02-11 11:59:05', null, '1');
-INSERT INTO `sys_api` VALUES ('210', '定时任务立即执行任务', '/api/sysJobs/executeNow', 'POST', '任务调度', '2026-02-12 17:57:07', '2026-02-12 17:57:07', null, '1');
+INSERT INTO `sys_api` VALUES ('203', '定时任务列表', '/api/sysjobs/list', 'GET', '任务调度', '2026-02-11 11:56:54', '2026-02-11 11:56:54', null, '1');
+INSERT INTO `sys_api` VALUES ('204', '定时任务获取所有执行器列表', '/api/sysjobs/executors', 'GET', '任务调度', '2026-02-12 17:57:47', '2026-02-12 17:57:47', null, '1');
+INSERT INTO `sys_api` VALUES ('205', '定时任务新增', '/api/sysjobs/add', 'POST', '任务调度', '2026-02-11 11:57:33', '2026-02-11 11:57:33', null, '1');
+INSERT INTO `sys_api` VALUES ('206', '定时任务编辑', '/api/sysjobs/edit', 'PUT', '任务调度', '2026-02-11 11:57:58', '2026-02-11 11:57:58', null, '1');
+INSERT INTO `sys_api` VALUES ('207', '定时任务获取数据', '/api/sysjobs/:id', 'GET', '任务调度', '2026-02-11 11:59:54', '2026-02-11 11:59:54', null, '1');
+INSERT INTO `sys_api` VALUES ('208', '定时任务设置任务状态', '/api/sysjobs/setStatus', 'PUT', '任务调度', '2026-02-12 17:56:33', '2026-02-12 17:56:33', null, '1');
+INSERT INTO `sys_api` VALUES ('209', '定时任务删除', '/api/sysjobs/delete', 'DELETE', '任务调度', '2026-02-11 11:59:05', '2026-02-11 11:59:05', null, '1');
+INSERT INTO `sys_api` VALUES ('210', '定时任务立即执行任务', '/api/sysjobs/executeNow', 'POST', '任务调度', '2026-02-12 17:57:07', '2026-02-12 17:57:07', null, '1');
 INSERT INTO `sys_api` VALUES ('211', '定时任务日志', '/api/sysJobResults/list', 'GET', '任务调度', '2026-02-11 12:00:54', '2026-02-11 12:00:54', null, '1');
 INSERT INTO `sys_api` VALUES ('212', '定时任务日志删除', '/api/sysJobResults/delete', 'DELETE', '任务调度', '2026-02-11 12:01:22', '2026-02-11 12:01:22', null, '1');
+INSERT INTO `sys_api` VALUES ('213', '分片上传初始化', '/api/sysAffix/chunk/init', 'POST', '文件管理', '2026-04-09 15:12:48', '2026-04-09 15:12:48', null, '1');
+INSERT INTO `sys_api` VALUES ('214', '分片上传上传分片', '/api/sysAffix/chunk/upload', 'POST', '文件管理', '2026-04-09 15:37:44', '2026-04-09 15:37:44', null, '1');
+INSERT INTO `sys_api` VALUES ('215', '分片上传合并分片', '/api/sysAffix/chunk/merge', 'POST', '文件管理', '2026-04-09 15:39:26', '2026-04-09 15:39:26', null, '1');
+INSERT INTO `sys_api` VALUES ('216', '分片上传取消上传', '/api/sysAffix/chunk/cancel', 'DELETE', '文件管理', '2026-04-09 15:43:38', '2026-04-09 15:43:38', null, '1');
 
 -- ----------------------------
 -- Table structure for sys_casbin_rule
@@ -810,7 +843,7 @@ CREATE TABLE `sys_menu` (
   KEY `idx_parent_id` (`parent_id`) USING BTREE,
   KEY `idx_sort` (`sort`) USING BTREE,
   KEY `idx_type` (`type`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=140349 DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='系统菜单路由表';
+) ENGINE=InnoDB AUTO_INCREMENT=140350 DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='系统菜单路由表';
 
 -- ----------------------------
 -- Records of sys_menu
@@ -894,6 +927,7 @@ INSERT INTO `sys_menu` VALUES ('140345', '140342', '', '', '', '', '删除', '0'
 INSERT INTO `sys_menu` VALUES ('140346', '140342', '', '', '', '', '执行一次', '0', '0', '0', '1', '0', '', '0', '', '', '0', '3', '0', 'system:sysjobs:executeNow', '2026-02-12 17:59:02', '2026-02-12 17:59:02', null, '1');
 INSERT INTO `sys_menu` VALUES ('140347', '140341', '/system/joblog', 'SystemJoblog', '', 'system/sysjobresults/sysjobresultslist', 'joblog', '0', '0', '0', '1', '0', '', '0', '', 'IconHistory', '0', '2', '0', '', '2026-02-11 11:41:27', '2026-02-11 11:41:27', null, '1');
 INSERT INTO `sys_menu` VALUES ('140348', '140347', '', '', '', '', '删除', '0', '0', '0', '1', '0', '', '0', '', '', '0', '3', '0', 'system:sysjobresults:delete', '2026-02-11 11:45:18', '2026-02-11 11:45:18', null, '1');
+INSERT INTO `sys_menu` VALUES ('140349', '140239', '', '', '', '', '大文件上传', '0', '0', '0', '1', '0', '', '0', '', '', '0', '3', '0', 'system:affix:bigupload', '2026-04-09 15:47:39', '2026-04-09 15:47:39', null, '1');
 
 -- ----------------------------
 -- Table structure for sys_menu_api
@@ -1015,6 +1049,11 @@ INSERT INTO `sys_menu_api` VALUES ('140345', '209');
 INSERT INTO `sys_menu_api` VALUES ('140346', '210');
 INSERT INTO `sys_menu_api` VALUES ('140347', '211');
 INSERT INTO `sys_menu_api` VALUES ('140348', '212');
+INSERT INTO `sys_menu_api` VALUES ('140349', '55');
+INSERT INTO `sys_menu_api` VALUES ('140349', '213');
+INSERT INTO `sys_menu_api` VALUES ('140349', '214');
+INSERT INTO `sys_menu_api` VALUES ('140349', '215');
+INSERT INTO `sys_menu_api` VALUES ('140349', '216');
 
 -- ----------------------------
 -- Table structure for sys_operation_logs

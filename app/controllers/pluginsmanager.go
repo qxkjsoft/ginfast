@@ -60,19 +60,26 @@ func (pmc *PluginsManagerController) GetPluginsExport(c *gin.Context) {
 // @Router /pluginsmanager/export [post]
 // @Security ApiKeyAuth
 func (pmc *PluginsManagerController) ExportPlugin(c *gin.Context) {
-	var req map[string]string
+	var req map[string]interface{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		pmc.FailAndAbort(c, "请求参数错误", err, 400)
 		return
 	}
-	folderName := req["folderName"]
+	folderName, _ := req["folderName"].(string)
 	if folderName == "" {
 		pmc.FailAndAbort(c, "插件名称不能为空", errors.New("folderName is required"), 400)
+		return
+	}
+
+	// 获取是否包含数据库数据参数，默认为 true
+	includeData := true
+	if val, ok := req["includeData"].(bool); ok {
+		includeData = val
 	}
 
 	// 先写入到内存中，需要先设置响应头
 	buf := new(bytes.Buffer)
-	version, err := pmc.service.ExportPluginToWriter(folderName, buf)
+	version, err := pmc.service.ExportPluginToWriter(folderName, buf, includeData)
 	if err != nil {
 		pmc.FailAndAbort(c, err.Error(), err, 500)
 	}

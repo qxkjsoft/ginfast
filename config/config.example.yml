@@ -193,6 +193,14 @@ upload:
     bucket: ""           # 七牛云存储空间名称
     domain: ""           # 七牛云域名
     zone: "ZoneHuadong"  # 七牛云存储区域: ZoneHuadong, ZoneHuabei, ZoneHuanan, ZoneBeimei, ZoneXinjiapo
+  
+  # 分片上传配置
+  # 分片上传最大文件总大小(单位: MB)
+  chunk_max_size: 5120
+  # 单个分片最大大小(单位: MB)
+  max_chunk_size: 5
+  # 分片上传允许的文件类型(为空则允许所有类型)
+  chunk_allowed_types: [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".txt", ".zip", ".rar", ".mp4", ".avi", ".webp", ".svg", ".ico"]
 
 #代码生成
 gen:

@@ -246,6 +246,15 @@ func InitRoutes(engine *gin.Engine) {
 				sysAffix.GET("/:id", sysAffixControllers.GetByID)
 				// 获取文件URL
 				sysAffix.GET("/download/:id", sysAffixControllers.Download)
+				/** 分片上传接口 */
+				// 分片上传 - 初始化
+				sysAffix.POST("/chunk/init", sysAffixControllers.ChunkInit)
+				// 分片上传 - 上传分片
+				sysAffix.POST("/chunk/upload", sysAffixControllers.ChunkUpload)
+				// 分片上传 - 合并分片
+				sysAffix.POST("/chunk/merge", sysAffixControllers.ChunkMerge)
+				// 分片上传 - 取消上传
+				sysAffix.DELETE("/chunk/cancel", sysAffixControllers.ChunkCancel)
 			}
 
 			// 系统配置路由组

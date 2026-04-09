@@ -83,6 +83,15 @@ type UploadConfig struct {
 
 	// QiniuConfig 七牛云配置
 	QiniuConfig QiniuConfig `yaml:"qiniu_config"`
+
+	// ChunkMaxSize 分片上传最大文件总大小(单位: MB)
+	ChunkMaxSize int `yaml:"chunk_max_size"`
+
+	// MaxChunkSize 单个分片最大大小(单位: MB)
+	MaxChunkSize int `yaml:"max_chunk_size"`
+
+	// ChunkAllowedTypes 分片上传允许的文件类型(为空则允许所有类型)
+	ChunkAllowedTypes []string `yaml:"chunk_allowed_types"`
 }
 
 // QiniuConfig 七牛云配置

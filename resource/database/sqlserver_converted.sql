@@ -116,6 +116,7 @@ CREATE TABLE [sys_affix] (
     [name] VARCHAR(255),
     [path] VARCHAR(255),
     [url] VARCHAR(255),
+    [file_md5] VARCHAR(32) DEFAULT '',
     [size] INT,
     [ftype] VARCHAR(100),
     [created_at] DATETIME,
@@ -129,7 +130,31 @@ CREATE TABLE [sys_affix] (
     [thumbnail_url] VARCHAR(255),
     PRIMARY KEY ([id])
 );
+CREATE INDEX [idx_sys_affix_file_md5] ON [sys_affix] ([file_md5]);
 
+
+-- Table structure for sys_affix_chunk
+IF OBJECT_ID('sys_affix_chunk', 'U') IS NOT NULL DROP TABLE [sys_affix_chunk];
+CREATE TABLE [sys_affix_chunk] (
+    [id] INT IDENTITY(1,1) NOT NULL,
+    [upload_id] VARCHAR(64) NOT NULL,
+    [file_md5] VARCHAR(32) NOT NULL,
+    [file_name] VARCHAR(255),
+    [file_size] BIGINT,
+    [chunk_size] INT,
+    [total_chunks] INT,
+    [chunk_index] INT NOT NULL,
+    [chunk_path] VARCHAR(255),
+    [status] TINYINT DEFAULT 0,
+    [created_at] DATETIME,
+    [updated_at] DATETIME,
+    [deleted_at] DATETIME,
+    [created_by] INT,
+    [tenant_id] INT DEFAULT 0,
+    PRIMARY KEY ([id])
+);
+CREATE INDEX [idx_sac_upload_id] ON [sys_affix_chunk] ([upload_id]);
+CREATE INDEX [idx_sac_file_md5] ON [sys_affix_chunk] ([file_md5]);
 
 -- Records of sys_affix
 -- Table structure for sys_api
