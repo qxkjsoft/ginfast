@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -68,7 +69,7 @@ func (s *SysMenuService) GetAllAncestorRoleIDs(c *gin.Context, roleIDs []uint) (
 }
 
 // ProcessMenuImport 递归处理菜单导入
-func (s *SysMenuService) ProcessMenuImport(tx *gorm.DB, menuList models.SysMenuList, parentID uint, idMap map[uint]uint, currentUserID uint) error {
+func (s *SysMenuService) ProcessMenuImport(tx *gorm.DB, menuList models.SysMenuList, parentID uint, idMap map[uint]uint, currentUserID uint, newMenus *models.SysMenuList, newApis *[]*models.SysApi) error {
 	for _, menu := range menuList {
 		// 保存原始ID
 		oldID := menu.ID
@@ -87,9 +88,13 @@ func (s *SysMenuService) ProcessMenuImport(tx *gorm.DB, menuList models.SysMenuL
 		// 记录ID映射
 		idMap[oldID] = newMenuID
 
+		// 收集新增菜单（深拷贝，避免后续修改影响）
+		newMenu := *menu
+		*newMenus = append(*newMenus, &newMenu)
+
 		// 递归处理子菜单
 		if len(menu.Children) > 0 {
-			err := s.ProcessMenuImport(tx, menu.Children, newMenuID, idMap, currentUserID)
+			err := s.ProcessMenuImport(tx, menu.Children, newMenuID, idMap, currentUserID, newMenus, newApis)
 			if err != nil {
 				return err
 			}
@@ -153,7 +158,7 @@ func (s *SysMenuService) checkCircularReference(c *gin.Context, currentMenuID ui
 }
 
 // CreateMenuApis 创建菜单关联的API
-func (s *SysMenuService) CreateMenuApis(tx *gorm.DB, menuList models.SysMenuList, idMap map[uint]uint, currentUserID uint) error {
+func (s *SysMenuService) CreateMenuApis(tx *gorm.DB, menuList models.SysMenuList, idMap map[uint]uint, currentUserID uint, newApis *[]*models.SysApi) error {
 	for _, menu := range menuList {
 		newMenuID := idMap[menu.ID]
 
@@ -185,6 +190,11 @@ func (s *SysMenuService) CreateMenuApis(tx *gorm.DB, menuList models.SysMenuList
 						return fmt.Errorf("创建API失败: %w", err)
 					}
 					apiID = api.ID
+
+					// 收集新增API
+					newApi := *api
+					*newApis = append(*newApis, &newApi)
+
 					// 还原
 					api.ID = oldAPIID
 					api.CreatedBy = oldCreatedBy
@@ -207,7 +217,7 @@ func (s *SysMenuService) CreateMenuApis(tx *gorm.DB, menuList models.SysMenuList
 
 		// 递归处理子菜单的API
 		if len(menu.Children) > 0 {
-			err := s.CreateMenuApis(tx, menu.Children, idMap, currentUserID)
+			err := s.CreateMenuApis(tx, menu.Children, idMap, currentUserID, newApis)
 			if err != nil {
 				return err
 			}
@@ -217,48 +227,61 @@ func (s *SysMenuService) CreateMenuApis(tx *gorm.DB, menuList models.SysMenuList
 	return nil
 }
 
-// Import 导入菜单数据
-func (s *SysMenuService) Import(c *gin.Context, menuList models.SysMenuList, userID uint) error {
+// Import 导入菜单数据，返回导入结果
+func (s *SysMenuService) Import(c *gin.Context, menuList models.SysMenuList, userID uint, overwrite bool) (*models.ImportResult, error) {
 	// 验证菜单数据合法性
 	validateTreeErr := menuList.ValidateTree()
 	if !validateTreeErr.IsEmpty() {
-		return validateTreeErr
+		return nil, validateTreeErr
 	}
 
-	// 获取所有组件文件路径
-	componentPaths := menuList.GetAllComponentPaths()
-	// 检查组件文件是否存在
-	if len(componentPaths) > 0 {
-		var componentCount int64
-		app.DB().WithContext(c).Model(&models.SysMenu{}).Where("component IN ?", componentPaths).Count(&componentCount)
-		if componentCount > 0 {
-			return fmt.Errorf("存在重复的组件路径:%s", strings.Join(componentPaths, ","))
+	if !overwrite {
+		// 普通模式：检查路由路径是否已存在（仅目录和菜单类型）
+		allPaths := menuList.GetAllPaths()
+		if len(allPaths) > 0 {
+			var pathCount int64
+			app.DB().WithContext(c).Model(&models.SysMenu{}).Where("path IN ? AND type IN (1, 2)", allPaths).Count(&pathCount)
+			if pathCount > 0 {
+				return nil, fmt.Errorf("存在重复的路由路径:%s", strings.Join(allPaths, ","))
+			}
+		}
+
+		// 普通模式：检查按钮权限标识是否已存在（仅按钮类型）
+		allPermission := menuList.GetAllPermission()
+		if len(allPermission) > 0 {
+			var permissionCount int64
+			app.DB().WithContext(c).Model(&models.SysMenu{}).Where("permission IN ? AND type = 3", allPermission).Count(&permissionCount)
+			if permissionCount > 0 {
+				return nil, fmt.Errorf("存在重复的权限标识:%s", strings.Join(allPermission, ","))
+			}
 		}
 	}
 
-	allPermission := menuList.GetAllPermission()
-	// 检查权限是否存在
-	if len(allPermission) > 0 {
-		var permissionCount int64
-		app.DB().WithContext(c).Model(&models.SysMenu{}).Where("permission IN ?", allPermission).Count(&permissionCount)
-		if permissionCount > 0 {
-			return fmt.Errorf("存在重复的权限标识:%s", strings.Join(allPermission, ","))
-		}
-	}
+	// 准备收集结果
+	newMenus := models.NewSysMenuList()
+	newApis := make([]*models.SysApi, 0)
 
 	// 使用事务处理导入
 	err := app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
 		// 创建ID映射，用于处理父子关系
 		idMap := make(map[uint]uint) // oldID -> newID
 
-		// 递归处理菜单数据
-		err := s.ProcessMenuImport(tx, menuList, 0, idMap, userID)
-		if err != nil {
-			return err
+		if overwrite {
+			// 覆盖模式：增量导入，只创建不存在的菜单
+			err := s.ProcessMenuImportWithOverwrite(tx, menuList, 0, idMap, userID, &newMenus, &newApis)
+			if err != nil {
+				return err
+			}
+		} else {
+			// 普通模式：全部新建
+			err := s.ProcessMenuImport(tx, menuList, 0, idMap, userID, &newMenus, &newApis)
+			if err != nil {
+				return err
+			}
 		}
 
-		// 创建菜单API关联
-		err = s.CreateMenuApis(tx, menuList, idMap, userID)
+		// 创建菜单API关联（两种模式共用，FirstOrCreate 天然幂等）
+		err := s.CreateMenuApis(tx, menuList, idMap, userID, &newApis)
 		if err != nil {
 			return err
 		}
@@ -266,7 +289,95 @@ func (s *SysMenuService) Import(c *gin.Context, menuList models.SysMenuList, use
 		return nil
 	})
 
-	return err
+	if err != nil {
+		return nil, err
+	}
+
+	// 构建返回结果
+	result := &models.ImportResult{
+		NewMenus:   s.buildImportMenuInfo(newMenus),
+		NewApis:    s.buildImportApiInfo(newApis),
+		TotalMenus: len(newMenus),
+		TotalApis:  len(newApis),
+	}
+
+	// 记录日志
+	app.ZapLog.Info("菜单导入完成",
+		zap.Int("新增菜单数量", result.TotalMenus),
+		zap.Int("新增API数量", result.TotalApis),
+		zap.String("新增菜单", s.formatMenuNames(newMenus)),
+	)
+
+	return result, nil
+}
+
+// ProcessMenuImportWithOverwrite 覆盖模式递归处理菜单导入
+// 对每个菜单节点，先尝试按 path（目录/菜单）或 permission（按钮）在数据库中查找匹配记录：
+//   - 已存在：记录 idMap 映射，跳过创建，继续处理子级
+//   - 不存在：创建新记录，记录 idMap 映射，继续处理子级
+func (s *SysMenuService) ProcessMenuImportWithOverwrite(tx *gorm.DB, menuList models.SysMenuList, parentID uint, idMap map[uint]uint, currentUserID uint, newMenus *models.SysMenuList, newApis *[]*models.SysApi) error {
+	for _, menu := range menuList {
+		oldID := menu.ID
+
+		// 尝试在数据库中查找匹配的已有菜单
+		existingMenu := models.NewSysMenu()
+		var err error
+
+		if (menu.Type == 1 || menu.Type == 2) && menu.Path != "" {
+			// 目录/菜单：按 path 匹配
+			err = existingMenu.Find(tx.Statement.Context, func(d *gorm.DB) *gorm.DB {
+				return d.Where("path = ?", menu.Path)
+			})
+		} else if menu.Type == 3 && menu.Permission != "" {
+			// 按钮：按 permission 匹配
+			err = existingMenu.Find(tx.Statement.Context, func(d *gorm.DB) *gorm.DB {
+				return d.Where("permission = ? AND type = 3", menu.Permission)
+			})
+		}
+
+		if err != nil {
+			return fmt.Errorf("查询已有菜单失败: %w", err)
+		}
+
+		var actualParentID uint
+
+		if !existingMenu.IsEmpty() {
+			// 菜单已存在，记录映射，不创建
+			idMap[oldID] = existingMenu.ID
+			actualParentID = existingMenu.ID
+		} else {
+			// 菜单不存在，创建新记录
+			menu.ID = 0
+			menu.ParentID = parentID
+			menu.CreatedBy = currentUserID
+
+			err = tx.Omit(clause.Associations).Create(menu).Error
+			if err != nil {
+				return fmt.Errorf("创建菜单失败: %w", err)
+			}
+
+			idMap[oldID] = menu.ID
+			actualParentID = menu.ID
+
+			// 收集新增菜单
+			newMenu := *menu
+			newMenu.ID = menu.ID // 使用新生成的ID
+			*newMenus = append(*newMenus, &newMenu)
+
+			// 还原ID（供后续 CreateMenuApis 使用）
+			menu.ID = oldID
+		}
+
+		// 递归处理子菜单
+		if len(menu.Children) > 0 {
+			err := s.ProcessMenuImportWithOverwrite(tx, menu.Children, actualParentID, idMap, currentUserID, newMenus, newApis)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func (s *SysMenuService) Update(c *gin.Context, req models.SysMenuUpdateRequest) (*models.SysMenu, error) {
@@ -298,16 +409,18 @@ func (s *SysMenuService) Update(c *gin.Context, req models.SysMenuUpdateRequest)
 			return nil, fmt.Errorf("菜单名称已被其他菜单使用")
 		}
 
-		// 检查路由路径是否与其他菜单冲突（排除当前菜单）
-		existPath := models.NewSysMenu()
-		err = existPath.Find(c, func(d *gorm.DB) *gorm.DB {
-			return d.Where("path = ? AND id != ?", req.Path, req.ID)
-		})
-		if err != nil {
-			return nil, err
-		}
-		if !existPath.IsEmpty() {
-			return nil, fmt.Errorf("路由路径已被其他菜单使用")
+		// 检查路由路径是否与其他菜单冲突（排除当前菜单，非空时才检查）
+		if req.Path != "" {
+			existPath := models.NewSysMenu()
+			err = existPath.Find(c, func(d *gorm.DB) *gorm.DB {
+				return d.Where("path = ? AND id != ?", req.Path, req.ID)
+			})
+			if err != nil {
+				return nil, err
+			}
+			if !existPath.IsEmpty() {
+				return nil, fmt.Errorf("路由路径已被其他菜单使用")
+			}
 		}
 	}
 
@@ -535,4 +648,44 @@ func (s *SysMenuService) BatchDelete(c *gin.Context, menuIDs []uint) error {
 	})
 
 	return err
+}
+
+// buildImportMenuInfo 构建导入菜单信息
+func (s *SysMenuService) buildImportMenuInfo(menus models.SysMenuList) []*models.ImportMenuInfo {
+	result := make([]*models.ImportMenuInfo, 0, len(menus))
+	for _, menu := range menus {
+		result = append(result, &models.ImportMenuInfo{
+			ID:         menu.ID,
+			Name:       menu.Name,
+			Title:      menu.Title,
+			Type:       int(menu.Type),
+			Path:       menu.Path,
+			Permission: menu.Permission,
+			ParentID:   menu.ParentID,
+		})
+	}
+	return result
+}
+
+// buildImportApiInfo 构建导入API信息
+func (s *SysMenuService) buildImportApiInfo(apis []*models.SysApi) []*models.ImportApiInfo {
+	result := make([]*models.ImportApiInfo, 0, len(apis))
+	for _, api := range apis {
+		result = append(result, &models.ImportApiInfo{
+			ID:          api.ID,
+			Path:        api.Path,
+			Method:      api.Method,
+			Description: api.Title,
+		})
+	}
+	return result
+}
+
+// formatMenuNames 格式化菜单名称列表
+func (s *SysMenuService) formatMenuNames(menus models.SysMenuList) string {
+	names := make([]string, 0, len(menus))
+	for _, menu := range menus {
+		names = append(names, menu.Title)
+	}
+	return strings.Join(names, ", ")
 }

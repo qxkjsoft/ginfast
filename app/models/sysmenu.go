@@ -466,6 +466,16 @@ func (list SysMenuList) GetAllComponentPaths() (paths []string) {
 	return
 }
 
+// GetAllPaths 获取所有路由路径（仅目录和菜单类型）
+func (list SysMenuList) GetAllPaths() (paths []string) {
+	list.Each(func(menu *SysMenu) {
+		if (menu.Type == 1 || menu.Type == 2) && menu.Path != "" {
+			paths = append(paths, menu.Path)
+		}
+	})
+	return
+}
+
 // GetAllPermission 获取所有按钮权限标识
 func (list SysMenuList) GetAllPermission() (permissions []string) {
 	list.Each(func(menu *SysMenu) {

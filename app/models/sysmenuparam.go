@@ -99,3 +99,30 @@ type SysMenuBatchDeleteRequest struct {
 func (r *SysMenuBatchDeleteRequest) Validate(c *gin.Context) error {
 	return r.Check(c, r)
 }
+
+// ImportResult 菜单导入结果
+type ImportResult struct {
+	NewMenus   []*ImportMenuInfo `json:"newMenus"`   // 新增菜单列表
+	NewApis    []*ImportApiInfo  `json:"newApis"`    // 新增API列表
+	TotalMenus int               `json:"totalMenus"` // 总菜单数
+	TotalApis  int               `json:"totalApis"`  // 总API数
+}
+
+// ImportMenuInfo 导入菜单信息（简化版，用于返回）
+type ImportMenuInfo struct {
+	ID         uint   `json:"id"`
+	Name       string `json:"name"`
+	Title      string `json:"title"`
+	Type       int    `json:"type"`
+	Path       string `json:"path"`
+	Permission string `json:"permission"`
+	ParentID   uint   `json:"parentId"`
+}
+
+// ImportApiInfo 导入API信息（简化版，用于返回）
+type ImportApiInfo struct {
+	ID          uint   `json:"id"`
+	Path        string `json:"path"`
+	Method      string `json:"method"`
+	Description string `json:"description"`
+}

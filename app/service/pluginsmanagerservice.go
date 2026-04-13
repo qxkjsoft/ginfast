@@ -1164,7 +1164,8 @@ func (pms *PluginsManagerService) importMenus(c *gin.Context, zipReader *zip.Rea
 
 	// 调用菜单服务导入
 	menuService := NewSysMenuService()
-	if err := menuService.Import(c, menuList, userID); err != nil {
+	_, err := menuService.Import(c, menuList, userID, false)
+	if err != nil {
 		return err
 	}
 

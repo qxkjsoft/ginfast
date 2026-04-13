@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
 	"gin-fast/app/service"
@@ -248,16 +249,18 @@ func (sm *SysMenuController) Add(c *gin.Context) {
 			sm.FailAndAbort(c, "菜单名称已存在", nil)
 		}
 
-		// 检查路由路径是否已存在
-		existPath := models.NewSysMenu()
-		err = existPath.Find(c, func(d *gorm.DB) *gorm.DB {
-			return d.Where("path = ?", req.Path)
-		})
-		if err != nil {
-			sm.FailAndAbort(c, "检查路由路径失败", err)
-		}
-		if !existPath.IsEmpty() {
-			sm.FailAndAbort(c, "路由路径已存在", nil)
+		// 检查路由路径是否已存在（非空时才检查）
+		if req.Path != "" {
+			existPath := models.NewSysMenu()
+			err = existPath.Find(c, func(d *gorm.DB) *gorm.DB {
+				return d.Where("path = ?", req.Path)
+			})
+			if err != nil {
+				sm.FailAndAbort(c, "检查路由路径失败", err)
+			}
+			if !existPath.IsEmpty() {
+				sm.FailAndAbort(c, "路由路径已存在", nil)
+			}
 		}
 	}
 
@@ -731,11 +734,15 @@ func (sm *SysMenuController) Import(c *gin.Context) {
 		sm.FailAndAbort(c, "获取当前用户ID失败", nil)
 	}
 
+	// 读取覆盖模式参数
+	overwrite := c.PostForm("overwrite") == "true"
+
 	// 调用service层的Import方法
-	err = sm.menuService.Import(c, menuList, currentUserID)
+	result, err := sm.menuService.Import(c, menuList, currentUserID, overwrite)
 	if err != nil {
-		sm.FailAndAbort(c, "导入菜单数据失败", err)
+		sm.FailAndAbort(c, err.Error(), err)
+		return
 	}
 
-	sm.SuccessWithMessage(c, "菜单数据导入成功", nil)
+	sm.SuccessWithMessage(c, fmt.Sprintf("成功导入 %d 个菜单，%d 个API", result.TotalMenus, result.TotalApis), result)
 }
