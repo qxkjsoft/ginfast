@@ -44,8 +44,10 @@ func (api *SysApi) Find(ctx context.Context, funcs ...func(*gorm.DB) *gorm.DB) (
 }
 
 // FindByPathAndMethod 根据path和method查找API（处理SQLServer的兼容性问题）
+// 使用 Session{PrepareStmt: false} 避免 MySQL 下事务内 Raw().Scan() 导致的 invalid connection 错误
 func (api *SysApi) FindByPathAndMethod(tx *gorm.DB, path string, method string) (err error) {
-	err = tx.Raw("SELECT * FROM sys_api WHERE path = ? AND method = ?", path, method).Scan(api).Error
+	err = tx.Session(&gorm.Session{PrepareStmt: false}).
+		Raw("SELECT * FROM sys_api WHERE path = ? AND method = ? AND deleted_at IS NULL", path, method).Scan(api).Error
 
 	if err == gorm.ErrRecordNotFound {
 		err = nil // 将记录未找到的错误转换为nil，通过IsEmpty()方法判断

@@ -27,16 +27,25 @@ echo.
 go build -o "%OUTPUT_DIR%/%OUTPUT_NAME%" -ldflags="-s -w" main.go
 
 if %ERRORLEVEL% EQU 0 (
-    echo.
-    echo ========================================
-    echo 编译成功！
-    echo 输出文件: %OUTPUT_DIR%\%OUTPUT_NAME%
-    echo ========================================
+    call :build_success
 ) else (
-    echo.
-    echo ========================================
-    echo 编译失败！
-    echo ========================================
+    call :build_failure
 )
+goto :eof
+
+:build_success
+echo.
+echo ========================================
+echo 编译成功！
+echo 输出文件: %OUTPUT_DIR%\%OUTPUT_NAME%
+echo ========================================
+goto :eof
+
+:build_failure
+echo.
+echo ========================================
+echo 编译失败！
+echo ========================================
+goto :eof
 
 pause

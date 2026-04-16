@@ -93,5 +93,11 @@ __debug_bin.exe*
 !/plugins/exampleinit.go
 /plans
 /AGENTS.md
-/scripts/mysql2postgres
-/scripts/mysql2sqlserver
+# scripts 目录配置 - 只提交构建和文档生成脚本
+/scripts/*
+!/scripts/build-to-linux.bat
+!/scripts/build-to-linux.sh
+!/scripts/build-to-windows.bat
+!/scripts/swagger.bat
+!/scripts/swagger.sh
+/.history
