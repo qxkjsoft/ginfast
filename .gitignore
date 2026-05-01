@@ -5,6 +5,9 @@
 *.swo
 *~
 
+# claude 相关文件夹不提交
+.claude
+CLAUDE.md
 # .trae 文件夹不提交
 .trae/
 
