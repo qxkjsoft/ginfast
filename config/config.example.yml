@@ -10,6 +10,14 @@ server:
     userids: []       # 演示账号的用户ID列表，例如：[1, 2, 3]
     defaultusername: "admin"  # 登录页默认账号
     defaultpassword: "123456"  # 登录页默认密码
+    # 允许演示账号执行非GET请求的路径前缀列表（白名单）
+    # 配置后，演示账号可以对这些路径执行POST/PUT/DELETE等操作
+    # 示例：
+    # allowpathprefixes:
+    #   - "/api/demo/"          # 演示相关API
+    #   - "/api/public/"        # 公开API
+    #   - "/api/plugins/test/"  # 测试插件API
+    allowpathprefixes: []
 
 system: 
   #系统LOGO

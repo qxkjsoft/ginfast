@@ -91,6 +91,51 @@ definitions:
     required:
     - id
     type: object
+  models.ChunkCancelRequest:
+    properties:
+      uploadId:
+        type: string
+    required:
+    - uploadId
+    type: object
+  models.ChunkInitRequest:
+    properties:
+      chunkSize:
+        type: integer
+      fileMd5:
+        type: string
+      fileName:
+        type: string
+      fileSize:
+        type: integer
+      totalChunks:
+        type: integer
+    required:
+    - chunkSize
+    - fileMd5
+    - fileName
+    - fileSize
+    - totalChunks
+    type: object
+  models.ChunkMergeRequest:
+    properties:
+      fileMd5:
+        type: string
+      fileName:
+        type: string
+      fileSize:
+        type: integer
+      totalChunks:
+        type: integer
+      uploadId:
+        type: string
+    required:
+    - fileMd5
+    - fileName
+    - fileSize
+    - totalChunks
+    - uploadId
+    type: object
   models.RefreshRequest:
     properties:
       refreshToken:
@@ -328,12 +373,23 @@ definitions:
       id:
         type: integer
       isCover:
-        type: boolean
+        type: integer
       isMenu:
-        type: boolean
+        type: integer
+      isRelationTree:
+        description: 是否关联树形数据
+        type: integer
+      isTree:
+        type: integer
       moduleName:
         description: 模块名称
         type: string
+      relationField:
+        description: 关联树形数据字段ID
+        type: integer
+      relationTreeTable:
+        description: 关联树形数据表ID
+        type: integer
       sysGenFields:
         description: 字段更新列表
         items:
@@ -349,23 +405,23 @@ definitions:
   models.SysMenuAddRequest:
     properties:
       affix:
-        type: boolean
+        type: integer
       component:
         type: string
       disable:
-        type: boolean
+        type: integer
       hide:
-        type: boolean
+        type: integer
       icon:
         type: string
       iframe:
-        type: boolean
+        type: integer
       isFull:
-        type: boolean
+        type: integer
       isLink:
-        type: boolean
+        type: integer
       keepAlive:
-        type: boolean
+        type: integer
       link:
         type: string
       name:
@@ -419,25 +475,25 @@ definitions:
   models.SysMenuUpdateRequest:
     properties:
       affix:
-        type: boolean
+        type: integer
       component:
         type: string
       disable:
-        type: boolean
+        type: integer
       hide:
-        type: boolean
+        type: integer
       icon:
         type: string
       id:
         type: integer
       iframe:
-        type: boolean
+        type: integer
       isFull:
-        type: boolean
+        type: integer
       isLink:
-        type: boolean
+        type: integer
       keepAlive:
-        type: boolean
+        type: integer
       link:
         type: string
       name:
@@ -526,6 +582,8 @@ definitions:
         type: string
       domain:
         type: string
+      menuPermission:
+        type: string
       name:
         type: string
       platformDomain:
@@ -534,6 +592,7 @@ definitions:
         type: integer
     required:
     - code
+    - domain
     - name
     type: object
   models.SysTenantUpdateRequest:
@@ -546,6 +605,8 @@ definitions:
         type: string
       id:
         type: integer
+      menuPermission:
+        type: string
       name:
         type: string
       platformDomain:
@@ -554,6 +615,7 @@ definitions:
         type: integer
     required:
     - code
+    - domain
     - id
     - name
     type: object
@@ -645,53 +707,23 @@ info:
   title: Gin-Fast API
   version: "1.0"
 paths:
-  /captcha/id:
+  /captcha/verify:
     get:
-      description: 获取验证码ID用于生成验证码图片
+      description: 获取验证码图片字符串，返回验证码ID和base64图片
       produces:
       - application/json
       responses:
         "200":
-          description: 成功返回验证码ID
+          description: 成功返回验证码ID和base64图片
           schema:
             additionalProperties: true
             type: object
-      summary: 获取验证码ID
-      tags:
-      - 认证
-  /captcha/image:
-    get:
-      description: 根据验证码ID获取验证码图片
-      parameters:
-      - description: 验证码ID
-        in: query
-        name: captchaId
-        required: true
-        type: string
-      - default: 130
-        description: 图片宽度
-        in: query
-        name: width
-        type: integer
-      - default: 30
-        description: 图片高度
-        in: query
-        name: height
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 成功返回验证码图片
+        "500":
+          description: 生成验证码失败
           schema:
             additionalProperties: true
             type: object
-        "400":
-          description: 请求参数错误
-          schema:
-            additionalProperties: true
-            type: object
-      summary: 获取验证码图片
+      summary: 获取验证码图片字符串
       tags:
       - 认证
   /codegen/columns:
@@ -1193,6 +1225,120 @@ paths:
       summary: 根据ID获取文件信息
       tags:
       - 文件附件管理
+  /sysAffix/chunk/cancel:
+    delete:
+      consumes:
+      - application/json
+      description: 取消分片上传并清理临时文件
+      parameters:
+      - description: 取消参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.ChunkCancelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 取消分片上传
+      tags:
+      - 文件附件管理
+  /sysAffix/chunk/init:
+    post:
+      consumes:
+      - application/json
+      description: 初始化大文件分片上传，支持秒传检测和断点续传
+      parameters:
+      - description: 初始化参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.ChunkInitRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 初始化分片上传
+      tags:
+      - 文件附件管理
+  /sysAffix/chunk/merge:
+    post:
+      consumes:
+      - application/json
+      description: 合并所有已上传的分片为最终文件
+      parameters:
+      - description: 合并参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.ChunkMergeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 合并分片
+      tags:
+      - 文件附件管理
+  /sysAffix/chunk/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 上传大文件的单个分片
+      parameters:
+      - description: 分片文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: 上传会话ID
+        in: formData
+        name: uploadId
+        required: true
+        type: string
+      - description: 分片序号
+        in: formData
+        name: chunkIndex
+        required: true
+        type: integer
+      - description: 总分片数
+        in: formData
+        name: totalChunks
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 上传分片
+      tags:
+      - 文件附件管理
   /sysAffix/delete:
     delete:
       consumes:
@@ -1343,13 +1489,28 @@ paths:
     post:
       consumes:
       - multipart/form-data
-      description: 上传文件并保存记录
+      description: 上传文件并保存记录，支持生成缩略图
       parameters:
       - description: 上传的文件
         in: formData
         name: file
         required: true
         type: file
+      - default: 0
+        description: 是否生成缩略图(0或1)
+        in: formData
+        name: isThumb
+        type: integer
+      - default: 120
+        description: 缩略图宽度
+        in: formData
+        name: width
+        type: integer
+      - default: 120
+        description: 缩略图高度
+        in: formData
+        name: height
+        type: integer
       produces:
       - application/json
       responses:
@@ -2663,12 +2824,17 @@ paths:
     get:
       consumes:
       - application/json
-      description: 获取系统中所有菜单列表
+      description: 获取系统中所有菜单列表，根据当前登录用户的租户权限过滤
       produces:
       - application/json
       responses:
         "200":
           description: 成功返回菜单列表
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 用户未登录
           schema:
             additionalProperties: true
             type: object
@@ -3973,6 +4139,45 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取当前登录用户信息
+      tags:
+      - 用户管理
+  /users/switchTenant/{tenantId}:
+    get:
+      consumes:
+      - application/json
+      description: 切换当前登录用户的租户，注销当前token并生成新token
+      parameters:
+      - description: 租户ID
+        in: path
+        name: tenantId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回新的访问令牌
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 用户未登录
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: 租户不存在或未启用
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 切换租户
       tags:
       - 用户管理
   /users/updateAccount:

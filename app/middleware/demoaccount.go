@@ -4,6 +4,7 @@ import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/global/consts"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -61,7 +62,25 @@ func DemoAccountMiddleware() gin.HandlerFunc {
 
 		// 是演示账号，检查请求方法
 		if c.Request.Method != "GET" {
-			// 非GET请求，拒绝访问
+			// 检查路径是否在白名单中
+			allowPathPrefixes := app.ConfigYml.GetStringSlice("server.demoaccount.allowpathprefixes")
+			if len(allowPathPrefixes) > 0 {
+				currentPath := c.Request.URL.Path
+				for _, prefix := range allowPathPrefixes {
+					if strings.HasPrefix(currentPath, prefix) {
+						// 路径在白名单中，允许通过
+						app.ZapLog.Info("演示账号访问白名单路径",
+							zap.Uint("userID", claims.UserID),
+							zap.String("method", c.Request.Method),
+							zap.String("path", currentPath),
+							zap.String("matchedPrefix", prefix))
+						c.Next()
+						return
+					}
+				}
+			}
+
+			// 非GET请求且不在白名单中，拒绝访问
 			app.ZapLog.Warn("演示账号尝试执行非GET操作",
 				zap.Uint("userID", claims.UserID),
 				zap.String("method", c.Request.Method),

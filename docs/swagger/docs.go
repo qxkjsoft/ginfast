@@ -24,70 +24,26 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/captcha/id": {
+        "/captcha/verify": {
             "get": {
-                "description": "获取验证码ID用于生成验证码图片",
+                "description": "获取验证码图片字符串，返回验证码ID和base64图片",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "认证"
                 ],
-                "summary": "获取验证码ID",
+                "summary": "获取验证码图片字符串",
                 "responses": {
                     "200": {
-                        "description": "成功返回验证码ID",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/captcha/image": {
-            "get": {
-                "description": "根据验证码ID获取验证码图片",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "认证"
-                ],
-                "summary": "获取验证码图片",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "验证码ID",
-                        "name": "captchaId",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "default": 130,
-                        "description": "图片宽度",
-                        "name": "width",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 30,
-                        "description": "图片高度",
-                        "name": "height",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功返回验证码图片",
+                        "description": "成功返回验证码ID和base64图片",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     },
-                    "400": {
-                        "description": "请求参数错误",
+                    "500": {
+                        "description": "生成验证码失败",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -803,6 +759,185 @@ const docTemplate = `{
                 }
             }
         },
+        "/sysAffix/chunk/cancel": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "取消分片上传并清理临时文件",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "文件附件管理"
+                ],
+                "summary": "取消分片上传",
+                "parameters": [
+                    {
+                        "description": "取消参数",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ChunkCancelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/sysAffix/chunk/init": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "初始化大文件分片上传，支持秒传检测和断点续传",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "文件附件管理"
+                ],
+                "summary": "初始化分片上传",
+                "parameters": [
+                    {
+                        "description": "初始化参数",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ChunkInitRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/sysAffix/chunk/merge": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "合并所有已上传的分片为最终文件",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "文件附件管理"
+                ],
+                "summary": "合并分片",
+                "parameters": [
+                    {
+                        "description": "合并参数",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ChunkMergeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/sysAffix/chunk/upload": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "上传大文件的单个分片",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "文件附件管理"
+                ],
+                "summary": "上传分片",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "分片文件",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "上传会话ID",
+                        "name": "uploadId",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "分片序号",
+                        "name": "chunkIndex",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "总分片数",
+                        "name": "totalChunks",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/sysAffix/delete": {
             "delete": {
                 "security": [
@@ -1034,7 +1169,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "上传文件并保存记录",
+                "description": "上传文件并保存记录，支持生成缩略图",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -1052,6 +1187,27 @@ const docTemplate = `{
                         "name": "file",
                         "in": "formData",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "是否生成缩略图(0或1)",
+                        "name": "isThumb",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 120,
+                        "description": "缩略图宽度",
+                        "name": "width",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 120,
+                        "description": "缩略图高度",
+                        "name": "height",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -3062,7 +3218,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "获取系统中所有菜单列表",
+                "description": "获取系统中所有菜单列表，根据当前登录用户的租户权限过滤",
                 "consumes": [
                     "application/json"
                 ],
@@ -3076,6 +3232,13 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "成功返回菜单列表",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "用户未登录",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -5070,6 +5233,65 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/switchTenant/{tenantId}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "切换当前登录用户的租户，注销当前token并生成新token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "用户管理"
+                ],
+                "summary": "切换租户",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "租户ID",
+                        "name": "tenantId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功返回新的访问令牌",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "用户未登录",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "租户不存在或未启用",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/users/updateAccount": {
             "put": {
                 "security": [
@@ -5415,6 +5637,71 @@ const docTemplate = `{
             "properties": {
                 "id": {
                     "type": "integer"
+                }
+            }
+        },
+        "models.ChunkCancelRequest": {
+            "type": "object",
+            "required": [
+                "uploadId"
+            ],
+            "properties": {
+                "uploadId": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ChunkInitRequest": {
+            "type": "object",
+            "required": [
+                "chunkSize",
+                "fileMd5",
+                "fileName",
+                "fileSize",
+                "totalChunks"
+            ],
+            "properties": {
+                "chunkSize": {
+                    "type": "integer"
+                },
+                "fileMd5": {
+                    "type": "string"
+                },
+                "fileName": {
+                    "type": "string"
+                },
+                "fileSize": {
+                    "type": "integer"
+                },
+                "totalChunks": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.ChunkMergeRequest": {
+            "type": "object",
+            "required": [
+                "fileMd5",
+                "fileName",
+                "fileSize",
+                "totalChunks",
+                "uploadId"
+            ],
+            "properties": {
+                "fileMd5": {
+                    "type": "string"
+                },
+                "fileName": {
+                    "type": "string"
+                },
+                "fileSize": {
+                    "type": "integer"
+                },
+                "totalChunks": {
+                    "type": "integer"
+                },
+                "uploadId": {
+                    "type": "string"
                 }
             }
         },
@@ -5773,14 +6060,29 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "isCover": {
-                    "type": "boolean"
+                    "type": "integer"
                 },
                 "isMenu": {
-                    "type": "boolean"
+                    "type": "integer"
+                },
+                "isRelationTree": {
+                    "description": "是否关联树形数据",
+                    "type": "integer"
+                },
+                "isTree": {
+                    "type": "integer"
                 },
                 "moduleName": {
                     "description": "模块名称",
                     "type": "string"
+                },
+                "relationField": {
+                    "description": "关联树形数据字段ID",
+                    "type": "integer"
+                },
+                "relationTreeTable": {
+                    "description": "关联树形数据表ID",
+                    "type": "integer"
                 },
                 "sysGenFields": {
                     "description": "字段更新列表",
@@ -5798,31 +6100,31 @@ const docTemplate = `{
             ],
             "properties": {
                 "affix": {
-                    "type": "boolean"
+                    "type": "integer"
                 },
                 "component": {
                     "type": "string"
                 },
                 "disable": {
-                    "type": "boolean"
+                    "type": "integer"
                 },
                 "hide": {
-                    "type": "boolean"
+                    "type": "integer"
                 },
                 "icon": {
                     "type": "string"
                 },
                 "iframe": {
-                    "type": "boolean"
+                    "type": "integer"
                 },
                 "isFull": {
-                    "type": "boolean"
+                    "type": "integer"
                 },
                 "isLink": {
-                    "type": "boolean"
+                    "type": "integer"
                 },
                 "keepAlive": {
-                    "type": "boolean"
+                    "type": "integer"
                 },
                 "link": {
                     "type": "string"
@@ -5906,16 +6208,16 @@ const docTemplate = `{
             ],
             "properties": {
                 "affix": {
-                    "type": "boolean"
+                    "type": "integer"
                 },
                 "component": {
                     "type": "string"
                 },
                 "disable": {
-                    "type": "boolean"
+                    "type": "integer"
                 },
                 "hide": {
-                    "type": "boolean"
+                    "type": "integer"
                 },
                 "icon": {
                     "type": "string"
@@ -5924,16 +6226,16 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "iframe": {
-                    "type": "boolean"
+                    "type": "integer"
                 },
                 "isFull": {
-                    "type": "boolean"
+                    "type": "integer"
                 },
                 "isLink": {
-                    "type": "boolean"
+                    "type": "integer"
                 },
                 "keepAlive": {
-                    "type": "boolean"
+                    "type": "integer"
                 },
                 "link": {
                     "type": "string"
@@ -6056,6 +6358,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "code",
+                "domain",
                 "name"
             ],
             "properties": {
@@ -6066,6 +6369,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "domain": {
+                    "type": "string"
+                },
+                "menuPermission": {
                     "type": "string"
                 },
                 "name": {
@@ -6083,6 +6389,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "code",
+                "domain",
                 "id",
                 "name"
             ],
@@ -6098,6 +6405,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "menuPermission": {
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"

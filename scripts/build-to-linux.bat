@@ -36,7 +36,7 @@ goto :eof
 :build_success
 echo.
 echo ========================================
-echo 编译成功！
+echo 编译成功!
 echo 输出文件: %OUTPUT_DIR%\%OUTPUT_NAME%
 echo ========================================
 goto :eof
@@ -44,7 +44,7 @@ goto :eof
 :build_failure
 echo.
 echo ========================================
-echo 编译失败！
+echo 编译失败!
 echo ========================================
 goto :eof
 
