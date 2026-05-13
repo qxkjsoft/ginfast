@@ -1,0 +1,34 @@
+{
+    "name": "ginfastwechatapppay",
+    "version": "1.0.2",
+    "description": "ginfast微信小程序支付插件",
+    "author": "ginfast",
+    "email": "ginfast@example.com",
+    "url": "https://example.com",
+    "dependencies": {
+        "ginfast-tenant": "^1.0.0",
+        "ginfast-tenant-ui": "^1.0.0"
+    },
+    "exportDirs": [    
+        "config/wxconfig/wxconfig.example.yml",
+        "config/wxconfig/wxconfigtoken.example.yml",
+        "plugins/pluwechat/",
+        "plugins/pluwechatinit.go"
+    ],
+    "exportDirsFrontend": [
+        "src/plugins/pluwechat/"
+    ],
+    "menus" :[
+        {
+            "path" :  "/plugins/pluwechat/config/index",
+            "type" : 2
+        }
+    ],
+    "databaseTable" : [
+        "plu_wx_members",
+        "plu_wx_payment_notify",
+        "plu_wx_payment_notify_refund",
+        "plu_wx_payment_order"
+    ]
+
+}
