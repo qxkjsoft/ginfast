@@ -91,7 +91,7 @@ __debug_bin.exe*
 /.qoder
 
 # plugins 目录配置 - 只提交 example 目录和 exampleinit.go
-# /plugins/*
+/plugins/*
 !/plugins/example/
 !/plugins/exampleinit.go
 /plans
