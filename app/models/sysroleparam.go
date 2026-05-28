@@ -98,7 +98,7 @@ type SysRoleDataScopeUpdateRequest struct {
 	Validator
 	ID           uint   `form:"id" json:"id" validate:"required" message:"角色ID不能为空"`
 	CheckedDepts string `form:"checkedDepts" json:"checkedDepts"`
-	DataScope    int8   `form:"dataScope" json:"dataScope" validate:"required|in:0,1,2,3,4,5" message:"数据权限必须在0-5之间"`
+	DataScope    int8   `form:"dataScope" json:"dataScope" validate:"in:0,1,2,3,4,5" message:"数据权限必须在0-5之间"`
 }
 
 func (r *SysRoleDataScopeUpdateRequest) Validate(c *gin.Context) error {

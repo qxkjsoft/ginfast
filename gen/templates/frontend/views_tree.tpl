@@ -251,6 +251,28 @@ const editingData = reactive<Partial<{{.StructName}}Data>>({
 {{- end}}
 });
 
+{{- range .Columns}}
+{{- if and (eq .GoType "string") (eq .FormType "images")}}
+// 计算属性：处理 {{.JsonTag}} JSON 字符串与数组的双向转换
+const {{.JsonTag}}List = computed({
+    get(): string[] {
+        if (!editingData.{{.JsonTag}} || typeof editingData.{{.JsonTag}} !== 'string') {
+            return [];
+        }
+        try {
+            const parsed = JSON.parse(editingData.{{.JsonTag}});
+            return Array.isArray(parsed) ? parsed : [];
+        } catch {
+            return [];
+        }
+    },
+    set(value: string[]) {
+        editingData.{{.JsonTag}} = JSON.stringify(value);
+    }
+});
+{{- end}}
+{{- end}}
+
 const rules = {
 {{- range .Columns}}
 {{- if and (not .IsPrimary) (not .Exclude) (not .IsParentKey) .Required }}
