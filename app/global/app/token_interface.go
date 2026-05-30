@@ -27,7 +27,7 @@ type TokenServiceInterface interface {
 	RevokeTokenWithCache(tokenString string) error
 
 	// GenerateRefreshToken 生成Refresh Token
-	GenerateRefreshToken(userID uint) (string, error)
+	GenerateRefreshToken(userID uint, tenantID uint, tenantCode string) (string, error)
 
 	// ParseRefreshToken 解析Refresh Token
 	ParseRefreshToken(tokenString string) (*RefreshTokenClaims, error)
@@ -61,7 +61,9 @@ type Claims struct {
 
 // RefreshTokenClaims Refresh Token声明结构
 type RefreshTokenClaims struct {
-	UserID uint `json:"userId"`
+	UserID     uint   `json:"userId"`
+	TenantID   uint   `json:"tenantId,omitempty"`
+	TenantCode string `json:"tenantCode,omitempty"`
 	jwt.RegisteredClaims
 }
 

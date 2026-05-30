@@ -78,7 +78,7 @@ func TestRotateRefreshToken(t *testing.T) {
 	userID := uint(1)
 
 	// 生成初始refresh token
-	originalRefreshToken, err := tokenService.GenerateRefreshToken(userID)
+	originalRefreshToken, err := tokenService.GenerateRefreshToken(userID, 1, "test_tenant")
 	assert.NoError(t, err)
 	assert.NotEmpty(t, originalRefreshToken)
 
@@ -126,7 +126,7 @@ func TestRotateRefreshToken_ExpiredToken(t *testing.T) {
 	userID := uint(1)
 
 	// 生成一个很快过期的refresh token
-	shortExpiryToken, err := tokenService.GenerateRefreshToken(userID)
+	shortExpiryToken, err := tokenService.GenerateRefreshToken(userID, 1, "test_tenant")
 	assert.NoError(t, err)
 
 	// 等待token过期

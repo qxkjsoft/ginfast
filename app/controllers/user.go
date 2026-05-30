@@ -783,7 +783,7 @@ func (uc *UserController) SwitchTenant(c *gin.Context) {
 	}
 
 	// 生成新的refresh token
-	newRefreshToken, err := app.TokenService.GenerateRefreshToken(user.ID)
+	newRefreshToken, err := app.TokenService.GenerateRefreshToken(user.ID, tenantID, tenantCode)
 	if err != nil {
 		uc.FailAndAbort(c, "生成新refresh token失败", err)
 		return
