@@ -1361,3 +1361,23 @@ CREATE TABLE `sys_user_tenant` (
 -- ----------------------------
 -- Records of sys_user_tenant
 -- ----------------------------
+
+-- ----------------------------
+-- Table structure for sys_param
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_param`;
+CREATE TABLE `sys_param` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) DEFAULT NULL COMMENT '参数名称',
+  `code` varchar(255) NOT NULL COMMENT '参数唯一标识',
+  `value` text COMMENT '参数值',
+  `status` tinyint(4) DEFAULT '1' COMMENT '状态(0禁用/1启用)',
+  `description` varchar(500) DEFAULT NULL COMMENT '描述',
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  `created_by` int(11) unsigned DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_sys_param_code` (`code`),
+  KEY `idx_sys_param_deleted_at` (`deleted_at`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COMMENT='系统参数配置';

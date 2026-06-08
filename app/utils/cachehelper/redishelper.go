@@ -2,6 +2,7 @@ package cachehelper
 
 import (
 	"context"
+	"errors"
 	"gin-fast/app/global/app"
 	"time"
 
@@ -41,8 +42,13 @@ func (r *redisHelper) Set(ctx context.Context, key string, value string, expirat
 }
 
 // Get 获取键值
+// 键不存在时返回 ("", app.ErrKeyNotFound)
 func (r *redisHelper) Get(ctx context.Context, key string) (string, error) {
-	return r.client.Get(ctx, key).Result()
+	val, err := r.client.Get(ctx, key).Result()
+	if errors.Is(err, redis.Nil) {
+		return "", app.ErrKeyNotFound
+	}
+	return val, err
 }
 
 // Del 删除键
@@ -60,11 +66,80 @@ func (r *redisHelper) Expire(ctx context.Context, key string, expiration time.Du
 	return r.client.Expire(ctx, key, expiration).Err()
 }
 
-// GetAll 获取所有缓存项（Redis实现中不支持直接获取所有键值对）
+// GetAll 获取所有缓存项（使用SCAN命令分批遍历，避免KEYS *阻塞Redis）
 func (r *redisHelper) GetAll(ctx context.Context) ([]app.CacheItem, error) {
-	// Redis没有简单的方法获取所有键值对，这里返回空数组
-	// 如果需要实现此功能，需要使用SCAN命令遍历所有键，然后逐个获取值
-	return []app.CacheItem{}, nil
+	var items []app.CacheItem
+	var cursor uint64
+
+	for {
+		// 分批扫描，每次取100条，避免一次性加载所有键
+		keys, nextCursor, err := r.client.Scan(ctx, cursor, "*", 100).Result()
+		if err != nil {
+			return nil, err
+		}
+
+		for _, key := range keys {
+			val, err := r.client.Get(ctx, key).Result()
+			if err == redis.Nil {
+				continue // key在SCAN和GET之间被删除（竞态），跳过
+			}
+			if err != nil {
+				return nil, err
+			}
+
+			ttl, err := r.client.TTL(ctx, key).Result()
+			if err != nil {
+				return nil, err
+			}
+
+			var expiresAt time.Time
+			if ttl == -2 {
+				continue // key已不存在（竞态），跳过
+			} else if ttl == -1 {
+				expiresAt = time.Time{} // 永不过期，零值表示
+			} else {
+				expiresAt = time.Now().Add(ttl)
+			}
+
+			items = append(items, app.CacheItem{
+				Key:       key,
+				Value:     val,
+				ExpiresAt: expiresAt,
+			})
+		}
+
+		cursor = nextCursor
+		if cursor == 0 {
+			break // 遍历完成
+		}
+	}
+
+	return items, nil
+}
+
+// GetInt 获取键对应的整数值
+// 键不存在时返回 (0, app.ErrKeyNotFound)
+func (r *redisHelper) GetInt(ctx context.Context, key string) (int64, error) {
+	val, err := r.client.Get(ctx, key).Int64()
+	if errors.Is(err, redis.Nil) {
+		return 0, app.ErrKeyNotFound
+	}
+	return val, err
+}
+
+// SetInt 设置整数值，并指定过期时间
+func (r *redisHelper) SetInt(ctx context.Context, key string, value int64, expiration time.Duration) error {
+	return r.client.Set(ctx, key, value, expiration).Err()
+}
+
+// Incr 指定 key 的数值加 1
+func (r *redisHelper) Incr(ctx context.Context, key string) (int64, error) {
+	return r.client.Incr(ctx, key).Result()
+}
+
+// Decr 指定 key 的数值减 1
+func (r *redisHelper) Decr(ctx context.Context, key string) (int64, error) {
+	return r.client.Decr(ctx, key).Result()
 }
 
 // Close 关闭连接
