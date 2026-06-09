@@ -1440,6 +1440,33 @@ COMMENT ON COLUMN sys_user_tenant.user_id IS '用户ID';
 
 -- Records of sys_user_tenant
 
+-- Table structure for sys_param
+DROP TABLE IF EXISTS sys_param;
+CREATE TABLE sys_param (
+    id BIGSERIAL,
+    name VARCHAR(255),
+    code VARCHAR(255) NOT NULL,
+    value TEXT,
+    status SMALLINT DEFAULT 1,
+    description VARCHAR(500),
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    deleted_at TIMESTAMP,
+    created_by INTEGER DEFAULT 0,
+    PRIMARY KEY (id)
+);
+
+COMMENT ON COLUMN sys_param.id IS 'ID';
+COMMENT ON COLUMN sys_param.name IS '参数名称';
+COMMENT ON COLUMN sys_param.code IS '参数唯一标识';
+COMMENT ON COLUMN sys_param.value IS '参数值';
+COMMENT ON COLUMN sys_param.status IS '状态(0禁用/1启用)';
+COMMENT ON COLUMN sys_param.description IS '描述';
+COMMENT ON COLUMN sys_param.created_by IS '创建人';
+
+CREATE UNIQUE INDEX idx_sys_param_code ON sys_param (code);
+CREATE INDEX idx_sys_param_deleted_at ON sys_param (deleted_at);
+
 -- 创建索引
 CREATE INDEX sys_jobs_idx_group ON sys_jobs ("group");
 CREATE INDEX sys_jobs_idx_status ON sys_jobs (status);
@@ -1483,6 +1510,7 @@ SELECT setval('example_id_seq', 15, true);
 -- 表 sys_affix 的列 id 没有数据，序列 sys_affix_id_seq 将保持默认起始值
 SELECT setval('sys_api_id_seq', 216, true);
 SELECT setval('sys_casbin_rule_id_seq', 7560, true);
+SELECT setval('sys_param_id_seq', 4, true);
 
 
 SET session_replication_role = DEFAULT;

@@ -1260,6 +1260,27 @@ CREATE TABLE [sys_user_tenant] (
 
 
 -- Records of sys_user_tenant
+
+-- Table structure for sys_param
+IF OBJECT_ID('sys_param', 'U') IS NOT NULL DROP TABLE [sys_param];
+CREATE TABLE [sys_param] (
+    [id] BIGINT IDENTITY(1,1) NOT NULL,
+    [name] NVARCHAR(255),
+    [code] NVARCHAR(255) NOT NULL,
+    [value] NVARCHAR(MAX),
+    [status] TINYINT DEFAULT 1,
+    [description] NVARCHAR(500),
+    [created_at] DATETIME,
+    [updated_at] DATETIME,
+    [deleted_at] DATETIME,
+    [created_by] BIGINT DEFAULT 0,
+    PRIMARY KEY ([id])
+);
+
+CREATE UNIQUE INDEX [idx_sys_param_code] ON [sys_param] ([code]);
+CREATE INDEX [idx_sys_param_deleted_at] ON [sys_param] ([deleted_at]);
+
+-- 创建索引
 CREATE INDEX [sys_jobs_idx_group] ON [sys_jobs] ([group]);
 CREATE INDEX [sys_jobs_idx_status] ON [sys_jobs] ([status]);
 CREATE INDEX [sys_jobs_idx_executor_name] ON [sys_jobs] ([executor_name]);

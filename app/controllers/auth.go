@@ -195,7 +195,7 @@ func (ac *AuthController) Login(c *gin.Context) {
 	}
 
 	// 生成refresh token
-	refreshToken, err := app.TokenService.GenerateRefreshToken(user.ID)
+	refreshToken, err := app.TokenService.GenerateRefreshToken(user.ID, tenantID, tenantCode)
 	if err != nil {
 		ac.FailAndAbort(c, "生成refresh token失败", err)
 	}
@@ -239,7 +239,7 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 		refreshToken = req.RefreshToken
 	}
 
-	// 解析refreshToken获取用户ID
+	// 解析refreshToken获取用户ID和租户信息
 	claims, err := app.TokenService.ParseRefreshToken(refreshToken)
 	if err != nil {
 		ac.FailAndAbort(c, "无效的refreshToken", err)
@@ -251,11 +251,17 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 		ac.FailAndAbort(c, "用户不存在", err)
 	}
 
+	// 从refresh token claims中获取租户信息
+	tenantID := claims.TenantID
+	tenantCode := claims.TenantCode
+
 	// 使用refresh token刷新access token
 	user.Password = ""
 	newAccessToken, err := app.TokenService.RefreshAccessTokenWithCache(refreshToken, &app.ClaimsUser{
-		UserID:   user.ID,
-		Username: user.Username,
+		UserID:     user.ID,
+		Username:   user.Username,
+		TenantID:   tenantID,
+		TenantCode: tenantCode,
 	})
 	if err != nil {
 		ac.FailAndAbort(c, "refresh token刷新失败", err)

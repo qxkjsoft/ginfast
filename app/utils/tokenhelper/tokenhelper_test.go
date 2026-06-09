@@ -63,6 +63,22 @@ func (m *MockCacheInterf) GetAll(ctx context.Context) ([]app.CacheItem, error) {
 	return nil, nil
 }
 
+func (m *MockCacheInterf) GetInt(ctx context.Context, key string) (int64, error) {
+	return 0, nil
+}
+
+func (m *MockCacheInterf) SetInt(ctx context.Context, key string, value int64, expiration time.Duration) error {
+	return nil
+}
+
+func (m *MockCacheInterf) Incr(ctx context.Context, key string) (int64, error) {
+	return 0, nil
+}
+
+func (m *MockCacheInterf) Decr(ctx context.Context, key string) (int64, error) {
+	return 0, nil
+}
+
 func TestRotateRefreshToken(t *testing.T) {
 	// 设置测试环境
 	mockCache := NewMockCacheInterf()
@@ -78,7 +94,7 @@ func TestRotateRefreshToken(t *testing.T) {
 	userID := uint(1)
 
 	// 生成初始refresh token
-	originalRefreshToken, err := tokenService.GenerateRefreshToken(userID)
+	originalRefreshToken, err := tokenService.GenerateRefreshToken(userID, 1, "test_tenant")
 	assert.NoError(t, err)
 	assert.NotEmpty(t, originalRefreshToken)
 
@@ -126,7 +142,7 @@ func TestRotateRefreshToken_ExpiredToken(t *testing.T) {
 	userID := uint(1)
 
 	// 生成一个很快过期的refresh token
-	shortExpiryToken, err := tokenService.GenerateRefreshToken(userID)
+	shortExpiryToken, err := tokenService.GenerateRefreshToken(userID, 1, "test_tenant")
 	assert.NoError(t, err)
 
 	// 等待token过期

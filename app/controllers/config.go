@@ -41,30 +41,32 @@ func (con ConfigController) GetConfig(ctx *gin.Context) {
 	// 获取Server配置
 	systemConfig := make(map[string]interface{})
 
-	systemConfig["systemLogo"] = app.ConfigYml.GetString("system.systemlogo")
-	systemConfig["systemIcon"] = app.ConfigYml.GetString("system.systemicon")
-	systemConfig["systemName"] = app.ConfigYml.GetString("system.systemname")
-	systemConfig["systemCopyright"] = app.ConfigYml.GetString("system.systemcopyright")
-	systemConfig["systemRecordNo"] = app.ConfigYml.GetString("system.systemrecordno")
-	// 获取DemoAccount配置
-	systemConfig["defaultusername"] = app.ConfigYml.GetString("server.demoaccount.defaultusername")
-	systemConfig["defaultpassword"] = app.ConfigYml.GetString("server.demoaccount.defaultpassword")
-	result["system"] = systemConfig
+	systemConfig["systemLogo"] = app.ConfigYml.GetString("system.systemlogo")           // 系统LOGO图片地址
+	systemConfig["systemIcon"] = app.ConfigYml.GetString("system.systemicon")           // 系统图标地址
+	systemConfig["systemName"] = app.ConfigYml.GetString("system.systemname")           // 系统名称
+	systemConfig["systemCopyright"] = app.ConfigYml.GetString("system.systemcopyright") // 版权声明信息
+	systemConfig["systemRecordNo"] = app.ConfigYml.GetString("system.systemrecordno")   // 网站备案号
+	// 获取DemoAccount配置，仅在演示账号开关开启时传递
+	if app.ConfigYml.GetBool("server.demoaccount.enabled") {
+		systemConfig["defaultusername"] = app.ConfigYml.GetString("server.demoaccount.defaultusername") // 演示账号默认用户名
+		systemConfig["defaultpassword"] = app.ConfigYml.GetString("server.demoaccount.defaultpassword") // 演示账号默认密码
+	}
+	result["system"] = systemConfig // 将系统配置放入结果集
 
 	// 获取Safe配置
 	safeConfig := make(map[string]interface{})
-	safeConfig["loginLockThreshold"] = app.ConfigYml.GetInt("safe.loginlockthreshold")
-	safeConfig["loginLockExpire"] = app.ConfigYml.GetInt("safe.loginlockexpire")
-	safeConfig["loginLockDuration"] = app.ConfigYml.GetInt("safe.loginlockduration")
-	safeConfig["minPasswordLength"] = app.ConfigYml.GetInt("safe.minpasswordlength")
-	safeConfig["requireSpecialChar"] = app.ConfigYml.GetBool("safe.requirespecialchar")
-	result["safe"] = safeConfig
+	safeConfig["loginLockThreshold"] = app.ConfigYml.GetInt("safe.loginlockthreshold")  // 密码错误锁定阈值，连续登录失败次数达到该值将锁定账号，0表示不锁定
+	safeConfig["loginLockExpire"] = app.ConfigYml.GetInt("safe.loginlockexpire")        // 连续登录失败次数记录的缓存时间（单位：秒）
+	safeConfig["loginLockDuration"] = app.ConfigYml.GetInt("safe.loginlockduration")    // 账号锁定时长（单位：秒）
+	safeConfig["minPasswordLength"] = app.ConfigYml.GetInt("safe.minpasswordlength")    // 密码最小长度要求
+	safeConfig["requireSpecialChar"] = app.ConfigYml.GetBool("safe.requirespecialchar") // 密码是否必须包含特殊字符
+	result["safe"] = safeConfig                                                         // 将安全配置放入结果集
 
 	// 获取Captcha配置
 	captchaConfig := make(map[string]interface{})
-	captchaConfig["open"] = app.ConfigYml.GetBool("captcha.open")
-	captchaConfig["length"] = app.ConfigYml.GetInt("captcha.length")
-	result["captcha"] = captchaConfig
+	captchaConfig["open"] = app.ConfigYml.GetBool("captcha.open")    // 是否开启验证码功能
+	captchaConfig["length"] = app.ConfigYml.GetInt("captcha.length") // 验证码字符长度
+	result["captcha"] = captchaConfig                                // 将验证码配置放入结果集
 
 	// 返回成功响应
 	con.Common.Success(ctx, result)

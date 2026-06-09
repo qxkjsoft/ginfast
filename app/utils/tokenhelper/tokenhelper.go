@@ -135,10 +135,12 @@ func (s *TokenService) getTokenKeyWithCache(userID uint, tokenString string) str
 
 /*****************************************refreshToken管理****************************************************/
 // GenerateRefreshToken 生成Refresh Token
-func (s *TokenService) GenerateRefreshToken(userID uint) (string, error) {
+func (s *TokenService) GenerateRefreshToken(userID uint, tenantID uint, tenantCode string) (string, error) {
 	expirationTime := time.Now().Add(s.RefreshExpire * time.Second)
 	claims := &app.RefreshTokenClaims{
-		UserID: userID,
+		UserID:     userID,
+		TenantID:   tenantID,
+		TenantCode: tenantCode,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -249,10 +251,12 @@ func (s *TokenService) RotateRefreshToken(oldRefreshToken string) (string, error
 		return "", fmt.Errorf("failed to revoke old refresh token: %w", err)
 	}
 
-	// 4. 生成新的refresh token，使用剩余的有效时间
+	// 4. 生成新的refresh token，使用剩余的有效时间，保留租户信息
 	expirationTime := now.Add(remainingDuration)
 	newClaims := &app.RefreshTokenClaims{
-		UserID: claims.UserID,
+		UserID:     claims.UserID,
+		TenantID:   claims.TenantID,
+		TenantCode: claims.TenantCode,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(now),
