@@ -1303,4 +1303,21 @@ CREATE UNIQUE INDEX [sys_tenants_code] ON [sys_tenants] ([code]);
 CREATE UNIQUE INDEX [sys_tenants_domain] ON [sys_tenants] ([domain]);
 CREATE INDEX [sys_tenants_idx_sys_tenants_deleted_at] ON [sys_tenants] ([deleted_at]);
 
+-- Table structure for sys_area
+IF OBJECT_ID('sys_area', 'U') IS NOT NULL DROP TABLE [sys_area];
+CREATE TABLE [sys_area] (
+    [id] BIGINT IDENTITY(1,1) NOT NULL,
+    [value] NVARCHAR(20) NOT NULL,
+    [label] NVARCHAR(100) NOT NULL,
+    [level] TINYINT,
+    [parent] NVARCHAR(20) DEFAULT '',
+    [sort] INT DEFAULT 0,
+    [created_at] DATETIME,
+    [updated_at] DATETIME,
+    [deleted_at] DATETIME,
+    CONSTRAINT [sys_area_pk] PRIMARY KEY ([id])
+);
+CREATE UNIQUE INDEX [sys_area_uk_value] ON [sys_area] ([value]);
+CREATE INDEX [sys_area_idx_parent] ON [sys_area] ([parent]);
+
 SET NOCOUNT OFF;

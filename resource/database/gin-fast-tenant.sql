@@ -1381,3 +1381,22 @@ CREATE TABLE `sys_param` (
   UNIQUE KEY `idx_sys_param_code` (`code`),
   KEY `idx_sys_param_deleted_at` (`deleted_at`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COMMENT='系统参数配置';
+
+-- ----------------------------
+-- Table structure for sys_area
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_area`;
+CREATE TABLE `sys_area` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `value` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '地区编码',
+  `label` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '地区名称',
+  `level` tinyint(4) DEFAULT NULL COMMENT '层级 1省2市3区县4街道',
+  `parent` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '父级编码',
+  `sort` int(11) DEFAULT '0' COMMENT '排序',
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_sys_area_value` (`value`),
+  KEY `idx_sys_area_parent` (`parent`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='行政区划';

@@ -1513,5 +1513,21 @@ SELECT setval('sys_casbin_rule_id_seq', 7560, true);
 SELECT setval('sys_param_id_seq', 4, true);
 
 
+-- Table structure for sys_area
+DROP TABLE IF EXISTS sys_area;
+CREATE TABLE sys_area (
+    id SERIAL,
+    value VARCHAR(20) NOT NULL,
+    label VARCHAR(100) NOT NULL,
+    level SMALLINT,
+    parent VARCHAR(20) DEFAULT '',
+    sort INTEGER DEFAULT 0,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    deleted_at TIMESTAMP
+);
+CREATE UNIQUE INDEX sys_area_uk_value ON sys_area (value);
+CREATE INDEX sys_area_idx_parent ON sys_area (parent);
+
 SET session_replication_role = DEFAULT;
 SET client_min_messages TO NOTICE;
