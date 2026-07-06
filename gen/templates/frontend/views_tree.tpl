@@ -8,7 +8,7 @@
                     <a-input-search v-model="searchForm.name" placeholder="请输入名称搜索" style="width: 240px;" @search="handleSearch" allow-clear />
                     <a-button type="primary" @click="handleSearch">查询</a-button>
                     <a-button @click="handleReset">重置</a-button>
-                    <a-button type="primary" @click="handleCreate" v-hasPerm="['plugins:{{.DirName}}{{.FileName}}:add']">
+                    <a-button type="primary" @click="handleCreate" v-hasPerm="['plugins:{{.FlatDirName}}{{.FileName}}:add']">
                         <template #icon>
                             <icon-plus />
                         </template>
@@ -35,17 +35,17 @@
                     <a-table-column title="操作" :width="280">
                         <template #cell="{ record }">
                             <a-space>
-                                <a-button size="small" @click="handleAddChild(record)" v-hasPerm="['plugins:{{.DirName}}{{.FileName}}:add']">
+                                <a-button size="small" @click="handleAddChild(record)" v-hasPerm="['plugins:{{.FlatDirName}}{{.FileName}}:add']">
                                     <template #icon>
                                         <icon-plus />
                                     </template>
                                     新增子级
                                 </a-button>
-                                <a-button size="small" @click="handleEdit(record)" v-hasPerm="['plugins:{{.DirName}}{{.FileName}}:edit']">
+                                <a-button size="small" @click="handleEdit(record)" v-hasPerm="['plugins:{{.FlatDirName}}{{.FileName}}:edit']">
                                     编辑
                                 </a-button>
                                 <a-popconfirm content="确定要删除这条数据吗？" @ok="handleDelete(record.{{if .PrimaryKey}}{{.PrimaryKey.JsonTag}}{{else}}id{{end}})">
-                                    <a-button size="small" status="danger" v-hasPerm="['plugins:{{.DirName}}{{.FileName}}:delete']">
+                                    <a-button size="small" status="danger" v-hasPerm="['plugins:{{.FlatDirName}}{{.FileName}}:delete']">
                                         删除
                                     </a-button>
                                 </a-popconfirm>

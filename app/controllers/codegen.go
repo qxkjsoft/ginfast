@@ -256,8 +256,8 @@ func (cgc *CodeGenController) InsertMenuAndApiData(ctx *gin.Context) {
 	// 构建菜单API上下文
 	menuApiCtx := &models.MenuApiContext{
 		TableName: sysGen.Name,
-		FileName:  common.KeepLettersOnlyLower(sysGen.FileName),
-		DirName:   common.KeepLettersOnlyLower(sysGen.ModuleName),
+		FileName:  common.KeepLettersOnly(sysGen.FileName),
+		DirName:   common.KeepLettersAndPathLower(sysGen.ModuleName),
 		Comment:   sysGen.Describe,
 	}
 

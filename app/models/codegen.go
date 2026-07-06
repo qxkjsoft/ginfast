@@ -65,8 +65,8 @@ func NewCodeGenContext(tableName, dirName, fileName, comment string, columns Col
 
 	ctx := &CodeGenContext{
 		TableName:           tableName,
-		DirName:             common.KeepLettersOnlyLower(dirName),
-		FileName:            common.KeepLettersOnlyLower(fileName),
+		DirName:             common.KeepLettersAndPathLower(dirName),
+		FileName:            common.KeepLettersOnly(fileName),
 		Comment:             comment,
 		Columns:             columns,
 		PrimaryKey:          primaryKey,
@@ -96,7 +96,8 @@ type MenuApiContext struct {
 type FrontendGenContext struct {
 	// 基础信息
 	TableName string `json:"tableName"` // 表名
-	DirName   string `json:"dirName"`   // 目录名（全英文字母小写）
+	DirName   string `json:"dirName"`   // 目录名（全英文字母小写，可包含路径分隔符 "/"，如 test/admin）
+	FlatDirName string `json:"flatDirName"` // 拍平路径的目录名（DirName 移除 "/" 后的结果，如 testadmin）
 	FileName  string `json:"fileName"`  // 文件名（全英文字母小写）
 
 	// 派生信息
@@ -133,10 +134,15 @@ func NewFrontendGenContext(tableName, dirName, fileName string, columns ColumnTe
 		parentIdField = columns.GetParentIdField(primaryKey)
 	}
 
+	// 规范化目录名（保留路径分隔符 "/"），并派生拍平路径版本
+	normalizedDirName := common.KeepLettersAndPathLower(dirName)
+	flatDirName := strings.ReplaceAll(normalizedDirName, "/", "")
+
 	ctx := &FrontendGenContext{
 		TableName:       tableName,
-		DirName:         common.KeepLettersOnlyLower(dirName),
-		FileName:        common.KeepLettersOnlyLower(fileName),
+		DirName:         normalizedDirName,
+		FlatDirName:     flatDirName,
+		FileName:        common.KeepLettersOnly(fileName),
 		Columns:         columns,
 		PrimaryKey:      primaryKey,
 		StructName:      common.ToCamelCase(fileName),
@@ -567,6 +573,9 @@ type FileTreeNode struct {
 // BuildFileTree 构建文件树结构
 func BuildFileTree(dirName, fileName string, frontendDir string) []*FileTreeNode {
 	root := []*FileTreeNode{}
+	// init.go 始终位于 plugins 根目录下，需拍平路径分隔符
+	// 例如 dirName="test/admin" -> init 文件名为 "testadmininit.go"
+	flatDirName := strings.ReplaceAll(dirName, "/", "")
 
 	// 后端代码目录结构
 	backendRoot := &FileTreeNode{
@@ -642,8 +651,8 @@ func BuildFileTree(dirName, fileName string, frontendDir string) []*FileTreeNode
 				},
 			},
 			{
-				Name: dirName + "init.go",
-				Path: "plugins/" + dirName + "init.go",
+				Name: flatDirName + "init.go",
+				Path: "plugins/" + flatDirName + "init.go",
 				Type: "file",
 			},
 		},

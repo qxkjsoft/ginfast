@@ -51,6 +51,30 @@ func KeepLettersOnlyLower(s string) string {
 	return result.String()
 }
 
+// KeepLettersAndPathLower 只保留字符串中的英文字母和路径分隔符 "/"，并且全部转换为小写。
+// 同时规范化路径：去除首尾 "/"，合并连续的 "//"，丢弃空段。
+// 例如: "Test/Admin" -> "test/admin", "//a//b//" -> "a/b"
+func KeepLettersAndPathLower(s string) string {
+	var result strings.Builder
+	result.Grow(len(s))
+
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || r == '/' {
+			result.WriteRune(unicode.ToLower(r))
+		}
+	}
+
+	// 规范化路径：合并连续的 "/"，去除首尾 "/"
+	parts := strings.Split(result.String(), "/")
+	var validParts []string
+	for _, part := range parts {
+		if part != "" {
+			validParts = append(validParts, part)
+		}
+	}
+	return strings.Join(validParts, "/")
+}
+
 // ToCamelCase 将字符串转换为驼峰命名， 首字母大写
 func ToCamelCase(str string) string {
 	if str == "" {

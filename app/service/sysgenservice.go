@@ -309,10 +309,10 @@ func (sgs *SysGenService) Update(ctx context.Context, req *models.SysGenUpdateRe
 	gen.ID = req.ID
 	updates := make(map[string]interface{})
 	if req.ModuleName != "" {
-		if moduleName := common.KeepLettersOnly(req.ModuleName); moduleName != "" {
+		if moduleName := common.KeepLettersAndPathLower(req.ModuleName); moduleName != "" {
 			updates["module_name"] = moduleName
 		} else {
-			return fmt.Errorf("模块名只保留字母和下划线")
+			return fmt.Errorf("模块名只能包含字母和路径分隔符")
 		}
 	}
 

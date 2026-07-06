@@ -486,9 +486,9 @@ func (cgs *CodeGenService) GenerateBackendCodeFiles(ctx context.Context, sysGen 
 	var tableName, dirName, fileName, comment string
 	var columnTemplates models.ColumnTemplateList
 	tableName = sysGen.Name
-	//KeepLettersOnlyLower 只保留字符串中的英文字母，并且全部转换为小写
-	dirName = common.KeepLettersOnlyLower(sysGen.ModuleName)
-	fileName = common.KeepLettersOnlyLower(sysGen.FileName)
+	//KeepLettersAndPathLower 保留字符串中的英文字母和路径分隔符 "/"，并且全部转换为小写，支持类似 test/admin 的子目录结构
+	dirName = common.KeepLettersAndPathLower(sysGen.ModuleName)
+	fileName = common.KeepLettersOnly(sysGen.FileName)
 	comment = sysGen.Describe
 	columnTemplates = sysGen.SysGenFields.ToColumnTemplate()
 
@@ -584,7 +584,11 @@ func (cgs *CodeGenService) GenerateBackendCodeFiles(ctx context.Context, sysGen 
 
 	// 生成初始化代码
 	initCode := cgs.generateInitCode(codeGenCtx)
-	initFilePath := filepath.Join("plugins", dirName+"init.go")
+	// 对于包含子路径的 dirName（如 test/admin），需要拍平 "/" 以保证
+	// init 文件仍位于 plugins 目录下且声明正确的 package plugins。
+	// 例如 dirName="test/admin" 会生成 "plugins/testadmininit.go"。
+	flatDirName := strings.ReplaceAll(dirName, "/", "")
+	initFilePath := filepath.Join("plugins", flatDirName+"init.go")
 	if err := cgs.writeCodeToFileWithCover(initFilePath, initCode, sysGen.IsCover == 1); err != nil {
 		return fmt.Errorf("生成初始化文件失败: %v", err)
 	}
@@ -603,9 +607,9 @@ func (cgs *CodeGenService) GenerateBackendCodeFiles(ctx context.Context, sysGen 
 func (cgs *CodeGenService) GenerateFrontendCodeFiles(sysGen *models.SysGen) error {
 	var tableName, dirName, fileName string
 	tableName = sysGen.Name
-	// KeepLettersOnlyLower 只保留字符串中的英文字母，并且全部转换为小写
-	dirName = common.KeepLettersOnlyLower(sysGen.ModuleName)
-	fileName = common.KeepLettersOnlyLower(sysGen.FileName)
+	// KeepLettersAndPathLower 保留字符串中的英文字母和路径分隔符 "/"，并且全部转换为小写，支持类似 test/admin 的子目录结构
+	dirName = common.KeepLettersAndPathLower(sysGen.ModuleName)
+	fileName = common.KeepLettersOnly(sysGen.FileName)
 	columnTemplates := sysGen.SysGenFields.ToColumnTemplate()
 	// 获取前端代码生成目录配置
 	frontendDir := cgs.getFrontendGenDir()
@@ -639,8 +643,8 @@ func (cgs *CodeGenService) GenerateFrontendCodeFiles(sysGen *models.SysGen) erro
 	if isRelationTree {
 		// 获取关联树形分类信息
 		if sysGen.RelationTreeGen != nil {
-			relationTreeDirName := common.KeepLettersOnlyLower(sysGen.RelationTreeGen.ModuleName)
-			relationTreeFileName := common.KeepLettersOnlyLower(sysGen.RelationTreeGen.FileName)
+			relationTreeDirName := common.KeepLettersAndPathLower(sysGen.RelationTreeGen.ModuleName)
+			relationTreeFileName := common.KeepLettersOnly(sysGen.RelationTreeGen.FileName)
 			relationTreeStructName := common.ToCamelCase(sysGen.RelationTreeGen.FileName)
 
 			// 获取关联字段信息
@@ -772,6 +776,7 @@ func (cgs *CodeGenService) generateFrontendViewCode(ctx *models.FrontendGenConte
 		"StructNameLower":        ctx.StructNameLower,
 		"TableName":              ctx.TableName,
 		"DirName":                ctx.DirName,
+		"FlatDirName":            ctx.FlatDirName,
 		"FileName":               ctx.FileName,
 		"Columns":                ctx.Columns,
 		"PrimaryKey":             ctx.PrimaryKey,
@@ -895,8 +900,8 @@ func (cgs *CodeGenService) PreviewCode(ctx context.Context, genID uint) (map[str
 	if isRelationTree {
 		// 获取关联树形分类信息
 		if sysGen.RelationTreeGen != nil {
-			relationTreeDirName := common.KeepLettersOnlyLower(sysGen.RelationTreeGen.ModuleName)
-			relationTreeFileName := common.KeepLettersOnlyLower(sysGen.RelationTreeGen.FileName)
+			relationTreeDirName := common.KeepLettersAndPathLower(sysGen.RelationTreeGen.ModuleName)
+			relationTreeFileName := common.KeepLettersOnly(sysGen.RelationTreeGen.FileName)
 			relationTreeStructName := common.ToCamelCase(sysGen.RelationTreeGen.FileName)
 
 			// 获取关联字段信息
@@ -931,8 +936,8 @@ func (cgs *CodeGenService) PreviewCode(ctx context.Context, genID uint) (map[str
 	//}
 
 	// 构建文件树结构
-	dirName := common.KeepLettersOnlyLower(sysGen.ModuleName)
-	fileName := common.KeepLettersOnlyLower(sysGen.FileName)
+	dirName := common.KeepLettersAndPathLower(sysGen.ModuleName)
+	fileName := common.KeepLettersOnly(sysGen.FileName)
 	fileTree := models.BuildFileTree(dirName, fileName, frontendPath)
 
 	return map[string]interface{}{
@@ -1351,7 +1356,11 @@ func (cgs *CodeGenService) generateMenuAndApiData(fileName, dirName, comment str
 	// 父级菜单ID
 	parentMenuID := uint(0)
 
-	routerPath := dirName + fileName
+	// 对于含子路径的 dirName（如 test/admin），
+	// routerPath 用于权限标识和菜单 Name，需要拍平 "/" 以避免与 Casbin 分段匹配和 Vue Router 名称规则冲突；
+	// 而 URL Path / Component 是真实的文件/URL 路径，保留完整 dirName。
+	flatDirName := strings.ReplaceAll(dirName, "/", "")
+	routerPath := flatDirName + fileName
 	// 生成主菜单项
 	mainMenu := models.SysMenu{
 		ParentID:   parentMenuID,
