@@ -20,6 +20,7 @@ import (
 type SysApiController struct {
 	Common
 	CasbinService *service.PermissionService
+	ApiService    *service.SysApiService
 }
 
 // NewSysApiController 创建系统API控制器
@@ -27,6 +28,7 @@ func NewSysApiController() *SysApiController {
 	return &SysApiController{
 		Common:        Common{},
 		CasbinService: service.NewPermissionService(),
+		ApiService:    service.NewSysApiService(),
 	}
 }
 
@@ -272,4 +274,68 @@ func (sc *SysApiController) Delete(c *gin.Context) {
 	}
 
 	sc.SuccessWithMessage(c, "API删除成功", nil)
+}
+
+// PreviewRoutes 预览路由同步（dry-run）
+// @Summary 预览路由同步
+// @Description 遍历后台已注册的路由，预览将要同步到 sys_api 表的内容（不写库）
+// @Tags API管理
+// @Accept json
+// @Produce json
+// @Param overwrite query bool false "是否覆盖已存在记录的 Title/ApiGroup" default(false)
+// @Param includePlugins query bool false "是否纳入 /api/plugins/* 路由" default(true)
+// @Param groupByPlugin query bool false "插件路由分组是否带 plugins/ 前缀" default(true)
+// @Success 200 {object} map[string]interface{} "成功返回预览结果"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysApi/previewRoutes [get]
+// @Security ApiKeyAuth
+func (sc *SysApiController) PreviewRoutes(c *gin.Context) {
+	var req models.SysApiSyncRequest
+	if err := req.Validate(c); err != nil {
+		sc.FailAndAbort(c, err.Error(), err)
+	}
+
+	opt := service.SyncOption{
+		Overwrite:      req.Overwrite,
+		IncludePlugins: req.IncludePlugins,
+		GroupByPlugin:  req.GroupByPlugin,
+		DryRun:         true,
+	}
+	result, err := sc.ApiService.SyncRoutes(c, opt)
+	if err != nil {
+		sc.FailAndAbort(c, "预览路由同步失败", err)
+	}
+	sc.Success(c, result)
+}
+
+// SyncRoutes 执行路由同步（写库）
+// @Summary 执行路由同步
+// @Description 遍历后台已注册的路由，按 path+method 去重写入 sys_api 表
+// @Tags API管理
+// @Accept json
+// @Produce json
+// @Param request body models.SysApiSyncRequest true "同步选项"
+// @Success 200 {object} map[string]interface{} "同步成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysApi/syncRoutes [post]
+// @Security ApiKeyAuth
+func (sc *SysApiController) SyncRoutes(c *gin.Context) {
+	var req models.SysApiSyncRequest
+	if err := req.Validate(c); err != nil {
+		sc.FailAndAbort(c, err.Error(), err)
+	}
+
+	opt := service.SyncOption{
+		Overwrite:      req.Overwrite,
+		IncludePlugins: req.IncludePlugins,
+		GroupByPlugin:  req.GroupByPlugin,
+		DryRun:         false,
+		SelectedKeys:   req.SelectedKeys,
+	}
+	result, err := sc.ApiService.SyncRoutes(c, opt)
+	if err != nil {
+		sc.FailAndAbort(c, "路由同步失败", err)
+	}
+	sc.SuccessWithMessage(c, "路由同步成功", result)
 }

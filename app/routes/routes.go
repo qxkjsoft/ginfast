@@ -250,6 +250,10 @@ func InitRoutes(engine *gin.Engine) {
 				sysApi.PUT("/edit", sysApiControllers.Update)
 				// 删除API
 				sysApi.DELETE("/delete", sysApiControllers.Delete)
+				// 预览路由同步（dry-run，不写库）
+				sysApi.GET("/previewRoutes", sysApiControllers.PreviewRoutes)
+				// 执行路由同步（写库）
+				sysApi.POST("/syncRoutes", sysApiControllers.SyncRoutes)
 			}
 
 			// 系统文件附件路由组

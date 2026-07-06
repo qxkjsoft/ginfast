@@ -90,3 +90,22 @@ type SysApiGetRequest struct {
 func (r *SysApiGetRequest) Validate(c *gin.Context) error {
 	return r.Check(c, r)
 }
+
+// SysApiSyncRequest 路由同步请求参数
+// 用于将后台代码中已注册的路由自动同步到 sys_api 表
+type SysApiSyncRequest struct {
+	Validator
+	// Overwrite 是否覆盖已存在记录的 Title/ApiGroup，默认 false（幂等模式）
+	Overwrite bool `form:"overwrite" json:"overwrite"`
+	// IncludePlugins 是否纳入 /api/plugins/* 路由，默认 true
+	IncludePlugins bool `form:"includePlugins" json:"includePlugins"`
+	// GroupByPlugin 插件路由分组是否带 plugins/ 前缀，默认 true
+	GroupByPlugin bool `form:"groupByPlugin" json:"groupByPlugin"`
+	// SelectedKeys 仅同步用户勾选的路由，格式为 "path|method"
+	// 为空时同步全部预览结果（兼容旧行为）
+	SelectedKeys []string `form:"selectedKeys" json:"selectedKeys"`
+}
+
+func (r *SysApiSyncRequest) Validate(c *gin.Context) error {
+	return r.Check(c, r)
+}
