@@ -11,6 +11,7 @@ import (
 	"gin-fast/app/utils/schedulerhelper"
 
 	"go.uber.org/zap"
+	"gorm.io/gorm/clause"
 )
 
 // RegisterExecutors 注册所有执行器
@@ -87,4 +88,51 @@ func LoadJobsFromDB() {
 
 	// 启动任务结果处理器，将任务执行结果保存到数据库
 	StartResultHandler()
+}
+
+// PersistJobToDB 将任务定义持久化到 sys_jobs 表（主键冲突时忽略）。
+// 供插件注册任务时调用，确保 sys_job_results 的外键约束 (job_id -> sys_jobs.id) 得到满足。
+//
+// 行为：使用 OnConflict{DoNothing}（MySQL 为 INSERT IGNORE）：
+//   - 首次启动：插入新记录
+//   - 重启(记录已存在)：跳过，不覆盖用户在后台对任务的修改
+//
+// 参数 job 应为已通过 AddOrUpdateJob 注册到调度器的任务（validateJob 会就地设置
+// ParallelNum/Timeout/RetryInterval 等默认值，故此时读取字段即为最终配置）。
+//
+// 返回持久化错误；调用方可选择仅记录日志、不阻断启动（任务已在内存 cron 中运行，
+// 仅 sys_job_results 历史无法落库）。
+func PersistJobToDB(job *schedulerhelper.Job) error {
+	ctx := context.Background()
+
+	parametersJSON := "{}"
+	if len(job.Parameters) > 0 {
+		if b, err := json.Marshal(job.Parameters); err == nil {
+			parametersJSON = string(b)
+		}
+	}
+
+	now := time.Now()
+	sysJob := &models.SysJobs{
+		Id:              job.ID,
+		Group:           job.Group,
+		Name:            job.Name,
+		Description:     job.Description,
+		ExecutorName:    job.ExecutorName,
+		ExecutionPolicy: int(job.ExecutionPolicy),
+		Status:          int(job.Status),
+		CronExpression:  job.CronExpression,
+		Parameters:      parametersJSON,
+		BlockingPolicy:  int(job.BlockingPolicy),
+		Timeout:         job.Timeout.Nanoseconds(),
+		MaxRetry:        job.MaxRetry,
+		RetryInterval:   job.RetryInterval.Nanoseconds(),
+		ParallelNum:     job.ParallelNum,
+		CreatedAt:       &now,
+		UpdatedAt:       &now,
+	}
+
+	return app.DB().WithContext(ctx).
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(sysJob).Error
 }
