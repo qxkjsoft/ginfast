@@ -71,6 +71,10 @@ type SyncResult struct {
 var swaggerSummaryCache map[string]map[string]string
 var swaggerSummaryOnce sync.Once
 
+// syncRoutesMu 串行化非 DryRun 的同步写库：
+// 并发同步会在彼此提交前读到相同的库内快照，双双判定"不存在"而重复插入同一 path+method
+var syncRoutesMu sync.Mutex
+
 // loadSwaggerSummary 加载并缓存 swagger 文档中的 summary
 // 通过解析 docs/swagger/docs.go 生成的 SwaggerInfo.ReadDoc() JSON 提取每个 path+method 的 summary
 func loadSwaggerSummary() map[string]map[string]string {
@@ -295,6 +299,13 @@ func handlerName(route gin.RouteInfo) string {
 // 遍历全局 engine 已注册的路由，按规则推导 Title/ApiGroup，按 path+method 去重写入 sys_api 表
 // 返回 SyncResult 描述本次将/已执行的明细
 func (s *SysApiService) SyncRoutes(ctx context.Context, opt SyncOption) (*SyncResult, error) {
+	// 非 DryRun（真实写库）全程加锁：加载库内快照与写库必须作为整体串行执行。
+	// DryRun 预览只读、不写库，不加锁
+	if !opt.DryRun {
+		syncRoutesMu.Lock()
+		defer syncRoutesMu.Unlock()
+	}
+
 	// 从 ginhelper 取回启动时由 main.go 通过 SetEngine 注入的全局 Gin 引擎实例
 	engine := ginhelper.GetSavedEngine()
 	// 引擎未注入则无法读取已注册路由，直接报错中止
@@ -383,26 +394,16 @@ func (s *SysApiService) SyncRoutes(ctx context.Context, opt SyncOption) (*SyncRe
 
 	// 3. 计算每个 candidate 的 Action
 	for _, c := range candidates {
-		it := c.item                        // 取出候选项（值拷贝，避免修改到原切片元素）
-		key := it.Path + "|" + it.Method    // 构造与 existMap 一致的唯一 key
-		if exist, ok := existMap[key]; ok { // 库中已存在相同 path+method
-			// 已存在
-			if opt.Overwrite { // 用户选择允许覆盖已存在记录
-				// 判断是否真的需要更新（Title 或 ApiGroup 不同）
-				if exist.Title != it.Title || exist.ApiGroup != it.ApiGroup { // 标题或分组有变化才更新
-					it.Action = "update" // 标记为更新
-					result.Updated++     // 更新计数 +1
-				} else { // 内容一致无需变更
-					it.Action = "skip" // 标记为跳过
-					result.Skipped++   // 跳过计数 +1
-				}
-			} else { // 不允许覆盖，已存在的一律跳过
-				it.Action = "skip" // 标记为跳过
-				result.Skipped++   // 跳过计数 +1
-			}
-		} else { // 库中不存在，需要新增
-			it.Action = "insert" // 标记为新增
-			result.Inserted++    // 新增计数 +1
+		it := c.item                     // 取出候选项（值拷贝，避免修改到原切片元素）
+		key := it.Path + "|" + it.Method // 构造与 existMap 一致的唯一 key
+		it.Action = classifySyncAction(it, existMap.active[key], existMap.soft[key] != nil, opt.Overwrite)
+		switch it.Action {
+		case "update":
+			result.Updated++ // 更新计数 +1
+		case "skip":
+			result.Skipped++ // 跳过计数 +1
+		default: // insert / restore 均计为新增（restore 复用软删行，等价新增）
+			result.Inserted++ // 新增计数 +1
 		}
 		result.Details = append(result.Details, it) // 将判定结果写入明细，供预览/写库使用
 	}
@@ -413,8 +414,9 @@ func (s *SysApiService) SyncRoutes(ctx context.Context, opt SyncOption) (*SyncRe
 	for _, c := range candidates {
 		codeKeySet[c.item.Path+"|"+c.item.Method] = true // 标记该路由在代码中存在
 	}
-	// 遍历库中所有 API，凡不在代码 key 集合中的即为"孤儿"
-	for key, api := range existMap {
+	// 遍历库中所有活跃 API，凡不在代码 key 集合中的即为"孤儿"
+	// （软删行本就是已删除状态，不算孤儿）
+	for key, api := range existMap.active {
 		if !codeKeySet[key] { // 代码中无此接口，可能是已删除的路由
 			result.OrphanList = append(result.OrphanList, SyncItem{
 				Path:     api.Path,     // 孤儿 API 的路径
@@ -444,6 +446,14 @@ func (s *SysApiService) SyncRoutes(ctx context.Context, opt SyncOption) (*SyncRe
 		}
 	}()
 
+	// 清理存量重复活跃行（各 key 保留 id 最小者，其余软删），与本次同步同事务提交
+	for _, dup := range existMap.dups {
+		if err := tx.Delete(&models.SysApi{}, dup.ID).Error; err != nil {
+			tx.Rollback()
+			return nil, fmt.Errorf("清理重复 API 失败 (id=%d path=%s): %v", dup.ID, dup.Path, err)
+		}
+	}
+
 	// 逐条按 Action 写库；skip 不操作
 	for _, it := range result.Details {
 		switch it.Action {
@@ -458,9 +468,23 @@ func (s *SysApiService) SyncRoutes(ctx context.Context, opt SyncOption) (*SyncRe
 				tx.Rollback()
 				return nil, fmt.Errorf("插入 API 失败 (path=%s method=%s): %v", it.Path, it.Method, err)
 			}
+		case "restore": // 恢复软删孪生行：等价于 insert，但复用既有行，避免留下"一活跃一软删"孪生
+			key := it.Path + "|" + it.Method
+			soft := existMap.soft[key]
+			// Unscoped：目标行处于软删状态，普通 Updates 会附带 deleted_at IS NULL 条件导致匹配不到
+			if err := tx.Unscoped().Model(&models.SysApi{}).
+				Where("id = ?", soft.ID).
+				Updates(map[string]interface{}{
+					"deleted_at": nil, // 清除软删标记
+					"title":      it.Title,
+					"api_group":  it.ApiGroup,
+				}).Error; err != nil {
+				tx.Rollback()
+				return nil, fmt.Errorf("恢复 API 失败 (path=%s method=%s): %v", it.Path, it.Method, err)
+			}
 		case "update": // 更新：仅刷新 title 与 api_group，保留原有 ID 等
 			key := it.Path + "|" + it.Method // 取对应库记录
-			exist := existMap[key]           // 已存在记录指针（含 ID）
+			exist := existMap.active[key]    // 已存在记录指针（含 ID）
 			if err := tx.Model(&models.SysApi{}).
 				Where("id = ?", exist.ID).      // 按主键定位
 				Updates(map[string]interface{}{ // 仅更新有变化的字段
@@ -483,16 +507,64 @@ func (s *SysApiService) SyncRoutes(ctx context.Context, opt SyncOption) (*SyncRe
 	return result, nil
 }
 
-// loadExistApiMap 加载所有未删除的 sys_api，构造 path|method -> *SysApi 映射
-func (s *SysApiService) loadExistApiMap(db *gorm.DB) (map[string]*models.SysApi, error) {
+// existApiMap 同步判定用的库内现状快照
+type existApiMap struct {
+	active map[string]*models.SysApi // 未删除行 path|method -> 记录（同 key 多行时保留 id 最小者）
+	soft   map[string]*models.SysApi // 已软删行 path|method -> 记录（可恢复的孪生行）
+	dups   []*models.SysApi          // active 中同 key 的重复行（保留 id 最小者之外的待清理部分）
+}
+
+// loadExistApiMap 加载所有 sys_api（Unscoped 含软删行），构造 path|method 映射。
+// 使用 Unscoped 的原因：软删的孪生行必须对同步可见，代码中重新出现的路由应优先恢复
+// 软删行，而不是插入新行、留下"一活跃一软删"的孪生数据；顺带识别存量重复活跃行
+func (s *SysApiService) loadExistApiMap(db *gorm.DB) (*existApiMap, error) {
 	var list models.SysApiList
-	if err := db.Find(&list).Error; err != nil {
+	if err := db.Unscoped().Find(&list).Error; err != nil {
 		return nil, err
 	}
-	m := make(map[string]*models.SysApi, len(list))
+	m := &existApiMap{
+		active: make(map[string]*models.SysApi, len(list)),
+		soft:   make(map[string]*models.SysApi),
+	}
 	for _, api := range list {
 		key := api.Path + "|" + api.Method
-		m[key] = api
+		if api.DeletedAt.Valid { // 软删行：同 key 保留其一即可（恢复时取任意一条都消除了孪生）
+			if _, exists := m.soft[key]; !exists {
+				m.soft[key] = api
+			}
+			continue
+		}
+		// 活跃行：同 key 多行时保留 id 最小者，其余记入 dups 待同步事务内软删清理
+		if cur, exists := m.active[key]; exists {
+			if api.ID < cur.ID {
+				m.active[key] = api
+				m.dups = append(m.dups, cur)
+			} else {
+				m.dups = append(m.dups, api)
+			}
+		} else {
+			m.active[key] = api
+		}
+	}
+	if len(m.dups) > 0 {
+		app.ZapLog.Warn("sys_api 存在重复的活跃记录，本次同步将保留各 key id 最小的一条并软删其余",
+			zap.Int("duplicateCount", len(m.dups)))
 	}
 	return m, nil
+}
+
+// classifySyncAction 对单个候选路由判定同步动作（纯函数，便于单测）
+// exist 非 nil 表示库中存在活跃行；softExist 表示库中存在软删孪生行
+// 返回值：insert 新增 / restore 恢复软删行 / update 覆盖更新 / skip 跳过
+func classifySyncAction(item SyncItem, exist *models.SysApi, softExist bool, overwrite bool) string {
+	if exist != nil {
+		if overwrite && (exist.Title != item.Title || exist.ApiGroup != item.ApiGroup) {
+			return "update"
+		}
+		return "skip"
+	}
+	if softExist {
+		return "restore"
+	}
+	return "insert"
 }

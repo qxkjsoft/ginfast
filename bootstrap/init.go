@@ -23,6 +23,7 @@ import (
 	"github.com/natefinch/lumberjack"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"gorm.io/gorm"
 )
 
 func init() {
@@ -96,6 +97,26 @@ func initDB() {
 		} else {
 			app.GormDbPostgreSql = dbPostgresql
 		}
+	}
+
+	// 启动期校验 usedbtype 对应的连接确实已初始化。
+	// 否则该类配置错误（如 usedbtype=mysql 但 isinitglobalgormmysql=0）会被推迟到
+	// 首个请求调用 app.DB() 时才 log.Fatal，表现为"启动一切正常、一来请求进程即挂"
+	usedbtype := app.ConfigYml.GetString("gormv2.usedbtype")
+	var activeDB *gorm.DB
+	var initSwitch string
+	switch usedbtype {
+	case consts.DbTypeMySql:
+		activeDB, initSwitch = app.GormDbMysql, "gormv2.mysql.isinitglobalgormmysql"
+	case consts.DbTypeSqlServer:
+		activeDB, initSwitch = app.GormDbSqlserver, "gormv2.sqlserver.isinitglobalgormsqlserver"
+	case consts.DbTypePostgreSql:
+		activeDB, initSwitch = app.GormDbPostgreSql, "gormv2.postgresql.isinitglobalgormpostgresql"
+	default:
+		log.Fatalf("数据库配置错误：gormv2.usedbtype=%q 不是有效类型（mysql/sqlserver/postgresql），请检查 config.yml", usedbtype)
+	}
+	if activeDB == nil {
+		log.Fatalf("数据库配置错误：gormv2.usedbtype=%s，但 %s 未开启，对应连接未初始化，请检查 config.yml", usedbtype, initSwitch)
 	}
 }
 

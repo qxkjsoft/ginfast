@@ -48,7 +48,9 @@ func DB(sqlType ...string) *gorm.DB {
 		db = GormDbMysql
 	}
 	if db == nil {
-		log.Fatal("数据库连接失败")
+		// 正常情况下启动期（bootstrap.initDB）已校验过 usedbtype 与 isinit 开关的匹配，
+		// 走到这里说明启动后配置被改坏或连接被外部置空，保留兜底并给出可排查的错误信息
+		log.Fatalf("数据库连接不可用：gormv2.usedbtype=%s 对应连接未初始化，请检查 config.yml 中 gormv2.* 各项配置", dbType)
 	}
 
 	return db

@@ -317,7 +317,7 @@ func (ac *AuthController) Logout(c *gin.Context) {
 	}
 
 	// 撤销 access token
-	tokenString, err := common.GetAccessToken(c)
+	tokenString, err := common.GetAccessTokenFromHeader(c)
 	if err == nil && tokenString != "" {
 		// 尝试撤销access token，即使失败也继续执行
 		app.TokenService.RevokeTokenWithCache(tokenString)

@@ -89,19 +89,32 @@ func (m *memoryHelper) Set(ctx context.Context, key string, value string, expira
 }
 
 // SetVal 设置键值对，并指定过期时间
-// expiration >= 0 时设置具体过期时间，并加入过期堆
-// expiration < 0 表示永不过期（类似 Redis SET 不带 EX），不加入过期堆
+// 语义与 go-redis 保持一致，保证 cachetype 在 memory/redis 之间切换时行为不翻转：
+//   - expiration > 0：设置具体过期时间，并加入过期堆
+//   - expiration == 0：永不过期（类似 Redis SET 不带 EX），不加入过期堆
+//   - expiration < 0：视为"已过期"，删除已有键且不写入新值
 func (m *memoryHelper) SetVal(ctx context.Context, key string, value interface{}, expiration time.Duration) error {
 	m.mutex.Lock()         // 加写锁，保证并发安全
 	defer m.mutex.Unlock() // 函数退出时释放锁
 
+	// 负数过期时间：立即删除键且不写入（此前实现为"永不过期"，会让已过期数据永久驻留）
+	if expiration < 0 {
+		if item, exists := m.data[key]; exists {
+			if !item.expiration.IsZero() { // 该项之前有过期时间，在堆中
+				heap.Remove(&m.expiryQueue, item.index)
+			}
+			delete(m.data, key)
+		}
+		return nil
+	}
+
 	item := &cacheItem{ // 创建新的缓存项
 		key:   key,   // 设置键
 		value: value, // 设置值
-		// expiration 默认为零值（time.Time{}），表示永不过期
+		// expiration 为零值（time.Time{}）时表示永不过期
 	}
 
-	if expiration >= 0 { // 仅当过期时间非负时设置具体过期时间
+	if expiration > 0 { // 仅当过期时间为正时设置具体过期时间
 		item.expiration = time.Now().Add(expiration) // 计算绝对过期时间点
 	}
 

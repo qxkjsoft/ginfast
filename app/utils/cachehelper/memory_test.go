@@ -557,8 +557,8 @@ func TestMemoryHelper_SetVal_NeverExpire(t *testing.T) {
 
 	ctx := context.Background()
 
-	// 用 -1 设置永不过期
-	err := cache.SetVal(ctx, "forever_key", "forever_value", -1)
+	// 用 0 设置永不过期（TTL 语义已与 go-redis 对齐：0=永不过期，负数=删除）
+	err := cache.SetVal(ctx, "forever_key", "forever_value", 0)
 	assert.NoError(t, err)
 
 	// 验证值存在
@@ -586,6 +586,38 @@ func TestMemoryHelper_SetVal_NeverExpire(t *testing.T) {
 	assert.Equal(t, int64(1), count)
 }
 
+// TestMemoryHelper_SetVal_Negative_DeletesKey 负 TTL 视为"已过期"：删除已有键且不写入新值
+// （旧实现为"永不过期"，会让已过期数据永久驻留；语义对齐 go-redis 后由本用例锁定新行为）
+func TestMemoryHelper_SetVal_Negative_DeletesKey(t *testing.T) {
+	cache := NewMemoryHelper().(*memoryHelper)
+	defer cache.Close()
+
+	ctx := context.Background()
+
+	// 对已有键（在过期堆中）传负 TTL → 键被删除而不是更新
+	err := cache.SetVal(ctx, "k", "old", time.Minute)
+	assert.NoError(t, err)
+	err = cache.SetVal(ctx, "k", "new", -1)
+	assert.NoError(t, err)
+
+	val, err := cache.GetVal(ctx, "k")
+	assert.NoError(t, err)
+	assert.Nil(t, val, "负 TTL 应删除键而不是写入新值")
+
+	// 对不存在的键传负 TTL → 不写入
+	err = cache.SetVal(ctx, "absent", "x", -1)
+	assert.NoError(t, err)
+	val, err = cache.GetVal(ctx, "absent")
+	assert.NoError(t, err)
+	assert.Nil(t, val)
+
+	// 过期堆不应有残留
+	cache.mutex.RLock()
+	queueLen := cache.expiryQueue.Len()
+	cache.mutex.RUnlock()
+	assert.Equal(t, 0, queueLen)
+}
+
 // TestMemoryHelper_Expire_Negative_DeletesKey 测试 Expire 传入负数时立即删除键
 func TestMemoryHelper_Expire_Negative_DeletesKey(t *testing.T) {
 	cache := NewMemoryHelper()
@@ -607,7 +639,7 @@ func TestMemoryHelper_Expire_Negative_DeletesKey(t *testing.T) {
 	assert.Equal(t, "", result)
 
 	// 对永不过期的键调用 Expire(-1) 也应删除
-	err = cache.Set(ctx, "forever_del", "value", -1)
+	err = cache.Set(ctx, "forever_del", "value", 0)
 	assert.NoError(t, err)
 
 	err = cache.Expire(ctx, "forever_del", -1)
@@ -626,9 +658,9 @@ func TestMemoryHelper_Del_NeverExpire(t *testing.T) {
 	ctx := context.Background()
 
 	// 设置永不过期的键
-	err := cache.Set(ctx, "forever1", "v1", -1)
+	err := cache.Set(ctx, "forever1", "v1", 0)
 	assert.NoError(t, err)
-	err = cache.Set(ctx, "forever2", "v2", -1)
+	err = cache.Set(ctx, "forever2", "v2", 0)
 	assert.NoError(t, err)
 
 	// 删除不应 panic
@@ -650,7 +682,7 @@ func TestMemoryHelper_GetAll_WithNeverExpire(t *testing.T) {
 
 	err := cache.Set(ctx, "normal", "v1", time.Minute)
 	assert.NoError(t, err)
-	err = cache.Set(ctx, "forever", "v2", -1)
+	err = cache.Set(ctx, "forever", "v2", 0)
 	assert.NoError(t, err)
 	err = cache.Set(ctx, "expiring", "v3", 50*time.Millisecond)
 	assert.NoError(t, err)
@@ -679,7 +711,7 @@ func TestMemoryHelper_SetVal_UpdateFromNeverExpire(t *testing.T) {
 	ctx := context.Background()
 
 	// 先设置永不过期
-	err := cache.SetVal(ctx, "key", "v1", -1)
+	err := cache.SetVal(ctx, "key", "v1", 0)
 	assert.NoError(t, err)
 
 	// 更新为有过期时间
@@ -712,7 +744,7 @@ func TestMemoryHelper_Expire_FromNeverExpire(t *testing.T) {
 	ctx := context.Background()
 
 	// 设置永不过期
-	err := cache.SetVal(ctx, "key", "value", -1)
+	err := cache.SetVal(ctx, "key", "value", 0)
 	assert.NoError(t, err)
 
 	// 设置过期时间
@@ -831,8 +863,8 @@ func TestMemoryHelper_SetInt_GetInt(t *testing.T) {
 	assert.ErrorIs(t, err, app.ErrKeyNotFound)
 	assert.Equal(t, int64(0), v)
 
-	// 永不过期（expiration < 0）的项也应能正常读写
-	err = cache.SetInt(ctx, "forever_int", 100, -1)
+	// 永不过期（expiration == 0）的项也应能正常读写
+	err = cache.SetInt(ctx, "forever_int", 100, 0)
 	assert.NoError(t, err)
 	v, err = cache.GetInt(ctx, "forever_int")
 	assert.NoError(t, err)

@@ -607,7 +607,7 @@ func (uc *UserController) UpdateAccount(c *gin.Context) {
 	// 密码修改成功后吊销当前token；refresh token按用户吊销（每用户单key），
 	// 其他设备access token在剩余有效期内自然过期、无法续期
 	if passwordChanged {
-		if tokenString, err := common.GetAccessToken(c); err == nil && tokenString != "" {
+		if tokenString, err := common.GetAccessTokenFromHeader(c); err == nil && tokenString != "" {
 			app.TokenService.RevokeTokenWithCache(tokenString)
 		}
 		if err := app.TokenService.RevokeRefreshToken(currentUserID); err != nil {
@@ -834,7 +834,7 @@ func (uc *UserController) SwitchTenant(c *gin.Context) {
 	}
 
 	// 撤销当前 access token
-	tokenString, err := common.GetAccessToken(c)
+	tokenString, err := common.GetAccessTokenFromHeader(c)
 	if err == nil && tokenString != "" {
 		app.TokenService.RevokeTokenWithCache(tokenString)
 	}

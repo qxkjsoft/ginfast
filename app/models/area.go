@@ -228,6 +228,52 @@ func GetAreaTree(ctx context.Context) (AreaModelList, error) {
 	return tree, nil
 }
 
+// GetAreaLabelParentMaps 获取 value->label 与 value->parent 映射（走树缓存遍历构建，
+// 避免调用方每次全表加载；增删改已有 InvalidateAreaTreeCache 保证一致性）
+func GetAreaLabelParentMaps(ctx context.Context) (labelMap map[string]string, parentMap map[string]string, err error) {
+	tree, err := GetAreaTree(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	labelMap = make(map[string]string)
+	parentMap = make(map[string]string)
+	var walk func(list AreaModelList, parent string)
+	walk = func(list AreaModelList, parent string) {
+		for i := range list {
+			labelMap[list[i].Value] = list[i].Label
+			parentMap[list[i].Value] = parent
+			if len(list[i].Children) > 0 {
+				walk(list[i].Children, list[i].Value)
+			}
+		}
+	}
+	walk(tree, "")
+	return labelMap, parentMap, nil
+}
+
+// GetAreaFlatList 获取扁平化的全量列表（树缓存展开，供 CollectDescendantValues
+// 等需要全量列表的场景，避免每次全表加载）
+func GetAreaFlatList(ctx context.Context) (AreaModelList, error) {
+	tree, err := GetAreaTree(ctx)
+	if err != nil {
+		return nil, err
+	}
+	flat := make(AreaModelList, 0, len(tree))
+	var walk func(list AreaModelList)
+	walk = func(list AreaModelList) {
+		for i := range list {
+			node := list[i]
+			node.Children = nil // 展平后的节点不携带子级
+			flat = append(flat, node)
+			if len(list[i].Children) > 0 {
+				walk(list[i].Children)
+			}
+		}
+	}
+	walk(tree)
+	return flat, nil
+}
+
 // AreaText 地区编码转换为地区文本（向后兼容）
 // area 为逗号分隔的编码（如 "11,1101,110101"）
 func AreaText(ctx context.Context, area string, split string) string {

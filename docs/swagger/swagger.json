@@ -1541,14 +1541,14 @@
                     },
                     {
                         "type": "boolean",
-                        "default": true,
+                        "default": false,
                         "description": "是否纳入 /api/plugins/* 路由",
                         "name": "includePlugins",
                         "in": "query"
                     },
                     {
                         "type": "boolean",
-                        "default": true,
+                        "default": false,
                         "description": "插件路由分组是否带 plugins/ 前缀",
                         "name": "groupByPlugin",
                         "in": "query"
@@ -6297,11 +6297,11 @@
             "type": "object",
             "properties": {
                 "groupByPlugin": {
-                    "description": "GroupByPlugin 插件路由分组是否带 plugins/ 前缀，默认 true",
+                    "description": "GroupByPlugin 插件路由分组是否带 plugins/ 前缀，默认 false（Go bool 零值；前端需显式传 true）",
                     "type": "boolean"
                 },
                 "includePlugins": {
-                    "description": "IncludePlugins 是否纳入 /api/plugins/* 路由，默认 true",
+                    "description": "IncludePlugins 是否纳入 /api/plugins/* 路由，默认 false（Go bool 零值；前端需显式传 true）",
                     "type": "boolean"
                 },
                 "overwrite": {
@@ -7044,9 +7044,6 @@
         },
         "models.UpdateAccountRequest": {
             "type": "object",
-            "required": [
-                "phone"
-            ],
             "properties": {
                 "email": {
                     "type": "string"
@@ -7059,6 +7056,7 @@
                     "type": "string"
                 },
                 "phone": {
+                    "description": "可选更新，仅在非空时生效",
                     "type": "string"
                 }
             }

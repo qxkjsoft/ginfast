@@ -60,11 +60,6 @@ func (c Common) SuccessWithMessage(ctx *gin.Context, msg string, data ...interfa
 	}
 }
 
-// GetAccessToken 获取access token
-func (c Common) GetAccessToken(ctx *gin.Context) (string, error) {
-	return common.GetAccessToken(ctx)
-}
-
 // GetClaims 从上下文获取 Claims
 func (c Common) GetClaims(ctx *gin.Context) *app.Claims {
 	return common.GetClaims(ctx)

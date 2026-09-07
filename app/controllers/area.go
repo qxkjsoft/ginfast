@@ -108,25 +108,21 @@ func (ac *AreaController) Search(c *gin.Context) {
 		ac.FailAndAbort(c, err.Error(), err)
 	}
 
-	keyword := "%" + req.Keyword + "%"
+	// LIKE 通配符转义：未转义时输入 % / _ 会被当作通配符（输入 % 即全表模糊匹配）；
+	// ESCAPE '\\' 子句 MySQL/PostgreSQL/SQLServer 均支持（SQL Server 特有的 [] 通配不在处理范围）
+	keyword := "%" + escapeLike(req.Keyword) + "%"
 	list := models.NewAreaList()
 	err := list.Find(c, func(db *gorm.DB) *gorm.DB {
-		return db.Where("value LIKE ? OR label LIKE ?", keyword, keyword).Order("sort ASC, id ASC")
+		return db.Where("value LIKE ? ESCAPE '\\\\' OR label LIKE ? ESCAPE '\\\\'", keyword, keyword).Order("sort ASC, id ASC")
 	})
 	if err != nil {
 		ac.FailAndAbort(c, "搜索地区失败", err)
 	}
 
-	// 查询全量数据构建 value->label、value->parent 映射，用于拼接完整路径
-	all := models.NewAreaList()
-	if err := all.Find(c); err != nil {
+	// 从 5 分钟 TTL 树缓存构建 value->label、value->parent 映射，用于拼接完整路径（避免每次全表加载）
+	labelMap, parentMap, err := models.GetAreaLabelParentMaps(c)
+	if err != nil {
 		ac.FailAndAbort(c, "构建路径失败", err)
-	}
-	labelMap := make(map[string]string, len(all))
-	parentMap := make(map[string]string, len(all))
-	for i := range all {
-		labelMap[all[i].Value] = all[i].Label
-		parentMap[all[i].Value] = all[i].Parent
 	}
 
 	var result []models.AreaSearchItem
@@ -157,6 +153,15 @@ func buildPathText(labelMap, parentMap map[string]string, value string) string {
 		cur = parentMap[cur]
 	}
 	return strings.Join(parts, " / ")
+}
+
+// escapeLike 转义 LIKE 模式中的通配符（\ % _），配合 SQL 里的 ESCAPE '\\' 子句使用。
+// 反斜杠必须最先转义，否则会二次转义自身产生的转义符
+func escapeLike(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `%`, `\%`)
+	s = strings.ReplaceAll(s, `_`, `\_`)
+	return s
 }
 
 // Add 新增地区
@@ -284,14 +289,14 @@ func (ac *AreaController) Delete(c *gin.Context) {
 		ac.FailAndAbort(c, "查询地区失败", err)
 	}
 
-	// 收集所有后代编码（含自身）
-	all := models.NewAreaList()
-	if err := all.Find(c); err != nil {
+	// 收集所有后代编码（含自身）：走 5 分钟 TTL 树缓存展开扁平列表，避免每次删除全表加载
+	all, err := models.GetAreaFlatList(c)
+	if err != nil {
 		ac.FailAndAbort(c, "查询地区数据失败", err)
 	}
 	valuesToDelete := append([]string{req.Value}, models.CollectDescendantValues(all, req.Value)...)
 
-	err := app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
+	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
 		return tx.Where("value IN ?", valuesToDelete).Delete(&models.AreaModel{}).Error
 	})
 	if err != nil {

@@ -204,10 +204,12 @@ definitions:
   models.SysApiSyncRequest:
     properties:
       groupByPlugin:
-        description: GroupByPlugin 插件路由分组是否带 plugins/ 前缀，默认 true
+        description: GroupByPlugin 插件路由分组是否带 plugins/ 前缀，默认 false（Go bool 零值；前端需显式传
+          true）
         type: boolean
       includePlugins:
-        description: IncludePlugins 是否纳入 /api/plugins/* 路由，默认 true
+        description: IncludePlugins 是否纳入 /api/plugins/* 路由，默认 false（Go bool 零值；前端需显式传
+          true）
         type: boolean
       overwrite:
         description: Overwrite 是否覆盖已存在记录的 Title/ApiGroup，默认 false（幂等模式）
@@ -720,9 +722,8 @@ definitions:
       password:
         type: string
       phone:
+        description: 可选更新，仅在非空时生效
         type: string
-    required:
-    - phone
     type: object
   models.UpdateBasicInfoRequest:
     properties:
@@ -1784,12 +1785,12 @@ paths:
         in: query
         name: overwrite
         type: boolean
-      - default: true
+      - default: false
         description: 是否纳入 /api/plugins/* 路由
         in: query
         name: includePlugins
         type: boolean
-      - default: true
+      - default: false
         description: 插件路由分组是否带 plugins/ 前缀
         in: query
         name: groupByPlugin

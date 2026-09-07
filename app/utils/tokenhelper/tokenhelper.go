@@ -90,7 +90,11 @@ func (s *TokenService) GenerateTokenWithCache(user *app.ClaimsUser) (string, err
 // StoreToken 存储Token到Redis
 func (s *TokenService) storeTokenWithCache(info *app.TokenInfo) error {
 	key := s.getTokenKeyWithCache(info.UserID, info.Token)
-	return s.RedisHelper.Set(s.Ctx, key, info.Token, time.Until(info.ExpiresAt))
+	// 已过期（或时钟偏移导致剩余时长非正）的 token 不落缓存，避免负 TTL 语义歧义
+	if ttl := time.Until(info.ExpiresAt); ttl > 0 {
+		return s.RedisHelper.Set(s.Ctx, key, info.Token, ttl)
+	}
+	return nil
 }
 
 // ValidateTokenWithCache 验证JWT令牌（带缓存检查）
@@ -173,7 +177,11 @@ func (s *TokenService) GenerateRefreshToken(userID uint, tenantID uint, tenantCo
 // StoreRefreshToken 存储Refresh Token到Redis
 func (s *TokenService) storeRefreshToken(info *app.RefreshTokenInfo) error {
 	key := s.getRefreshTokenKey(info.UserID)
-	return s.RedisHelper.Set(s.Ctx, key, info.Token, time.Until(info.ExpiresAt))
+	// 已过期（或时钟偏移导致剩余时长非正）的 token 不落缓存，避免负 TTL 语义歧义
+	if ttl := time.Until(info.ExpiresAt); ttl > 0 {
+		return s.RedisHelper.Set(s.Ctx, key, info.Token, ttl)
+	}
+	return nil
 }
 
 // ParseRefreshToken 解析Refresh Token
