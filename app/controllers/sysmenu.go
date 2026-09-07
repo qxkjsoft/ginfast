@@ -7,6 +7,7 @@ import (
 	"gin-fast/app/models"
 	"gin-fast/app/service"
 	"gin-fast/app/utils/common"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -710,9 +711,8 @@ func (sm *SysMenuController) Import(c *gin.Context) {
 	}
 	defer src.Close()
 
-	// 读取文件内容
-	content := make([]byte, file.Size)
-	_, err = src.Read(content)
+	// 读取文件内容（io.ReadAll 循环读满，单次 Read 不保证读全）
+	content, err := io.ReadAll(src)
 	if err != nil {
 		sm.FailAndAbort(c, "读取文件内容失败", err)
 	}

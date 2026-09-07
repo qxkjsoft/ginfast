@@ -163,7 +163,6 @@ var actionKeywordMap = map[string]string{
 	"initdata":          "初始化数据",
 	"children":          "子节点列表",
 	"search":            "搜索",
-	"dat Scope":         "数据权限",
 	"datascope":         "数据权限",
 	"setuserroles":      "设置用户角色",
 	"userlistall":       "用户列表(全部)",

@@ -283,8 +283,8 @@ func (sc *SysApiController) Delete(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param overwrite query bool false "是否覆盖已存在记录的 Title/ApiGroup" default(false)
-// @Param includePlugins query bool false "是否纳入 /api/plugins/* 路由" default(true)
-// @Param groupByPlugin query bool false "插件路由分组是否带 plugins/ 前缀" default(true)
+// @Param includePlugins query bool false "是否纳入 /api/plugins/* 路由" default(false)
+// @Param groupByPlugin query bool false "插件路由分组是否带 plugins/ 前缀" default(false)
 // @Success 200 {object} map[string]interface{} "成功返回预览结果"
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"
 // @Router /sysApi/previewRoutes [get]

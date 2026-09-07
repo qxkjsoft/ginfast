@@ -59,20 +59,28 @@ func (w *responseWriter) Write(b []byte) (int, error) {
 // shouldSkipLog 判断是否需要跳过日志记录
 func shouldSkipLog(c *gin.Context) bool {
 	// 跳过静态文件、健康检查等请求
-	skipPaths := []string{
+	// prefixSkipPaths 按前缀匹配（其下有子路径）；其余按路径精确匹配，
+	// 避免 strings.Contains 子串误伤（如 /api/users/health 误命中 /health）
+	prefixSkipPaths := []string{
 		"/swagger/",
+	}
+	exactSkipPaths := []string{
 		"/favicon.ico",
 		"/health",
 		"/metrics",
-		"/api/refreshToken",  // 刷新token
-		"/api/captcha/id",    // 生成验证码ID
-		"/api/captcha/image", // 获取验证码图片
-		"/api/config/get",    // 获取配置信息
+		"/api/refreshToken", // 刷新token
+		"/api/captcha/verify", // 获取验证码图片
+		"/api/config/get",   // 获取配置信息
 	}
 
 	path := c.Request.URL.Path
-	for _, skipPath := range skipPaths {
-		if strings.Contains(path, skipPath) {
+	for _, p := range prefixSkipPaths {
+		if strings.HasPrefix(path, p) {
+			return true
+		}
+	}
+	for _, p := range exactSkipPaths {
+		if path == p {
 			return true
 		}
 	}

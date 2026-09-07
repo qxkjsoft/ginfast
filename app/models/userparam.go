@@ -160,7 +160,7 @@ type UpdateAccountRequest struct {
 	// ID       uint   `form:"id" validate:"required" message:"用户ID不能为空"`
 	OldPassword string `form:"oldPassword"` // 修改密码时必填，仅在 Password 非空时校验
 	Password    string `form:"password"`
-	Phone       string `form:"phone" validate:"required" message:"手机号不能为空"`
+	Phone       string `form:"phone"` // 可选更新，仅在非空时生效
 	Email       string `form:"email" validate:"email" message:"邮箱格式不正确"`
 }
 
