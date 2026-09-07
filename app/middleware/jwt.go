@@ -13,7 +13,7 @@ import (
 // JWTAuthMiddleware JWT认证中间件
 func JWTAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		tokenString, err := common.GetAccessToken(c)
+		tokenString, err := common.GetAccessTokenFromHeader(c)
 		if err != nil {
 			app.ZapLog.Error("Get access token failed", zap.Error(err))
 			// 401 未认证

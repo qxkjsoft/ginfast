@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -619,6 +620,20 @@ func (uc *UserController) UpdateAccount(c *gin.Context) {
 	uc.SuccessWithMessage(c, "账户信息更新成功", nil)
 }
 
+// avatarImageExts 头像允许的图片扩展名白名单（小写带点）
+var avatarImageExts = []string{".jpg", ".jpeg", ".png", ".gif", ".bmp"}
+
+// isAllowedImageExt 判断文件名扩展名是否在头像图片白名单内（大小写不敏感）
+func isAllowedImageExt(filename string) bool {
+	ext := strings.ToLower(filepath.Ext(filename))
+	for _, allow := range avatarImageExts {
+		if ext == allow {
+			return true
+		}
+	}
+	return false
+}
+
 // UploadAvatar 上传用户头像
 // @Summary 上传用户头像
 // @Description 上传用户头像文件
@@ -639,22 +654,27 @@ func (uc *UserController) UploadAvatar(c *gin.Context) {
 		return
 	}
 
+	// 落盘前先校验扩展名，非图片直接拒绝（零落盘），避免"先保存后拒绝"产生残留文件
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		uc.FailAndAbort(c, "获取上传文件失败", err)
+	}
+	if !isAllowedImageExt(fileHeader.Filename) {
+		uc.FailAndAbort(c, "只允许上传图片文件", nil)
+	}
+
 	// 处理文件上传
 	response, err := app.UploadService.HandleUpload(c, "file")
 	if err != nil {
 		uc.FailAndAbort(c, "文件上传失败", err)
 	}
 
-	// 验证文件是否为图片类型
-	validImageTypes := []string{".jpg", ".jpeg", ".png", ".gif", ".bmp"}
-	isImage := false
-	for _, ext := range validImageTypes {
-		if strings.EqualFold(response.FileType, ext) {
-			isImage = true
-			break
+	// 兜底校验：上传服务实际保存的类型若非图片（按全局白名单放行了本接口不允许的类型），
+	// 拒绝的同时删除已落盘文件，确保不留残留
+	if !isAllowedImageExt(response.FileType) {
+		if delErr := app.UploadService.DeleteFile(response.Url); delErr != nil {
+			app.ZapLog.Error("清理非图片头像残留文件失败", zap.Error(delErr), zap.String("url", response.Url))
 		}
-	}
-	if !isImage {
 		uc.FailAndAbort(c, "只允许上传图片文件", nil)
 	}
 

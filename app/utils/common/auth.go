@@ -10,6 +10,24 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// GetAccessTokenFromHeader 仅从 Authorization header 获取 access token。
+// 主应用认证中间件应使用本函数：token 经 URL 参数传递会泄露到访问日志、
+// Referer 与浏览器历史，不接受该渠道
+func GetAccessTokenFromHeader(c *gin.Context) (string, error) {
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		return "", errors.New("token is required in Authorization header (Bearer {token})")
+	}
+	headerParts := strings.Split(authHeader, " ")
+	if len(headerParts) == 2 && headerParts[0] == "Bearer" {
+		return headerParts[1], nil
+	}
+	return "", errors.New("authorization header format must be Bearer {token}")
+}
+
+// GetAccessToken 从 Authorization header 或 URL query 参数获取 access token。
+// 仅供插件端点（H5 会员端等无法自定义请求头的场景）兼容使用，
+// 主应用路由请改用 GetAccessTokenFromHeader，避免 token 泄露到访问日志/Referer
 // 获取access token
 func GetAccessToken(c *gin.Context) (string, error) {
 	// 首先尝试从 Authorization header 获取 token

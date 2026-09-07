@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"context"
-	"strconv"
+	"fmt"
 	"time"
 
 	"gin-fast/app/global/app"
@@ -28,6 +28,10 @@ func NewAuthController() *AuthController {
 		Common: Common{},
 	}
 }
+
+// dummyPasswordHash 启动时预生成的 bcrypt 假哈希（明文内容无关紧要，任何比较必然失败，
+// 计算成本与真实密码一致）。用户不存在时用它执行等价开销的假密码比较，防止通过响应时间差枚举用户名
+var dummyPasswordHash, _ = passwordhelper.HashPassword("gin-fast-dummy-password")
 
 // Login 用户登录
 // @Summary 用户登录
@@ -55,11 +59,63 @@ func (ac *AuthController) Login(c *gin.Context) {
 		ac.FailAndAbort(c, "用户查询错误", err)
 	}
 
+	// 用户不存在时以预置假哈希走完全相同的密码校验与失败计数流程：
+	// 消息、时序、锁定行为与"密码错误"不可区分，防止枚举有效用户名。
+	// 密码校验置于租户校验之前，租户信息不再向未持正确密码者泄露
 	if user.IsEmpty() {
-		ac.FailAndAbort(c, "用户不存在", nil)
-	}
-	if user.Status != 1 {
+		user.Password = dummyPasswordHash
+	} else if user.Status != 1 {
 		ac.FailAndAbort(c, "用户未启用", nil)
+	}
+
+	// 获取安全配置
+	loginLockThreshold := app.ConfigYml.GetInt("safe.loginlockthreshold")
+	loginLockExpire := app.ConfigYml.GetInt("safe.loginlockexpire")
+	loginLockDuration := app.ConfigYml.GetInt("safe.loginlockduration")
+
+	// 失败计数与锁定键按"用户名+IP"组合：既能拦截同一来源爆破，
+	// 又避免攻击者仅凭用户名远程锁死任意真实账号（登录 DoS）
+	lockKey := "account_locked:" + req.Username + ":" + c.ClientIP()
+	failCountKey := "login_fail_count:" + req.Username + ":" + c.ClientIP()
+
+	// 如果启用了登录锁定功能
+	if loginLockThreshold > 0 {
+		// 检查账户是否被锁定
+		if locked, _ := app.Cache.Exists(context.Background(), lockKey); locked > 0 {
+			ac.FailAndAbort(c, "失败次数过多，账户已被锁定，请稍后再试", nil)
+			return
+		}
+
+		// 验证密码
+		if err = passwordhelper.ComparePassword(user.Password, req.Password); err != nil {
+			// 密码错误，原子自增失败计数（替代 Get+Set，消除并发竞态）
+			failCount, _ := app.Cache.Incr(context.Background(), failCountKey)
+			// Incr 不设置过期时间，首次计数时补 TTL
+			if failCount == 1 {
+				_ = app.Cache.Expire(context.Background(), failCountKey, time.Duration(loginLockExpire)*time.Second)
+			}
+
+			// 检查是否达到锁定阈值
+			if failCount >= int64(loginLockThreshold) {
+				// 锁定
+				app.Cache.Set(context.Background(), lockKey, "1", time.Duration(loginLockDuration)*time.Second)
+				ac.FailAndAbort(c, "失败次数过多，账户已被锁定，请稍后再试", nil)
+				return
+			}
+
+			// 返回统一消息（不区分用户不存在/密码错误），并提示剩余尝试次数
+			ac.FailAndAbort(c, fmt.Sprintf("用户名或密码错误（剩余尝试次数: %d次）", int64(loginLockThreshold)-failCount), nil)
+			return
+		}
+
+		// 密码正确，清除失败次数
+		app.Cache.Del(context.Background(), failCountKey)
+	} else {
+		// 未启用登录锁定功能
+		// 验证密码
+		if err = passwordhelper.ComparePassword(user.Password, req.Password); err != nil {
+			ac.FailAndAbort(c, "用户名或密码错误", err)
+		}
 	}
 
 	var tenantID uint
@@ -123,62 +179,6 @@ func (ac *AuthController) Login(c *gin.Context) {
 		}
 		tenantID = user.Tenant.ID
 		tenantCode = user.Tenant.Code
-	}
-
-	// 获取安全配置
-	loginLockThreshold := app.ConfigYml.GetInt("safe.loginlockthreshold")
-	loginLockExpire := app.ConfigYml.GetInt("safe.loginlockexpire")
-	loginLockDuration := app.ConfigYml.GetInt("safe.loginlockduration")
-
-	// 如果启用了登录锁定功能
-	if loginLockThreshold > 0 {
-		// 检查账户是否被锁定
-		lockKey := "account_locked:" + req.Username
-		if locked, _ := app.Cache.Exists(context.Background(), lockKey); locked > 0 {
-			ac.FailAndAbort(c, "账户已被锁定，请稍后再试", nil)
-			return
-		}
-
-		// 验证密码
-		if err = passwordhelper.ComparePassword(user.Password, req.Password); err != nil {
-			// 密码错误，增加失败次数
-			failCountKey := "login_fail_count:" + req.Username
-
-			// 获取当前失败次数
-			var failCount int
-			if countStr, err := app.Cache.Get(context.Background(), failCountKey); err == nil && countStr != "" {
-				failCount, _ = strconv.Atoi(countStr)
-			}
-
-			// 增加失败次数
-			failCount++
-
-			// 更新失败次数，设置过期时间
-			app.Cache.Set(context.Background(), failCountKey, strconv.Itoa(failCount), time.Duration(loginLockExpire)*time.Second)
-
-			// 检查是否达到锁定阈值
-			if failCount >= loginLockThreshold {
-				// 锁定账户
-				app.Cache.Set(context.Background(), lockKey, "1", time.Duration(loginLockDuration)*time.Second)
-				ac.FailAndAbort(c, "密码错误次数过多，账户已被锁定", nil)
-				return
-			}
-
-			// 返回密码错误，并提示剩余尝试次数
-			remainingAttempts := loginLockThreshold - failCount
-			ac.FailAndAbort(c, "密码错误，剩余尝试次数: "+strconv.Itoa(remainingAttempts), nil)
-			return
-		}
-
-		// 密码正确，清除失败次数
-		failCountKey := "login_fail_count:" + req.Username
-		app.Cache.Del(context.Background(), failCountKey)
-	} else {
-		// 未启用登录锁定功能，使用原有逻辑
-		// 验证密码
-		if err = passwordhelper.ComparePassword(user.Password, req.Password); err != nil {
-			ac.FailAndAbort(c, "密码错误", err)
-		}
 	}
 
 	// 生成token
