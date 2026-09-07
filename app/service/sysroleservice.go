@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
+	"gin-fast/app/utils/tenanthelper"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -21,11 +22,11 @@ func NewSysRoleService() *SysRoleService {
 }
 
 func (s *SysRoleService) Update(c *gin.Context, req models.SysRoleUpdateRequest) (*models.SysRole, error) {
-	// 检查角色名称是否与其他角色冲突（排除当前角色）
+	// 检查角色名称是否与其他角色冲突（排除当前角色，限本租户）
 	existRole := models.NewSysRole()
 	err := existRole.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("name = ? AND id != ?", req.Name, req.ID)
-	})
+	}, tenanthelper.TenantScope(c))
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +42,7 @@ func (s *SysRoleService) Update(c *gin.Context, req models.SysRoleUpdateRequest)
 		parentRole := models.NewSysRole()
 		err := parentRole.Find(c, func(d *gorm.DB) *gorm.DB {
 			return d.Where("id = ?", req.ParentID)
-		})
+		}, tenanthelper.TenantScope(c))
 		if err != nil {
 			return nil, err
 		}
@@ -54,11 +55,11 @@ func (s *SysRoleService) Update(c *gin.Context, req models.SysRoleUpdateRequest)
 		}
 	}
 
-	// 更新角色信息
+	// 更新角色信息（限本租户，跨租户ID视同不存在）
 	role := models.NewSysRole()
 	err = role.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", req.ID)
-	})
+	}, tenanthelper.TenantScope(c))
 	if err != nil {
 		return nil, err
 	}
@@ -89,11 +90,9 @@ func (s *SysRoleService) checkCircularReference(c *gin.Context, currentRoleID ui
 		return nil // 如果父级ID为0，不需要检查
 	}
 
-	// 获取所有角色用于构建角色树
+	// 获取本租户所有角色用于构建角色树
 	allRoles := models.NewSysRoleList()
-	err := allRoles.Find(c, func(db *gorm.DB) *gorm.DB {
-		return db
-	})
+	err := allRoles.Find(c, tenanthelper.TenantScope(c))
 	if err != nil {
 		return err
 	}

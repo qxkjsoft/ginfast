@@ -74,11 +74,11 @@ func (sc *SysDepartmentController) Add(c *gin.Context) {
 		sc.FailAndAbort(c, err.Error(), err)
 	}
 
-	// 检查部门名称是否已存在
+	// 检查部门名称是否已存在（限本租户范围内查重）
 	existDept := models.NewSysDepartment()
 	err := existDept.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("name = ?", req.Name)
-	})
+	}, tenanthelper.TenantScope(c))
 	if err != nil {
 		sc.FailAndAbort(c, "检查部门名称失败", err)
 	}
@@ -91,7 +91,7 @@ func (sc *SysDepartmentController) Add(c *gin.Context) {
 		parentDept := models.NewSysDepartment()
 		err := parentDept.Find(c, func(d *gorm.DB) *gorm.DB {
 			return d.Where("id = ?", *req.ParentID)
-		})
+		}, tenanthelper.TenantScope(c))
 		if err != nil {
 			sc.FailAndAbort(c, "检查父级部门失败", err)
 		}
@@ -161,11 +161,11 @@ func (sc *SysDepartmentController) Delete(c *gin.Context) {
 		sc.FailAndAbort(c, err.Error(), err)
 	}
 
-	// 检查部门是否存在
+	// 检查部门是否存在（限本租户）
 	dept := models.NewSysDepartment()
 	err := dept.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", req.ID)
-	})
+	}, tenanthelper.TenantScope(c))
 	if err != nil {
 		sc.FailAndAbort(c, "查询部门失败", err)
 	}
@@ -177,7 +177,7 @@ func (sc *SysDepartmentController) Delete(c *gin.Context) {
 	childDepts := models.NewSysDepartmentList()
 	err = childDepts.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("parent_id = ?", req.ID)
-	})
+	}, tenanthelper.TenantScope(c))
 	if err != nil {
 		sc.FailAndAbort(c, "检查子部门失败", err)
 	}
@@ -223,7 +223,9 @@ func (sc *SysDepartmentController) GetByID(c *gin.Context) {
 	}
 
 	dept := models.NewSysDepartment()
-	err := dept.GetDepartmentByID(c, req.ID)
+	err := dept.Find(c, func(d *gorm.DB) *gorm.DB {
+		return d.Where("id = ?", req.ID)
+	}, tenanthelper.TenantScope(c))
 	if err != nil {
 		sc.FailAndAbort(c, "获取部门信息失败", err)
 	}

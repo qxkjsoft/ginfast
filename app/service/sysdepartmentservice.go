@@ -1,10 +1,11 @@
 package service
 
 import (
-	"context"
 	"errors"
 	"gin-fast/app/models"
+	"gin-fast/app/utils/tenanthelper"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -16,12 +17,12 @@ func NewSysDepartmentService() *SysDepartmentService {
 	return &SysDepartmentService{}
 }
 
-func (s *SysDepartmentService) Update(c context.Context, req *models.SysDepartmentUpdateRequest) (*models.SysDepartment, error) {
-	// 检查部门是否存在
+func (s *SysDepartmentService) Update(c *gin.Context, req *models.SysDepartmentUpdateRequest) (*models.SysDepartment, error) {
+	// 检查部门是否存在（限本租户，跨租户ID视同不存在）
 	dept := models.NewSysDepartment()
 	err := dept.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", req.ID)
-	})
+	}, tenanthelper.TenantScope(c))
 	if err != nil {
 		return nil, err
 	}
@@ -29,11 +30,11 @@ func (s *SysDepartmentService) Update(c context.Context, req *models.SysDepartme
 		return nil, errors.New("部门不存在")
 	}
 
-	// 检查部门名称是否与其他部门冲突（排除当前部门）
+	// 检查部门名称是否与其他部门冲突（排除当前部门，限本租户）
 	existDept := models.NewSysDepartment()
 	err = existDept.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("name = ? AND id != ?", req.Name, req.ID)
-	})
+	}, tenanthelper.TenantScope(c))
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +50,7 @@ func (s *SysDepartmentService) Update(c context.Context, req *models.SysDepartme
 		parentDept := models.NewSysDepartment()
 		err := parentDept.Find(c, func(d *gorm.DB) *gorm.DB {
 			return d.Where("id = ?", *req.ParentID)
-		})
+		}, tenanthelper.TenantScope(c))
 		if err != nil {
 			return nil, err
 		}
@@ -80,16 +81,14 @@ func (s *SysDepartmentService) Update(c context.Context, req *models.SysDepartme
 }
 
 // checkCircularReference 检查是否存在循环引用
-func (s *SysDepartmentService) checkCircularReference(c context.Context, currentDeptID uint, parentID uint) error {
+func (s *SysDepartmentService) checkCircularReference(c *gin.Context, currentDeptID uint, parentID uint) error {
 	if parentID == 0 {
 		return nil // 如果父级ID为0，不需要检查
 	}
 
-	// 获取所有部门用于构建部门树
+	// 获取本租户所有部门用于构建部门树
 	allDepts := models.NewSysDepartmentList()
-	err := allDepts.Find(c, func(db *gorm.DB) *gorm.DB {
-		return db
-	})
+	err := allDepts.Find(c, tenanthelper.TenantScope(c))
 	if err != nil {
 		return err
 	}

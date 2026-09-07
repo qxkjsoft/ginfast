@@ -52,6 +52,18 @@ func (sc *SysRoleController) GetUserPermission(c *gin.Context) {
 	if err != nil {
 		sc.FailAndAbort(c, "Invalid role ID", err)
 	}
+	// 校验角色归属当前租户，防止跨租户读取菜单权限（sys_role_menu 无租户字段，需先确认角色归属）
+	role := models.NewSysRole()
+	err = role.Find(c, func(d *gorm.DB) *gorm.DB {
+		return d.Where("id = ?", roleId)
+	}, tenanthelper.TenantScope(c))
+	if err != nil {
+		sc.FailAndAbort(c, "查询角色失败", err)
+	}
+	if role.IsEmpty() {
+		sc.FailAndAbort(c, "角色不存在", nil)
+	}
+
 	sysRoleMenuList := models.NewSysRoleMenuList()
 	err = sysRoleMenuList.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("role_id = ?", roleId)
@@ -150,11 +162,11 @@ func (sc *SysRoleController) GetByID(c *gin.Context) {
 		sc.FailAndAbort(c, "角色ID格式错误", err)
 	}
 
-	// 查询角色信息
+	// 查询角色信息（限本租户）
 	role := models.NewSysRole()
 	err = role.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", uint(id))
-	})
+	}, tenanthelper.TenantScope(c))
 	if err != nil {
 		sc.FailAndAbort(c, "查询角色失败", err)
 	}
@@ -183,11 +195,11 @@ func (sc *SysRoleController) Add(c *gin.Context) {
 		sc.FailAndAbort(c, err.Error(), err)
 	}
 
-	// 检查角色名称是否已存在
+	// 检查角色名称是否已存在（限本租户范围内查重）
 	existRole := models.NewSysRole()
 	err := existRole.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("name = ?", req.Name)
-	})
+	}, tenanthelper.TenantScope(c))
 	if err != nil {
 		sc.FailAndAbort(c, "检查角色名称失败", err)
 	}
@@ -200,7 +212,7 @@ func (sc *SysRoleController) Add(c *gin.Context) {
 		parentRole := models.NewSysRole()
 		err := parentRole.Find(c, func(d *gorm.DB) *gorm.DB {
 			return d.Where("id = ?", req.ParentID)
-		})
+		}, tenanthelper.TenantScope(c))
 		if err != nil {
 			sc.FailAndAbort(c, "检查父级角色失败", err)
 		}
@@ -274,11 +286,11 @@ func (sc *SysRoleController) Delete(c *gin.Context) {
 		sc.FailAndAbort(c, err.Error(), err)
 	}
 
-	// 检查角色是否存在
+	// 检查角色是否存在（限本租户）
 	role := models.NewSysRole()
 	err := role.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", req.ID)
-	})
+	}, tenanthelper.TenantScope(c))
 	if err != nil {
 		sc.FailAndAbort(c, "查询角色失败", err)
 	}
@@ -290,7 +302,7 @@ func (sc *SysRoleController) Delete(c *gin.Context) {
 	childRoles := models.NewSysRoleList()
 	err = childRoles.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("parent_id = ?", req.ID)
-	})
+	}, tenanthelper.TenantScope(c))
 	if err != nil {
 		sc.FailAndAbort(c, "检查子角色失败", err)
 	}
@@ -355,11 +367,11 @@ func (sm *SysRoleController) AddRoleMenu(c *gin.Context) {
 		sm.FailAndAbort(c, err.Error(), err)
 	}
 
-	// 检查角色是否存在
+	// 检查角色是否存在（限本租户）
 	role := models.NewSysRole()
 	err := role.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", req.RoleID)
-	})
+	}, tenanthelper.TenantScope(c))
 	if err != nil {
 		sm.FailAndAbort(c, "查询角色失败", err)
 	}
@@ -445,11 +457,11 @@ func (sc *SysRoleController) UpdateDataScope(c *gin.Context) {
 		sc.FailAndAbort(c, err.Error(), err)
 	}
 
-	// 检查角色是否存在
+	// 检查角色是否存在（限本租户）
 	role := models.NewSysRole()
 	err := role.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Where("id = ?", req.ID)
-	})
+	}, tenanthelper.TenantScope(c))
 	if err != nil {
 		sc.FailAndAbort(c, "查询角色失败", err)
 	}
