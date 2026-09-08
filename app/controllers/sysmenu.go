@@ -7,6 +7,7 @@ import (
 	"gin-fast/app/models"
 	"gin-fast/app/service"
 	"gin-fast/app/utils/common"
+	"gin-fast/app/utils/tenanthelper"
 	"io"
 	"net/http"
 	"strconv"
@@ -17,6 +18,10 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
+
+// tenantManagementMenuPaths 多租户关闭时需从下发菜单中剔除的租户管理入口路径
+// （对应 sys_menu 种子记录"租户管理"，其下按钮为 type=3 本就不在下发范围内）
+var tenantManagementMenuPaths = map[string]struct{}{"/system/systenant": {}}
 
 // SysMenuController 系统菜单控制器
 // @Summary 系统菜单管理API
@@ -136,6 +141,17 @@ func (sm *SysMenuController) GetRouters(c *gin.Context) {
 		}
 	}
 
+	// 多租户关闭时，下发的菜单中剔除租户管理入口（该功能在单体模式下停用）
+	if !tenanthelper.MultiTenantEnabled() {
+		filtered := make(models.SysMenuList, 0, len(menuList))
+		for _, menu := range menuList {
+			if _, ok := tenantManagementMenuPaths[menu.Path]; !ok {
+				filtered = append(filtered, menu)
+			}
+		}
+		menuList = filtered
+	}
+
 	if !menuList.IsEmpty() {
 		menuList = menuList.BuildTree().TreeSort()
 	}
@@ -161,6 +177,10 @@ func (sm *SysMenuController) GetMenuList(c *gin.Context) {
 
 	// 获取当前用户的租户ID
 	tenantID := common.GetCurrentTenantID(c)
+	// 多租户关闭时不按租户菜单权限过滤，返回全部菜单（单体模式）
+	if !tenanthelper.MultiTenantEnabled() {
+		tenantID = 0
+	}
 
 	// 如果有租户ID，则根据租户的菜单权限过滤
 	if tenantID > 0 {

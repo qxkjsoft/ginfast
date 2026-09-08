@@ -12,6 +12,7 @@ import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/middleware"
 	"gin-fast/app/utils/cachehelper"
+	"gin-fast/app/utils/tenanthelper"
 )
 
 var userControllers = controllers.NewUserController()                       // 用户控制器
@@ -32,8 +33,8 @@ var sysGenControllers = controllers.NewSysGenController()                   // �
 var pluginsManagerControllers = controllers.NewPluginsManagerController()   // 插件管理控制器
 var sysJobsControllers = controllers.NewSysJobsController()                 // 定时任务控制器
 var sysJobResultsControllers = controllers.NewSysJobResultsController()     // 定时任务执行结果控制器
-var sysParamControllers = controllers.NewSysParamController()                 // 参数管理控制器
-var areaControllers = controllers.NewAreaController()                         // 地区管理控制器
+var sysParamControllers = controllers.NewSysParamController()               // 参数管理控制器
+var areaControllers = controllers.NewAreaController()                       // 地区管理控制器
 
 // InitRoutes 初始化路由
 func InitRoutes(engine *gin.Engine) {
@@ -113,8 +114,10 @@ func InitRoutes(engine *gin.Engine) {
 				users.POST("/uploadAvatar", userControllers.UploadAvatar)
 				// 更新当前登录用户基本信息
 				users.PUT("/updateBasicInfo", userControllers.UpdateBasicInfo)
-				// 切换租户
-				users.GET("/switchTenant/:tenantId", userControllers.SwitchTenant)
+				// 切换租户（多租户开启时才注册）
+				if tenanthelper.MultiTenantEnabled() {
+					users.GET("/switchTenant/:tenantId", userControllers.SwitchTenant)
+				}
 			}
 
 			// 系统菜单路由组
@@ -309,40 +312,43 @@ func InitRoutes(engine *gin.Engine) {
 				sysOperationLog.GET("/export", sysOperationLogControllers.Export)
 			}
 
-			// 租户管理路由组
-			sysTenant := protected.Group("/sysTenant")
-			{
-				// 租户列表
-				sysTenant.GET("/list", sysTenantControllers.List)
-				// 根据ID获取租户信息
-				sysTenant.GET("/:id", sysTenantControllers.GetByID)
-				// 新增租户
-				sysTenant.POST("/add", sysTenantControllers.Add)
-				// 更新租户
-				sysTenant.PUT("/edit", sysTenantControllers.Update)
-				// 删除租户
-				sysTenant.DELETE("/:id", sysTenantControllers.Delete)
-			}
+			// 租户管理与用户租户关联路由组（多租户开启时才注册）
+			if tenanthelper.MultiTenantEnabled() {
+				// 租户管理路由组
+				sysTenant := protected.Group("/sysTenant")
+				{
+					// 租户列表
+					sysTenant.GET("/list", sysTenantControllers.List)
+					// 根据ID获取租户信息
+					sysTenant.GET("/:id", sysTenantControllers.GetByID)
+					// 新增租户
+					sysTenant.POST("/add", sysTenantControllers.Add)
+					// 更新租户
+					sysTenant.PUT("/edit", sysTenantControllers.Update)
+					// 删除租户
+					sysTenant.DELETE("/:id", sysTenantControllers.Delete)
+				}
 
-			// 用户租户关联管理路由组
-			sysUserTenant := protected.Group("/sysUserTenant")
-			{
-				// 用户租户关联列表
-				sysUserTenant.GET("/list", sysUserTenantControllers.List)
-				// 根据用户ID和租户ID获取用户租户关联信息
-				sysUserTenant.GET("/get", sysUserTenantControllers.GetByID)
-				//批量新增用户租户关联
-				sysUserTenant.POST("/batchAdd", sysUserTenantControllers.BatchAdd)
-				//批量删除用户租户关联
-				sysUserTenant.DELETE("/batchDelete", sysUserTenantControllers.BatchDelete)
-				// 用户列表(不限租户)
-				sysUserTenant.GET("/userListAll", sysUserTenantControllers.UserListAll)
-				// 角色列表(不限租户)
-				sysUserTenant.GET("/getRolesAll", sysUserTenantControllers.GetRolesAll)
-				// 根查询角色ID集合(不限租户)
-				sysUserTenant.GET("/getUserRoleIDs", sysUserTenantControllers.GetUserRoleIDs)
-				// 设置用户角色(不限租户)
-				sysUserTenant.POST("/setUserRoles", sysUserTenantControllers.SetUserRoles)
+				// 用户租户关联管理路由组
+				sysUserTenant := protected.Group("/sysUserTenant")
+				{
+					// 用户租户关联列表
+					sysUserTenant.GET("/list", sysUserTenantControllers.List)
+					// 根据用户ID和租户ID获取用户租户关联信息
+					sysUserTenant.GET("/get", sysUserTenantControllers.GetByID)
+					//批量新增用户租户关联
+					sysUserTenant.POST("/batchAdd", sysUserTenantControllers.BatchAdd)
+					//批量删除用户租户关联
+					sysUserTenant.DELETE("/batchDelete", sysUserTenantControllers.BatchDelete)
+					// 用户列表(不限租户)
+					sysUserTenant.GET("/userListAll", sysUserTenantControllers.UserListAll)
+					// 角色列表(不限租户)
+					sysUserTenant.GET("/getRolesAll", sysUserTenantControllers.GetRolesAll)
+					// 根查询角色ID集合(不限租户)
+					sysUserTenant.GET("/getUserRoleIDs", sysUserTenantControllers.GetUserRoleIDs)
+					// 设置用户角色(不限租户)
+					sysUserTenant.POST("/setUserRoles", sysUserTenantControllers.SetUserRoles)
+				}
 			}
 
 			// 代码生成配置路由组

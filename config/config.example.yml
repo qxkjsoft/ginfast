@@ -2,6 +2,7 @@ server:
   appdebug: true   # 设置程序所处的模式，debug=true 调试模式，日志优先显示在控制台， debug=false 非调试模式，日志将写入日志文件
   cachetype: "redis" #缓存模式 memory OR redis
   syslog: false  # 是否开启系统日志
+  multitenant: true  # 多租户开关。false 时停用前后端全部租户功能（数据不再按租户隔离、租户管理/切换接口停用、界面隐藏），退化为单体应用；缺省视为 true
   notcheckuser: []   # 不检查权限的用户（api、菜单及数据权限均不检查）。警告：若与演示账号同时配置，演示密码可被匿名获取并绕过全部权限校验，生产环境务必保持为空
   # 演示账号配置
   demoaccount:

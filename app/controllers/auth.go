@@ -11,6 +11,7 @@ import (
 	"gin-fast/app/utils/captchahelper"
 	"gin-fast/app/utils/common"
 	"gin-fast/app/utils/passwordhelper"
+	"gin-fast/app/utils/tenanthelper"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -120,6 +121,11 @@ func (ac *AuthController) Login(c *gin.Context) {
 
 	var tenantID uint
 	var tenantCode string
+
+	// 多租户关闭时忽略租户编码，统一走用户默认租户（单体模式）
+	if !tenanthelper.MultiTenantEnabled() {
+		req.TenantCode = ""
+	}
 
 	// 检查租户是否存在, 并验证用户是否关联该租户, 通过后用户token的租户ID将设置成请求的租户编码相关的租户ID
 	if req.TenantCode != "" {

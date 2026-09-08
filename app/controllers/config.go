@@ -3,6 +3,7 @@ package controllers
 import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
+	"gin-fast/app/utils/tenanthelper"
 
 	"github.com/gin-gonic/gin"
 )
@@ -69,6 +70,11 @@ func (con ConfigController) GetConfig(ctx *gin.Context) {
 	captchaConfig["open"] = app.ConfigYml.GetBool("captcha.open")    // 是否开启验证码功能
 	captchaConfig["length"] = app.ConfigYml.GetInt("captcha.length") // 验证码字符长度
 	result["captcha"] = captchaConfig                                // 将验证码配置放入结果集
+
+	// 获取多租户开关配置（前端据此显隐租户相关界面）
+	tenantConfig := make(map[string]interface{})
+	tenantConfig["enabled"] = tenanthelper.MultiTenantEnabled()
+	result["tenant"] = tenantConfig // 将多租户配置放入结果集
 
 	// 返回成功响应
 	con.Common.Success(ctx, result)
