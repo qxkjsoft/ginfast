@@ -282,25 +282,12 @@ func (sc *SysApiController) Delete(c *gin.Context) {
 // @Tags API管理
 // @Accept json
 // @Produce json
-// @Param overwrite query bool false "是否覆盖已存在记录的 Title/ApiGroup" default(false)
-// @Param includePlugins query bool false "是否纳入 /api/plugins/* 路由" default(false)
-// @Param groupByPlugin query bool false "插件路由分组是否带 plugins/ 前缀" default(false)
 // @Success 200 {object} map[string]interface{} "成功返回预览结果"
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"
 // @Router /sysApi/previewRoutes [get]
 // @Security ApiKeyAuth
 func (sc *SysApiController) PreviewRoutes(c *gin.Context) {
-	var req models.SysApiSyncRequest
-	if err := req.Validate(c); err != nil {
-		sc.FailAndAbort(c, err.Error(), err)
-	}
-
-	opt := service.SyncOption{
-		Overwrite:      req.Overwrite,
-		IncludePlugins: req.IncludePlugins,
-		GroupByPlugin:  req.GroupByPlugin,
-		DryRun:         true,
-	}
+	opt := service.SyncOption{DryRun: true}
 	result, err := sc.ApiService.SyncRoutes(c, opt)
 	if err != nil {
 		sc.FailAndAbort(c, "预览路由同步失败", err)
@@ -327,11 +314,9 @@ func (sc *SysApiController) SyncRoutes(c *gin.Context) {
 	}
 
 	opt := service.SyncOption{
-		Overwrite:      req.Overwrite,
-		IncludePlugins: req.IncludePlugins,
-		GroupByPlugin:  req.GroupByPlugin,
-		DryRun:         false,
-		SelectedKeys:   req.SelectedKeys,
+		DryRun:       false,
+		SelectedKeys: req.SelectedKeys,
+		Items:        req.Items,
 	}
 	result, err := sc.ApiService.SyncRoutes(c, opt)
 	if err != nil {

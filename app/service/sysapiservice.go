@@ -27,43 +27,37 @@ func NewSysApiService() *SysApiService {
 
 // SyncOption 路由同步选项
 type SyncOption struct {
-	// Overwrite 是否覆盖已存在记录的 Title/ApiGroup
-	// false（默认幂等模式）：仅插入新增，已存在的按 path+method 跳过，保留用户手工修改
-	// true：用代码推导值覆盖已存在记录的 Title/ApiGroup
-	Overwrite bool
-	// IncludePlugins 是否纳入 /api/plugins/* 路由
-	IncludePlugins bool
-	// GroupByPlugin 插件路由分组是否带 plugins/ 前缀
-	// true：/api/plugins/example/list -> "plugins/example"
-	// false：/api/plugins/example/list -> "example"
-	GroupByPlugin bool
 	// DryRun true=仅计算并返回结果，不写库
 	DryRun bool
 	// SelectedKeys 仅同步用户勾选的路由，格式为 "path|method"
 	// 为空时同步全部候选（兼容旧行为）
 	// 注意：DryRun=true 的预览阶段应留空，以返回完整明细供用户勾选
 	SelectedKeys []string
+	// Items 携带前端编辑后的标题/分组（仅同步执行阶段传入）
+	// 按 path|method 匹配覆盖代码推导值，insert/restore 写库时生效
+	Items []models.SysApiSyncItem
 }
 
 // SyncItem 单条路由同步明细
 type SyncItem struct {
-	Path     string `json:"path"`
-	Method   string `json:"method"`
-	Title    string `json:"title"`
-	ApiGroup string `json:"apiGroup"`
-	Handler  string `json:"handler"`
-	// Action 同步动作：insert 新增 / update 更新 / skip 跳过
+	// ID 数据库主键，仅孤儿行填充（供前端调用删除接口）；新增明细行未入库，不输出
+	ID        uint   `json:"id,omitempty"`
+	Path      string `json:"path"`
+	Method    string `json:"method"`
+	Title     string `json:"title"`
+	ApiGroup  string `json:"apiGroup"`
+	Handler   string `json:"handler"`
+	// Action 同步动作：insert 新增 / restore 恢复软删行 / skip 跳过（已存在）
 	Action string `json:"action"`
 }
 
 // SyncResult 路由同步结果
 type SyncResult struct {
-	Total      int        `json:"total"`      // 代码中符合条件的路由总数（=Inserted+Updated+Skipped）
-	Inserted   int        `json:"inserted"`   // 新增条数
-	Updated    int        `json:"updated"`    // 更新条数（Overwrite=true 时才可能 >0）
-	Skipped    int        `json:"skipped"`    // 已存在且未覆盖的条数
+	Total      int        `json:"total"`      // 代码中符合条件的路由总数（=Inserted+Skipped）
+	Inserted   int        `json:"inserted"`   // 新增条数（含恢复软删行）
+	Skipped    int        `json:"skipped"`    // 已存在于库中的条数（保留库中标题/分组，不做任何修改）
 	Filtered   int        `json:"filtered"`   // 被过滤规则排除的数量（不在 Total 内）
-	Details    []SyncItem `json:"details"`    // 将要新增/更新/跳过的明细
+	Details    []SyncItem `json:"details"`    // 将要新增/跳过的明细
 	OrphanList []SyncItem `json:"orphanList"` // DB 有但代码无（仅返回提示，不操作）
 }
 
@@ -220,8 +214,8 @@ func deriveTitle(path, method, handler string) string {
 
 // deriveApiGroup 推导 ApiGroup
 // /api/users/list -> "users"
-// /api/plugins/example/list -> "plugins/example"（GroupByPlugin=true）或 "example"（GroupByPlugin=false）
-func deriveApiGroup(path string, includePlugins, groupByPlugin bool) string {
+// /api/plugins/example/list -> "plugins/example"（插件路由固定带 plugins/ 前缀单独成组）
+func deriveApiGroup(path string) string {
 	// 去掉 query 参数和尾部斜杠
 	cleanPath := strings.SplitN(path, "?", 2)[0]
 	cleanPath = strings.Trim(cleanPath, "/")
@@ -232,25 +226,13 @@ func deriveApiGroup(path string, includePlugins, groupByPlugin bool) string {
 		segments = segments[1:]
 	}
 
-	// 判断是否为插件路由
-	isPlugin := len(segments) > 0 && strings.EqualFold(segments[0], "plugins")
-	if isPlugin {
-		if !includePlugins {
-			return ""
+	// 插件路由：segments[0]="plugins", segments[1]=插件名
+	if len(segments) > 0 && strings.EqualFold(segments[0], "plugins") {
+		// plugins/example
+		if len(segments) >= 3 {
+			return segments[0] + "/" + segments[1]
 		}
-		// segments[0]="plugins", segments[1]=插件名
-		if groupByPlugin {
-			// plugins/example
-			if len(segments) >= 3 {
-				return segments[0] + "/" + segments[1]
-			}
-			return strings.Join(segments, "/")
-		}
-		// 仅插件名
-		if len(segments) >= 2 {
-			return segments[1]
-		}
-		return "plugins"
+		return strings.Join(segments, "/")
 	}
 
 	// 普通路由：取第一个业务段（如 users / sysMenu / sysApi）
@@ -333,16 +315,8 @@ func (s *SysApiService) SyncRoutes(ctx context.Context, opt SyncOption) (*SyncRe
 			result.Filtered++ // 计入被过滤数量，便于统计
 			continue          // 跳过该路由，不参与同步
 		}
-		// 插件路由过滤：路径中含 "/plugins/" 视为插件路由
-		isPlugin := strings.Contains(route.Path, "/plugins/")
-		// 若是插件路由且选项未要求包含插件，则过滤掉
-		if isPlugin && !opt.IncludePlugins {
-			result.Filtered++ // 计入被过滤数量
-			continue          // 跳过插件路由
-		}
-		// 根据路径推导 API 分组（系统接口按路径分段，插件接口按 GroupByPlugin 决定是否单独成组）
-		group := deriveApiGroup(route.Path, opt.IncludePlugins, opt.GroupByPlugin)
-		// 同步预览时若 includePlugins=false 导致 group 为空，仍保留记录但 group 为空
+		// 根据路径推导 API 分组（系统接口按路径分段，插件接口固定带 plugins/ 前缀单独成组）
+		group := deriveApiGroup(route.Path)
 		// 由路径/方法/handler 名推导人类可读的接口标题
 		title := deriveTitle(route.Path, route.Method, handlerName(route))
 		// 将推导结果加入候选集合
@@ -392,17 +366,29 @@ func (s *SysApiService) SyncRoutes(ctx context.Context, opt SyncOption) (*SyncRe
 		return nil, fmt.Errorf("加载已存在 API 失败: %v", err)
 	}
 
+	// 前端编辑覆盖：同步执行阶段可携带编辑后的标题/分组，按 path|method 匹配替换推导值
+	// （预览阶段不传 Items，始终展示代码推导值）
+	if len(opt.Items) > 0 {
+		editMap := make(map[string]models.SysApiSyncItem, len(opt.Items))
+		for _, e := range opt.Items {
+			editMap[e.Path+"|"+e.Method] = e
+		}
+		for i := range candidates {
+			if e, ok := editMap[candidates[i].item.Path+"|"+candidates[i].item.Method]; ok {
+				candidates[i].item.Title = e.Title
+				candidates[i].item.ApiGroup = e.ApiGroup
+			}
+		}
+	}
+
 	// 3. 计算每个 candidate 的 Action
 	for _, c := range candidates {
 		it := c.item                     // 取出候选项（值拷贝，避免修改到原切片元素）
 		key := it.Path + "|" + it.Method // 构造与 existMap 一致的唯一 key
-		it.Action = classifySyncAction(it, existMap.active[key], existMap.soft[key] != nil, opt.Overwrite)
-		switch it.Action {
-		case "update":
-			result.Updated++ // 更新计数 +1
-		case "skip":
+		it.Action = classifySyncAction(existMap.active[key], existMap.soft[key] != nil)
+		if it.Action == "skip" {
 			result.Skipped++ // 跳过计数 +1
-		default: // insert / restore 均计为新增（restore 复用软删行，等价新增）
+		} else { // insert / restore 均计为新增（restore 复用软删行，等价新增）
 			result.Inserted++ // 新增计数 +1
 		}
 		result.Details = append(result.Details, it) // 将判定结果写入明细，供预览/写库使用
@@ -419,6 +405,7 @@ func (s *SysApiService) SyncRoutes(ctx context.Context, opt SyncOption) (*SyncRe
 	for key, api := range existMap.active {
 		if !codeKeySet[key] { // 代码中无此接口，可能是已删除的路由
 			result.OrphanList = append(result.OrphanList, SyncItem{
+				ID:       api.ID,       // 孤儿行的数据库 ID，供前端调用删除接口
 				Path:     api.Path,     // 孤儿 API 的路径
 				Method:   api.Method,   // 孤儿 API 的方法
 				Title:    api.Title,    // 孤儿 API 的标题
@@ -454,7 +441,7 @@ func (s *SysApiService) SyncRoutes(ctx context.Context, opt SyncOption) (*SyncRe
 		}
 	}
 
-	// 逐条按 Action 写库；skip 不操作
+	// 逐条按 Action 写库；skip 不操作（已存在的一律保留库中标题/分组）
 	for _, it := range result.Details {
 		switch it.Action {
 		case "insert": // 新增：构造 SysApi 并写入
@@ -481,18 +468,6 @@ func (s *SysApiService) SyncRoutes(ctx context.Context, opt SyncOption) (*SyncRe
 				}).Error; err != nil {
 				tx.Rollback()
 				return nil, fmt.Errorf("恢复 API 失败 (path=%s method=%s): %v", it.Path, it.Method, err)
-			}
-		case "update": // 更新：仅刷新 title 与 api_group，保留原有 ID 等
-			key := it.Path + "|" + it.Method // 取对应库记录
-			exist := existMap.active[key]    // 已存在记录指针（含 ID）
-			if err := tx.Model(&models.SysApi{}).
-				Where("id = ?", exist.ID).      // 按主键定位
-				Updates(map[string]interface{}{ // 仅更新有变化的字段
-					"title":     it.Title,    // 更新标题
-					"api_group": it.ApiGroup, // 更新分组
-				}).Error; err != nil { // 更新失败回滚并返回
-				tx.Rollback()
-				return nil, fmt.Errorf("更新 API 失败 (path=%s method=%s): %v", it.Path, it.Method, err)
 			}
 		}
 		// skip 不操作
@@ -555,12 +530,10 @@ func (s *SysApiService) loadExistApiMap(db *gorm.DB) (*existApiMap, error) {
 
 // classifySyncAction 对单个候选路由判定同步动作（纯函数，便于单测）
 // exist 非 nil 表示库中存在活跃行；softExist 表示库中存在软删孪生行
-// 返回值：insert 新增 / restore 恢复软删行 / update 覆盖更新 / skip 跳过
-func classifySyncAction(item SyncItem, exist *models.SysApi, softExist bool, overwrite bool) string {
+// 已存在的一律跳过（保留库中人工维护的标题/分组），同步只做新增（含恢复软删行）
+// 返回值：insert 新增 / restore 恢复软删行 / skip 跳过
+func classifySyncAction(exist *models.SysApi, softExist bool) string {
 	if exist != nil {
-		if overwrite && (exist.Title != item.Title || exist.ApiGroup != item.ApiGroup) {
-			return "update"
-		}
 		return "skip"
 	}
 	if softExist {

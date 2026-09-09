@@ -1531,29 +1531,6 @@
                     "API管理"
                 ],
                 "summary": "预览路由同步",
-                "parameters": [
-                    {
-                        "type": "boolean",
-                        "default": false,
-                        "description": "是否覆盖已存在记录的 Title/ApiGroup",
-                        "name": "overwrite",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "default": false,
-                        "description": "是否纳入 /api/plugins/* 路由",
-                        "name": "includePlugins",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "default": false,
-                        "description": "插件路由分组是否带 plugins/ 前缀",
-                        "name": "groupByPlugin",
-                        "in": "query"
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "成功返回预览结果",
@@ -6293,20 +6270,32 @@
                 }
             }
         },
+        "models.SysApiSyncItem": {
+            "type": "object",
+            "properties": {
+                "apiGroup": {
+                    "type": "string"
+                },
+                "method": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "models.SysApiSyncRequest": {
             "type": "object",
             "properties": {
-                "groupByPlugin": {
-                    "description": "GroupByPlugin 插件路由分组是否带 plugins/ 前缀，默认 false（Go bool 零值；前端需显式传 true）",
-                    "type": "boolean"
-                },
-                "includePlugins": {
-                    "description": "IncludePlugins 是否纳入 /api/plugins/* 路由，默认 false（Go bool 零值；前端需显式传 true）",
-                    "type": "boolean"
-                },
-                "overwrite": {
-                    "description": "Overwrite 是否覆盖已存在记录的 Title/ApiGroup，默认 false（幂等模式）",
-                    "type": "boolean"
+                "items": {
+                    "description": "Items 携带编辑后的标题/分组，按 path|method 匹配覆盖代码推导值",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.SysApiSyncItem"
+                    }
                 },
                 "selectedKeys": {
                     "description": "SelectedKeys 仅同步用户勾选的路由，格式为 \"path|method\"\n为空时同步全部预览结果（兼容旧行为）",
