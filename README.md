@@ -154,7 +154,7 @@ ginfast-tenant/
 │   └── exampleinit.go      # 插件初始化文件
 ├── resource/               # 资源文件
 │   ├── database/           # 数据库脚本
-│   │   └── gin-fast-tenant.sql # 数据库初始化脚本
+│   │   └── gin-fast-tenant.sql # 数据库表结构脚本（仅表结构，不含数据）
 │   ├── logs/               # 日志文件目录
 │   └── public/             # 静态资源
 ├── scripts/                # 脚本文件
@@ -187,7 +187,8 @@ go mod tidy
 
 3. 配置数据库
    - 修改 `config/config.yml` 中的数据库配置
-   - 导入数据库脚本 `resource/database/gin-fast.sql`
+   - 建库后导入表结构脚本 `resource/database/gin-fast-tenant.sql`（仅表结构，不含数据）
+   - 在 `config/config.yml` 的 `server.initadmin` 中配置超管账号并保持 `enabled: true`（`id`、`username`、`password`）
 
 4. 启动应用
 ```bash
@@ -195,6 +196,11 @@ go run main.go
 ```
 
 应用将在 `http://localhost:8080` 启动。
+
+5. 初始化菜单（首次部署）
+   - 程序启动时会按 `server.initadmin` 配置自动创建超管账号（仅当用户不存在时）
+   - 使用超管账号登录后，系统检测到菜单为空会自动进入「菜单恢复」引导页，从服务器备份（`resource/database/menu_backup`）中选择一份备份恢复即可完成初始化
+   - 初始化完成后，请将 `server.initadmin.enabled` 改回 `false`
 
 ## API文档
 

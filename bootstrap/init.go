@@ -43,6 +43,9 @@ func init() {
 	// 初始化数据库
 	initDB()
 
+	// 初始化超管账号（按 server.initadmin 配置，全新部署时自动创建）
+	initAdmin()
+
 	// 初始化casbin
 	app.CasbinV2 = casbinhelper.NewCasbinHelper()
 	err := app.CasbinV2.InitCasbin(app.DB(), app.ConfigYml.GetString("casbin.modelconfig"))

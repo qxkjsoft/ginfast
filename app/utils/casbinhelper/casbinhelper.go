@@ -141,13 +141,10 @@ func (s *CasbinHelper) CasbinMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// 检查是否需要跳过权限检查
-		notCheckUsers := app.ConfigYml.GetUintSlice("server.notcheckuser")
-		for _, uid := range notCheckUsers {
-			if userID == uid {
-				c.Next()
-				return
-			}
+		// 检查是否需要跳过权限检查（notcheckuser 或 initadmin 超管初始化用户）
+		if common.IsSkipAuthUser(userID) {
+			c.Next()
+			return
 		}
 
 		// 获取请求路径和方法

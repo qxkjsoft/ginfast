@@ -249,8 +249,12 @@ CREATE DATABASE gin_fast CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 #### 2. 导入数据库结构
 
 ```bash
-mysql -u gin_fast -p gin_fast < resource/database/gin-fast.sql
+mysql -u gin_fast -p gin_fast < resource/database/gin-fast-tenant.sql
 ```
+
+> 说明：脚本仅含表结构，不含数据。首次启动后端时会按 `config/config.yml` 的 `server.initadmin` 配置自动创建超管账号；
+> 登录超管后系统检测到菜单为空会自动进入「菜单恢复」引导页，从 `resource/database/menu_backup` 备份中选择恢复即可完成初始化。
+> 初始化完成后，请将 `server.initadmin.enabled` 改回 `false`。
 
 #### 3. 验证数据库
 
@@ -542,7 +546,7 @@ CREATE DATABASE gin_fast CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
 ```bash
-mysql -u gin_fast -p gin_fast < resource/database/gin-fast.sql
+mysql -u gin_fast -p gin_fast < resource/database/gin-fast-tenant.sql
 ```
 
 #### 4. Redis 连接失败

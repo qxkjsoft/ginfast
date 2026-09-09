@@ -785,6 +785,48 @@ func (s *SysMenuService) BackupList() ([]*models.SysMenuBackupFile, error) {
 	return result, nil
 }
 
+// DeleteBackup 删除菜单备份文件
+// 至少保留一个备份文件：目录下仅剩一个 .json 备份时不允许删除
+func (s *SysMenuService) DeleteBackup(filename string) error {
+	// 防止路径穿越，仅允许备份目录下直接的json文件
+	filename = filepath.Base(filename)
+	if filename == "." || filename == string(filepath.Separator) || !strings.HasSuffix(strings.ToLower(filename), ".json") {
+		return fmt.Errorf("无效的备份文件名")
+	}
+
+	entries, err := os.ReadDir(menuBackupPath())
+	if err != nil {
+		return fmt.Errorf("读取备份目录失败: %w", err)
+	}
+	backupCount := 0
+	exists := false
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(strings.ToLower(entry.Name()), ".json") {
+			continue
+		}
+		backupCount++
+		if entry.Name() == filename {
+			exists = true
+		}
+	}
+	if !exists {
+		return fmt.Errorf("备份文件不存在")
+	}
+	if backupCount <= 1 {
+		return fmt.Errorf("至少需要保留一个菜单备份文件，不能删除")
+	}
+
+	if err = os.Remove(filepath.Join(menuBackupPath(), filename)); err != nil {
+		return fmt.Errorf("删除备份文件失败: %w", err)
+	}
+
+	app.ZapLog.Info("菜单备份文件已删除",
+		zap.String("文件名", filename),
+		zap.Int("剩余备份数", backupCount-1),
+	)
+	return nil
+}
+
 // Restore 从备份文件完全恢复菜单数据
 // 在一个事务内：清空现有菜单及关联数据 -> 从备份完整重建 -> 角色的菜单授权按业务标识重新挂载。
 // API记录按path+method复用（CreateMenuApis内部FirstOrCreate），Casbin策略以path+method为键，均不受菜单ID变化影响。

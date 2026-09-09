@@ -15,12 +15,19 @@ func ConvertPathToWildcard(path string) string {
 }
 
 // 是否是需要跳过权限检查的用户
+// 命中 server.notcheckuser 列表，或 server.initadmin.enabled=true 时等于 initadmin.id（超管初始化期间自动豁免）
 func IsSkipAuthUser(userID uint) bool {
+	if userID == 0 {
+		return false
+	}
 	notCheckUsers := app.ConfigYml.GetUintSlice("server.notcheckuser")
 	for _, id := range notCheckUsers {
 		if userID == id {
 			return true
 		}
+	}
+	if app.ConfigYml.GetBool("server.initadmin.enabled") && userID == uint(app.ConfigYml.GetInt("server.initadmin.id")) {
+		return true
 	}
 	return false
 }

@@ -114,6 +114,16 @@ func (r *SysMenuRestoreRequest) Validate(c *gin.Context) error {
 	return r.Check(c, r)
 }
 
+// SysMenuBackupDeleteRequest 删除菜单备份文件请求结构
+type SysMenuBackupDeleteRequest struct {
+	Validator
+	Filename string `form:"filename" json:"filename" validate:"required" message:"备份文件名不能为空"`
+}
+
+func (r *SysMenuBackupDeleteRequest) Validate(c *gin.Context) error {
+	return r.Check(c, r)
+}
+
 // SysMenuBackupFile 菜单备份文件信息
 type SysMenuBackupFile struct {
 	Filename string    `json:"filename"`          // 文件名

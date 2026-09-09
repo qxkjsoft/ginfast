@@ -63,17 +63,8 @@ func (sm *SysMenuController) GetRouters(c *gin.Context) {
 		sm.FailAndAbort(c, "用户未登录", nil)
 	}
 
-	// 获取不需要检查权限的用户ID数组
-	notCheckUserIds := app.ConfigYml.GetUintSlice("server.notcheckuser")
-
-	// 检查当前用户ID是否在不需要检查权限的数组中
-	needCheckPermission := true
-	for _, userId := range notCheckUserIds {
-		if userId == claims.UserID {
-			needCheckPermission = false
-			break
-		}
-	}
+	// 不检查权限的用户（notcheckuser 或 initadmin 超管初始化用户）直接返回所有菜单
+	needCheckPermission := !common.IsSkipAuthUser(claims.UserID)
 
 	var menuList models.SysMenuList
 	var err error
@@ -805,6 +796,32 @@ func (sm *SysMenuController) BackupList(c *gin.Context) {
 	}
 
 	sm.SuccessWithMessage(c, "获取备份文件列表成功", result)
+}
+
+// DeleteBackup 删除菜单备份文件
+// @Summary 删除菜单备份文件
+// @Description 删除服务器备份目录下的指定菜单备份文件；至少保留一个备份文件，目录下仅剩一个时不允许删除
+// @Tags 菜单管理
+// @Accept json
+// @Produce json
+// @Param filename body string true "备份文件名"
+// @Success 200 {object} map[string]interface{} "删除成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysMenu/backupDelete [post]
+// @Security ApiKeyAuth
+func (sm *SysMenuController) DeleteBackup(c *gin.Context) {
+	var req models.SysMenuBackupDeleteRequest
+	if err := req.Validate(c); err != nil {
+		sm.FailAndAbort(c, err.Error(), err)
+	}
+
+	if err := sm.menuService.DeleteBackup(req.Filename); err != nil {
+		sm.FailAndAbort(c, err.Error(), err)
+		return
+	}
+
+	sm.SuccessWithMessage(c, "备份文件删除成功", nil)
 }
 
 // Restore 恢复菜单数据

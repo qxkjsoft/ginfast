@@ -140,13 +140,9 @@ func GetDataScope(c *gin.Context) func(db *gorm.DB) *gorm.DB {
 		if userID == 0 {
 			return db.Where("1 = 0")
 		}
-		notCheckUserIds := app.ConfigYml.GetUintSlice("server.notcheckuser")
-		// 检查用户是否在不检查权限的用户列表中
-		for _, notCheckUserID := range notCheckUserIds {
-			if notCheckUserID == userID {
-				// 如果用户在不检查权限的用户列表中，直接返回所有数据
-				return db
-			}
+		// 不检查权限的用户（含 initadmin 超管初始化用户）直接返回所有数据
+		if common.IsSkipAuthUser(userID) {
+			return db
 		}
 
 		// 获取用户角色（租户用户只取当前登录租户下的角色）

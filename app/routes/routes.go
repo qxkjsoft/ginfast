@@ -149,6 +149,8 @@ func InitRoutes(engine *gin.Engine) {
 				sysMenu.POST("/backup", sysMenuControllers.Backup)
 				// 获取菜单备份文件列表
 				sysMenu.GET("/backupList", sysMenuControllers.BackupList)
+				// 删除菜单备份文件（至少保留一个备份）
+				sysMenu.POST("/backupDelete", sysMenuControllers.DeleteBackup)
 				// 从备份文件恢复菜单数据
 				sysMenu.POST("/restore", sysMenuControllers.Restore)
 			}

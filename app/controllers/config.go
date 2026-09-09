@@ -76,6 +76,15 @@ func (con ConfigController) GetConfig(ctx *gin.Context) {
 	tenantConfig["enabled"] = tenanthelper.MultiTenantEnabled()
 	result["tenant"] = tenantConfig // 将多租户配置放入结果集
 
+	// 菜单表是否为空（前端据此在菜单为空时弹出「菜单恢复」引导弹窗，用于全新部署初始化）
+	var menuCount int64
+	if err := app.DB().WithContext(ctx).Model(&models.SysMenu{}).Count(&menuCount).Error; err != nil {
+		con.Common.FailAndAbort(ctx, "查询菜单数据失败", err)
+	}
+	menuConfig := make(map[string]interface{})
+	menuConfig["empty"] = menuCount == 0
+	result["menu"] = menuConfig // 将菜单配置放入结果集
+
 	// 返回成功响应
 	con.Common.Success(ctx, result)
 }

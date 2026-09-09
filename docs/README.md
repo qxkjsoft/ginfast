@@ -55,7 +55,7 @@ pnpm install
 mysql -u root -p
 CREATE DATABASE gin_fast CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 exit;
-mysql -u root -p gin_fast < resource/database/gin-fast.sql
+mysql -u root -p gin_fast < resource/database/gin-fast-tenant.sql  # 仅表结构，不含数据
 ```
 
 5. 修改配置
@@ -87,6 +87,10 @@ pnpm run dev
 打开浏览器，访问 http://localhost:8001，使用默认账号登录：
 - 用户名：admin
 - 密码：123456
+
+> 全新部署首次启动时，后端会按 `config/config.yml` 中 `server.initadmin` 配置自动创建超管账号（仅当用户不存在时）；
+> 登录后系统检测到菜单为空会自动进入「菜单恢复」引导页，从服务器备份（`resource/database/menu_backup`）中选择一份备份恢复即可完成初始化。
+> 初始化完成后，请将 `server.initadmin.enabled` 改回 `false`。
 
 ## 文档说明
 

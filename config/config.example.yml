@@ -3,7 +3,13 @@ server:
   cachetype: "redis" #缓存模式 memory OR redis
   syslog: false  # 是否开启系统日志
   multitenant: true  # 多租户开关。false 时停用前后端全部租户功能（数据不再按租户隔离、租户管理/切换接口停用、界面隐藏），退化为单体应用；缺省视为 true
-  notcheckuser: []   # 不检查权限的用户（api、菜单及数据权限均不检查）。警告：若与演示账号同时配置，演示密码可被匿名获取并绕过全部权限校验，生产环境务必保持为空
+  notcheckuser: []   # 不检查权限的用户（api、菜单及数据权限均不检查）。initadmin.enabled=true 时 initadmin.id 自动豁免，无需重复配置。警告：若与演示账号同时配置，演示密码可被匿名获取并绕过全部权限校验，生产环境务必保持为空
+  # 超管账号初始化配置（全新部署时使用：建空库导入纯结构 SQL 后，启动程序自动创建超管）
+  initadmin:
+    enabled: true    # 是否随程序启动自动初始化超管账号（仅当用户不存在时创建）。注意：初始化成功后应将 enabled 设置为 false
+    id: 1            # 超管用户ID。enabled 为 true 时该用户不检查权限（api、菜单及数据权限均放行）；enabled 设为 false 后，如需保留权限豁免请将该 id 加入 notcheckuser
+    username: "admin"      # 超管登录账号
+    password: "123456"     # 超管初始密码（首次创建时 bcrypt 加密入库），初始化完成后可从配置中删除
   # 演示账号配置
   demoaccount:
     enabled: false    # 是否启用演示账号功能
