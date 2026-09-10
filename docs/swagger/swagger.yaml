@@ -2140,7 +2140,12 @@ paths:
     get:
       consumes:
       - application/json
-      description: 获取所有部门列表（树形结构）
+      description: 获取所有部门列表（树形结构），不传 status 返回全部（含停用）
+      parameters:
+      - description: 状态过滤：0 停用 1 启用，不传返回全部
+        in: query
+        name: status
+        type: integer
       produces:
       - application/json
       responses:
@@ -2978,6 +2983,41 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 备份菜单数据
+      tags:
+      - 菜单管理
+  /sysMenu/backupDelete:
+    post:
+      consumes:
+      - application/json
+      description: 删除服务器备份目录下的指定菜单备份文件；至少保留一个备份文件，目录下仅剩一个时不允许删除
+      parameters:
+      - description: 备份文件名
+        in: body
+        name: filename
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 删除菜单备份文件
       tags:
       - 菜单管理
   /sysMenu/backupList:

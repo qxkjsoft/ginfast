@@ -32,19 +32,23 @@ func NewSysDepartmentController() *SysDepartmentController {
 
 // GetDivision 获取部门列表（树形结构）
 // @Summary 获取部门列表
-// @Description 获取所有部门列表（树形结构）
+// @Description 获取所有部门列表（树形结构），不传 status 返回全部（含停用）
 // @Tags 部门管理
 // @Accept json
 // @Produce json
+// @Param status query int false "状态过滤：0 停用 1 启用，不传返回全部"
 // @Success 200 {object} map[string]interface{} "成功返回部门列表"
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"
 // @Router /sysDepartment/getDivision [get]
 // @Security ApiKeyAuth
 func (sc *SysDepartmentController) GetDivision(c *gin.Context) {
+	var req models.SysDepartmentListRequest
+	if err := req.Validate(c); err != nil {
+		sc.FailAndAbort(c, err.Error(), err)
+	}
+
 	sysDepartmentList := models.NewSysDepartmentList()
-	err := sysDepartmentList.Find(c, func(db *gorm.DB) *gorm.DB {
-		return db.Where("status = ?", 1)
-	}, tenanthelper.TenantScope(c))
+	err := sysDepartmentList.Find(c, req.Handler(), tenanthelper.TenantScope(c))
 	if err != nil {
 		sc.FailAndAbort(c, "获取部门列表失败", err)
 	}

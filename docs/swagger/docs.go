@@ -2087,7 +2087,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "获取所有部门列表（树形结构）",
+                "description": "获取所有部门列表（树形结构），不传 status 返回全部（含停用）",
                 "consumes": [
                     "application/json"
                 ],
@@ -2098,6 +2098,14 @@ const docTemplate = `{
                     "部门管理"
                 ],
                 "summary": "获取部门列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "状态过滤：0 停用 1 启用，不传返回全部",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "成功返回部门列表",
@@ -3362,6 +3370,60 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "备份成功，返回文件名和菜单数量",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/sysMenu/backupDelete": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "删除服务器备份目录下的指定菜单备份文件；至少保留一个备份文件，目录下仅剩一个时不允许删除",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "菜单管理"
+                ],
+                "summary": "删除菜单备份文件",
+                "parameters": [
+                    {
+                        "description": "备份文件名",
+                        "name": "filename",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
