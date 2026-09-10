@@ -10,7 +10,7 @@ type SysDictItemAddRequest struct {
 	Validator
 	Name   string `form:"name" validate:"required" message:"字典项名称不能为空"`
 	Value  string `form:"value" validate:"required" message:"字典项值不能为空"`
-	Status int8   `form:"status" validate:"required|in:0,1" message:"状态值必须为0或1"`
+	Status *int8  `form:"status" validate:"required|in:0,1" message:"状态值必须为0或1"`
 	DictID uint   `form:"dictId" validate:"required" message:"所属字典ID不能为空"`
 }
 
@@ -24,7 +24,7 @@ type SysDictItemUpdateRequest struct {
 	ID     uint   `form:"id" validate:"required" message:"字典项ID不能为空"`
 	Name   string `form:"name" validate:"required" message:"字典项名称不能为空"`
 	Value  string `form:"value" validate:"required" message:"字典项值不能为空"`
-	Status int8   `form:"status" validate:"required|in:0,1" message:"状态值必须为0或1"`
+	Status *int8  `form:"status" validate:"required|in:0,1" message:"状态值必须为0或1"`
 	DictID uint   `form:"dictId" validate:"required" message:"所属字典ID不能为空"`
 }
 

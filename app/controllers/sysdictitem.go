@@ -127,7 +127,7 @@ func (sdic *SysDictItemController) Add(c *gin.Context) {
 	dictItem := models.NewSysDictItem()
 	dictItem.Name = &req.Name
 	dictItem.Value = &req.Value
-	dictItem.Status = &req.Status
+	dictItem.Status = req.Status
 	dictItem.DictID = &req.DictID
 
 	err = dictItem.Create(c)
@@ -185,7 +185,7 @@ func (sdic *SysDictItemController) Update(c *gin.Context) {
 	// 更新字典项信息
 	dictItem.Name = &req.Name
 	dictItem.Value = &req.Value
-	dictItem.Status = &req.Status
+	dictItem.Status = req.Status
 	dictItem.DictID = &req.DictID
 
 	err = dictItem.Update(c)

@@ -10,7 +10,7 @@ type SysParamAddRequest struct {
 	Name        string `form:"name" validate:"required" message:"参数名称不能为空"`
 	Code        string `form:"code" validate:"required" message:"参数唯一标识不能为空"`
 	Value       string `form:"value"`
-	Status      int8   `form:"status" validate:"required|in:0,1" message:"状态值必须为0或1"`
+	Status      *int8  `form:"status" validate:"required|in:0,1" message:"状态值必须为0或1"`
 	Description string `form:"description"`
 }
 
@@ -24,7 +24,7 @@ type SysParamUpdateRequest struct {
 	Name        string `form:"name" validate:"required" message:"参数名称不能为空"`
 	Code        string `form:"code" validate:"required" message:"参数唯一标识不能为空"`
 	Value       string `form:"value"`
-	Status      int8   `form:"status" validate:"required|in:0,1" message:"状态值必须为0或1"`
+	Status      *int8  `form:"status" validate:"required|in:0,1" message:"状态值必须为0或1"`
 	Description string `form:"description"`
 }
 

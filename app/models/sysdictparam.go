@@ -10,7 +10,7 @@ type SysDictAddRequest struct {
 	Validator
 	Name        string `form:"name" validate:"required" message:"字典名称不能为空"`
 	Code        string `form:"code" validate:"required" message:"字典编码不能为空"`
-	Status      int8   `form:"status" validate:"required|in:0,1" message:"状态值必须为0或1"`
+	Status      *int8  `form:"status" validate:"required|in:0,1" message:"状态值必须为0或1"`
 	Description string `form:"description"`
 }
 
@@ -24,7 +24,7 @@ type SysDictUpdateRequest struct {
 	ID          uint   `form:"id" validate:"required" message:"字典ID不能为空"`
 	Name        string `form:"name" validate:"required" message:"字典名称不能为空"`
 	Code        string `form:"code" validate:"required" message:"字典编码不能为空"`
-	Status      int8   `form:"status" validate:"required|in:0,1" message:"状态值必须为0或1"`
+	Status      *int8  `form:"status" validate:"required|in:0,1" message:"状态值必须为0或1"`
 	Description string `form:"description"`
 }
 

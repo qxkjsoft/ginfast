@@ -225,7 +225,7 @@ func (sc *SysRoleController) Add(c *gin.Context) {
 	role := models.NewSysRole()
 	role.Name = req.Name
 	role.Sort = req.Sort
-	role.Status = req.Status
+	role.Status = *req.Status
 	role.Description = req.Description
 	role.ParentID = req.ParentID
 

@@ -205,7 +205,7 @@ func (sdc *SysDictController) Add(c *gin.Context) {
 	dict := models.NewSysDict()
 	dict.Name = &req.Name
 	dict.Code = &req.Code
-	dict.Status = &req.Status
+	dict.Status = req.Status
 	dict.Description = &req.Description
 
 	err = dict.Create(c)
@@ -251,7 +251,7 @@ func (sdc *SysDictController) Update(c *gin.Context) {
 	// 更新字典信息
 	dict.Name = &req.Name
 	dict.Code = &req.Code
-	dict.Status = &req.Status
+	dict.Status = req.Status
 	dict.Description = &req.Description
 
 	err = dict.Update(c)
