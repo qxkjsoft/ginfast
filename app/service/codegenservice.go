@@ -18,8 +18,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// identifierRegexp 数据库/表名只允许字母、数字、下划线，防止标识符注入（database/table 来源于 query string）
-var identifierRegexp = regexp.MustCompile(`^[a-zA-Z0-9_]+$`)
+// identifierRegexp 数据库/表名只允许字母、数字、下划线、连字符（连字符是合法的库名字符，如 gin-fast），防止标识符注入（database/table 来源于 query string）
+var identifierRegexp = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 // validateIdentifier 校验数据库/表名等标识符的合法性，非法时返回错误
 func validateIdentifier(name, kind string) error {

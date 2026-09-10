@@ -17,8 +17,8 @@ type SysJobs struct {
 	Name            string         `gorm:"column:name;not null" json:"name"`                                  // 任务名称
 	Description     string         `gorm:"column:description" json:"description"`                             // 任务描述
 	ExecutorName    string         `gorm:"column:executor_name;not null;index" json:"executorName"`           // 执行器名称
-	ExecutionPolicy int            `gorm:"column:execution_policy;not null;default:0" json:"executionPolicy"` // 执行策略
-	Status          int            `gorm:"column:status;not null;default:0;index" json:"status"`              // 任务状态
+	ExecutionPolicy int            `gorm:"column:execution_policy;not null" json:"executionPolicy"`           // 执行策略
+	Status          int            `gorm:"column:status;not null;index" json:"status"`                        // 任务状态
 	CronExpression  string         `gorm:"column:cron_expression;not null" json:"cronExpression"`             // Cron表达式
 	Parameters      string         `gorm:"column:parameters" json:"parameters"`                               // 任务参数
 	BlockingPolicy  int            `gorm:"column:blocking_policy;not null;default:0" json:"blockingPolicy"`   // 阻塞策略

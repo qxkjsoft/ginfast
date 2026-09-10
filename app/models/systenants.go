@@ -13,7 +13,7 @@ type Tenant struct {
 	Name           string `gorm:"column:name;size:255;not null;comment:租户名称" json:"name"`
 	Code           string `gorm:"column:code;size:100;uniqueIndex;not null;comment:租户编码(子域名标识)" json:"code"`
 	Description    string `gorm:"column:description;size:500;comment:租户描述" json:"description"`
-	Status         int8   `gorm:"column:status;default:1;comment:状态 0停用 1启用" json:"status"`
+	Status         int8   `gorm:"column:status;comment:状态 0停用 1启用" json:"status"`
 	Domain         string `gorm:"column:domain;size:255;comment:绑定域名(完整域名，非空时应唯一)" json:"domain"`
 	PlatformDomain string `gorm:"column:platform_domain;size:255;comment:平台基础域名(如:yourplatform.com)" json:"platformDomain"`
 	CreatedBy      uint   `gorm:"column:created_by;comment:创建人" json:"createdBy"`

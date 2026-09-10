@@ -58,8 +58,8 @@ type SysJobsCreateRequest struct {
 	Name            string `form:"name" validate:"required" message:"任务名称不能为空"`              // 任务名称
 	Description     string `form:"description"`                                              // 任务描述
 	ExecutorName    string `form:"executorName" validate:"required" message:"执行器名称不能为空"`     // 执行器名称
-	ExecutionPolicy int    `form:"executionPolicy"`                                          // 执行策略
-	Status          int    `form:"status"`                                                   // 任务状态
+	ExecutionPolicy int    `form:"executionPolicy" validate:"in:0,1" message:"执行策略必须为0或1"`           // 执行策略
+	Status          int    `form:"status" validate:"in:0,1" message:"任务状态必须为0或1"`                   // 任务状态
 	CronExpression  string `form:"cronExpression" validate:"required" message:"Cron表达式不能为空"` // Cron表达式
 	Parameters      string `form:"parameters"`                                               // 任务参数
 	BlockingPolicy  int    `form:"blockingPolicy"`                                           // 阻塞策略
@@ -82,8 +82,8 @@ type SysJobsUpdateRequest struct {
 	Name            string `form:"name" validate:"required" message:"任务名称不能为空"`              // 任务名称
 	Description     string `form:"description"`                                              // 任务描述
 	ExecutorName    string `form:"executorName" validate:"required" message:"执行器名称不能为空"`     // 执行器名称
-	ExecutionPolicy int    `form:"executionPolicy"`                                          // 执行策略
-	Status          int    `form:"status"`                                                   // 任务状态
+	ExecutionPolicy int    `form:"executionPolicy" validate:"in:0,1" message:"执行策略必须为0或1"`           // 执行策略
+	Status          int    `form:"status" validate:"in:0,1" message:"任务状态必须为0或1"`                   // 任务状态
 	CronExpression  string `form:"cronExpression" validate:"required" message:"Cron表达式不能为空"` // Cron表达式
 	Parameters      string `form:"parameters"`                                               // 任务参数
 	BlockingPolicy  int    `form:"blockingPolicy"`                                           // 阻塞策略

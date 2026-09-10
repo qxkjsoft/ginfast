@@ -20,7 +20,7 @@ type AddRequest struct {
 	Sex         string `form:"sex" validate:"required" message:"性别不能为空"`
 	DeptId      uint   `form:"deptId" validate:"required" message:"部门ID不能为空"`
 	Roles       []uint `form:"roles" validate:"required" message:"角色不能为空"`
-	Status      int8   `form:"status"`
+	Status      int8   `form:"status" validate:"in:0,1" message:"状态值必须为0或1"`
 	Description string `form:"description"`
 }
 
@@ -39,7 +39,7 @@ type UpdateRequest struct {
 	Sex         string `form:"sex" validate:"required" message:"性别不能为空"`
 	DeptId      uint   `form:"deptId" validate:"required" message:"部门ID不能为空"`
 	Roles       []uint `form:"roles" validate:"required" message:"角色不能为空"`
-	Status      int8   `form:"status" `
+	Status      int8   `form:"status" validate:"in:0,1" message:"状态值必须为0或1"`
 	Description string `form:"description"`
 }
 
