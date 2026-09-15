@@ -9,6 +9,7 @@ import (
 	"unicode"
 
 	"gin-fast/app/models"
+	"gin-fast/app/utils/filehelper"
 )
 
 // maxDangerousSQLCheck 单次导入最多上报的危险语句条数，防止响应体过大
@@ -194,4 +195,36 @@ func readDatabaseSQLStatements(zipReader *zip.Reader) ([]string, error) {
 		return splitSQLStatements(string(data)), nil
 	}
 	return nil, nil
+}
+
+// sqlIdentifierRegex 合法SQL标识符：仅字母数字下划线
+var sqlIdentifierRegex = regexp.MustCompile(`^[A-Za-z0-9_]+$`)
+
+// pluginFolderNameRegex 合法插件目录名：字母数字下划线连字符
+var pluginFolderNameRegex = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+
+// validateTableNames 校验插件清单中的数据库表名（外部输入），防止DROP语句标识符注入
+func validateTableNames(tableNames []string) error {
+	for _, name := range tableNames {
+		if !sqlIdentifierRegex.MatchString(name) {
+			return fmt.Errorf("非法的数据库表名: %q", name)
+		}
+	}
+	return nil
+}
+
+// resolveDeleteTargets 将插件清单中的导出路径归一化并收敛到root内，返回待删除的实际路径。
+// 拒绝绝对路径（含Windows盘符）与".."逃逸，防止卸载清单被篡改后删除任意目录；
+// 前导"/"按既有清单写法兼容，归一化为root内相对路径。
+func resolveDeleteTargets(root string, exportDirs []string) ([]string, error) {
+	var targets []string
+	for _, exportPath := range exportDirs {
+		normalized := strings.TrimPrefix(strings.TrimPrefix(exportPath, "/"), "\\")
+		target, err := filehelper.SafeJoinPath(root, normalized)
+		if err != nil {
+			return nil, fmt.Errorf("不安全的插件路径 %s: %v", exportPath, err)
+		}
+		targets = append(targets, target)
+	}
+	return targets, nil
 }

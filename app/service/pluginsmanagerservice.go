@@ -1253,6 +1253,11 @@ func (pms *PluginsManagerService) UninstallPlugin(c *gin.Context, folderName str
 		return errors.New("插件名称不能为空")
 	}
 
+	// 目录名白名单校验，防止通过folderName定位到plugins目录之外的plugin_export.json
+	if !pluginFolderNameRegex.MatchString(folderName) {
+		return fmt.Errorf("非法的插件目录名: %s", folderName)
+	}
+
 	// 获取plugin_export.json文件路径
 	pluginExportPath := filepath.Join("./plugins", folderName, "plugin_export.json")
 
@@ -1446,19 +1451,23 @@ func (pms *PluginsManagerService) deleteOrphanedAPIsInTx(tx *gorm.DB, apiIds []u
 
 // deleteFiles 删除后端文件和文件夹
 func (pms *PluginsManagerService) deleteFiles(exportDirs []string) error {
-	for _, exportPath := range exportDirs {
-		// 规范化路径，移除前导斜杠
-		exportPath = strings.TrimPrefix(exportPath, "/")
-		exportPath = strings.TrimPrefix(exportPath, "\\")
+	// 路径收敛到后端项目根目录内，拒绝绝对路径与".."逃逸
+	targets, err := resolveDeleteTargets(".", exportDirs)
+	if err != nil {
+		return err
+	}
+
+	for i, exportPath := range exportDirs {
+		target := targets[i]
 
 		// 检查文件或文件夹是否存在
-		if _, err := os.Stat(exportPath); errors.Is(err, os.ErrNotExist) {
+		if _, err := os.Stat(target); errors.Is(err, os.ErrNotExist) {
 			// 文件不存在，跳过
 			continue
 		}
 
 		// 删除文件或文件夹
-		if err := os.RemoveAll(exportPath); err != nil {
+		if err := os.RemoveAll(target); err != nil {
 			return fmt.Errorf("删除文件/文件夹失败 %s: %v", exportPath, err)
 		}
 	}
@@ -1483,13 +1492,14 @@ func (pms *PluginsManagerService) deleteFrontendFiles(exportDirsFrontend []strin
 		return errors.New("前端项目根目录不存在: " + frontendRootDir)
 	}
 
-	for _, exportPath := range exportDirsFrontend {
-		// 规范化路径，移除前导斜杠
-		exportPath = strings.TrimPrefix(exportPath, "/")
-		exportPath = strings.TrimPrefix(exportPath, "\\")
+	// 路径收敛到前端项目根目录内，拒绝绝对路径与".."逃逸
+	targets, err := resolveDeleteTargets(frontendRootDir, exportDirsFrontend)
+	if err != nil {
+		return err
+	}
 
-		// 构建完整路径
-		fullPath := filepath.Join(frontendRootDir, exportPath)
+	for i, exportPath := range exportDirsFrontend {
+		fullPath := targets[i]
 
 		// 检查文件或文件夹是否存在
 		if _, err := os.Stat(fullPath); errors.Is(err, os.ErrNotExist) {
@@ -1510,6 +1520,11 @@ func (pms *PluginsManagerService) deleteFrontendFiles(exportDirsFrontend []strin
 func (pms *PluginsManagerService) dropDatabaseTables(tableNames []string) error {
 	if len(tableNames) == 0 {
 		return nil
+	}
+
+	// 表名来自插件清单（外部输入），先做白名单校验再拼接，防标识符注入
+	if err := validateTableNames(tableNames); err != nil {
+		return err
 	}
 
 	// 获取数据库连接

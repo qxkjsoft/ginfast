@@ -3,6 +3,7 @@ package service
 import (
 	"archive/zip"
 	"bytes"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -234,5 +235,68 @@ func TestStripSQLCommentsAndLiterals(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.Equal(t, tc.want, stripSQLCommentsAndLiterals(tc.input))
 		})
+	}
+}
+
+func TestValidateTableNames(t *testing.T) {
+	assert.NoError(t, validateTableNames(nil))
+	assert.NoError(t, validateTableNames([]string{"plu_shop_goods", "example", "A1_"}))
+
+	for _, name := range []string{
+		"plu_goods`; DROP TABLE sys_users",
+		"evil name",
+		"plu-evil",
+		"",
+	} {
+		assert.Error(t, validateTableNames([]string{name}), "表名 %q 应被拒绝", name)
+	}
+}
+
+func TestResolveDeleteTargets(t *testing.T) {
+	root := t.TempDir()
+
+	t.Run("合法相对路径收敛到root内", func(t *testing.T) {
+		targets, err := resolveDeleteTargets(root, []string{
+			"plugins/simplemall/",
+			"plugins/exampleinit.go",
+			"config/wxconfig/wxconfig.example.yml",
+		})
+		assert.NoError(t, err)
+		assert.Len(t, targets, 3)
+		assert.Equal(t, filepath.Join(root, "plugins", "simplemall"), targets[0])
+		assert.Equal(t, filepath.Join(root, "plugins", "exampleinit.go"), targets[1])
+		assert.Equal(t, filepath.Join(root, "config", "wxconfig", "wxconfig.example.yml"), targets[2])
+	})
+
+	t.Run("前导斜杠按既有清单写法归一化", func(t *testing.T) {
+		targets, err := resolveDeleteTargets(root, []string{"/plugins/simplemall"})
+		assert.NoError(t, err)
+		assert.Equal(t, filepath.Join(root, "plugins", "simplemall"), targets[0])
+	})
+
+	t.Run("相对路径逃逸被拒绝", func(t *testing.T) {
+		for _, evil := range []string{"..", ".", "../escape", "plugins/../../escape", "..\\escape", ""} {
+			_, err := resolveDeleteTargets(root, []string{evil})
+			assert.Error(t, err, "路径 %q 应被拒绝", evil)
+		}
+	})
+
+	t.Run("Windows盘符路径被拒绝", func(t *testing.T) {
+		_, err := resolveDeleteTargets(root, []string{"C:\\Windows\\evil"})
+		assert.Error(t, err)
+	})
+
+	t.Run("批量中混入一条非法路径整体报错", func(t *testing.T) {
+		_, err := resolveDeleteTargets(root, []string{"plugins/ok/", "../evil"})
+		assert.Error(t, err)
+	})
+}
+
+func TestPluginFolderNameRegex(t *testing.T) {
+	for _, name := range []string{"simplemall", "example", "my-plugin_2"} {
+		assert.True(t, pluginFolderNameRegex.MatchString(name), "目录名 %q 应合法", name)
+	}
+	for _, name := range []string{"", "..", "../evil", "a/b", "a\\b", "a b", "a:b"} {
+		assert.False(t, pluginFolderNameRegex.MatchString(name), "目录名 %q 应被拒绝", name)
 	}
 }
