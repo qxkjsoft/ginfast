@@ -45,6 +45,13 @@ type TokenServiceInterface interface {
 	RotateRefreshToken(oldRefreshToken string) (string, error)
 }
 
+// token类型标识：access与refresh使用同一签名密钥签发，
+// 必须靠tokenType区分，防止长效的refresh token被当作access token通过鉴权
+const (
+	TokenTypeAccess  = "access"
+	TokenTypeRefresh = "refresh"
+)
+
 // ClaimsUser 用户声明信息
 type ClaimsUser struct {
 	UserID     uint   `json:"userId"`               // 用户ID
@@ -56,6 +63,7 @@ type ClaimsUser struct {
 // Claims JWT声明结构
 type Claims struct {
 	ClaimsUser
+	TokenType string `json:"tokenType"` // token类型，固定为TokenTypeAccess
 	jwt.RegisteredClaims
 }
 
@@ -64,6 +72,7 @@ type RefreshTokenClaims struct {
 	UserID     uint   `json:"userId"`
 	TenantID   uint   `json:"tenantId,omitempty"`
 	TenantCode string `json:"tenantCode,omitempty"`
+	TokenType  string `json:"tokenType"` // token类型，固定为TokenTypeRefresh
 	jwt.RegisteredClaims
 }
 

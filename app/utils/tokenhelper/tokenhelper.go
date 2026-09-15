@@ -29,6 +29,7 @@ type TokenService struct {
 func (s *TokenService) GenerateToken(user *app.ClaimsUser) (string, error) {
 	claims := &app.Claims{
 		ClaimsUser: *user,
+		TokenType:  app.TokenTypeAccess,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.TokenExpire * time.Second)), // 过期时间
 			IssuedAt:  jwt.NewNumericDate(time.Now()),                                  // 签发时间
@@ -51,6 +52,10 @@ func (s *TokenService) ParseToken(tokenString string) (*app.Claims, error) {
 	}
 	if !token.Valid {
 		return nil, errors.New("invalid token")
+	}
+	// 严格校验token类型，防止refresh token被当作access token使用
+	if claims.TokenType != app.TokenTypeAccess {
+		return nil, errors.New("invalid token type")
 	}
 	return claims, nil
 }
@@ -145,6 +150,7 @@ func (s *TokenService) GenerateRefreshToken(userID uint, tenantID uint, tenantCo
 		UserID:     userID,
 		TenantID:   tenantID,
 		TenantCode: tenantCode,
+		TokenType:  app.TokenTypeRefresh,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -195,6 +201,10 @@ func (s *TokenService) ParseRefreshToken(tokenString string) (*app.RefreshTokenC
 	}
 	if !token.Valid {
 		return nil, errors.New("invalid refresh token")
+	}
+	// 严格校验token类型，防止access token被当作refresh token使用
+	if claims.TokenType != app.TokenTypeRefresh {
+		return nil, errors.New("invalid refresh token type")
 	}
 	return claims, nil
 }
@@ -265,6 +275,7 @@ func (s *TokenService) RotateRefreshToken(oldRefreshToken string) (string, error
 		UserID:     claims.UserID,
 		TenantID:   claims.TenantID,
 		TenantCode: claims.TenantCode,
+		TokenType:  app.TokenTypeRefresh,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(now),
