@@ -110,6 +110,7 @@ func (pmc *PluginsManagerController) ExportPlugin(c *gin.Context) {
 // @Param overwriteDB formData int false "是否覆盖数据库 (0:否, 1:是)" default(0)
 // @Param importMenu formData int false "是否导入菜单 (0:否, 1:是)" default(0)
 // @Param overwriteFiles formData int false "是否覆盖文件 (0:否, 1:是)" default(0)
+// @Param confirmDangerousSQL formData int false "已确认database.sql中的危险语句，允许继续执行 (0:否, 1:是)" default(0)
 // @Success 200 {object} map[string]interface{} "导入成功"
 // @Failure 400 {object} map[string]interface{} "请求参数错误"
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"
@@ -146,12 +147,15 @@ func (pmc *PluginsManagerController) ImportPlugin(c *gin.Context) {
 		pmc.FailAndAbort(c, err.Error(), err, 500)
 	}
 
-	// 如果CheckExist=true，仅检查了，返回存在的项目列表
-	if req.CheckExist {
-		if !existingItems.IsEmpty() {
-			pmc.SuccessWithMessage(c, "以下项已存在，请核查", existingItems, 1)
+	// 存在警告项（database.sql含危险语句，或已存在文件/表）时返回警告，
+	// 由前端弹窗确认后携带确认参数重新提交，未确认前不执行任何导入
+	if !existingItems.IsEmpty() {
+		if len(existingItems.DangerousSQLs) > 0 {
+			pmc.SuccessWithMessage(c, "导入的database.sql包含危险语句，请确认是否继续导入", existingItems, 1)
 			return
 		}
+		pmc.SuccessWithMessage(c, "以下项已存在，请核查", existingItems, 1)
+		return
 	}
 
 	// 返回成功响应

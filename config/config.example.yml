@@ -66,10 +66,12 @@ httpserver:
   # 3. 未命中的来源不回显 Access-Control-Allow-Origin，浏览器将拦截跨域请求（前端接口全部失败，浏览器控制台报 CORS 错误）
   # 4. 配置 "*" 可放行任意来源（不带凭证），等于放弃来源白名单，生产环境不建议使用
   # 5. 前后端同源部署时可留空：corsorigins: []
-  # 以下示例为前端 vite dev 默认端口：
+  # 以下示例为前端 vite dev 默认端口与商城小程序 H5 演示端口（manifest.json h5.devServer.port）：
   corsorigins:
     - "http://localhost:5173"
     - "http://127.0.0.1:5173"
+    - "http://localhost:8090"
+    - "http://127.0.0.1:8090"
   serverrootpath: "/public" # 静态资源路由路径
   serverroot: "./resource/public" # 静态资源根目录
   read_timeout: 30    # TCP读取超时(秒)

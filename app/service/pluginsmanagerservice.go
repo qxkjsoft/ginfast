@@ -19,6 +19,7 @@ import (
 	"gin-fast/app/utils/gormhelper"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -790,6 +791,23 @@ func (pms *PluginsManagerService) processPluginImport(c *gin.Context, zipReader 
 
 	// 导入数据库
 	if params.OverwriteDB {
+		// 先做危险语句检测：未携带确认标记时中止导入（此时尚未执行任何写操作，无副作用）
+		statements, err := readDatabaseSQLStatements(zipReader)
+		if err != nil {
+			return nil, err
+		}
+		dangers := scanDangerousSQL(statements)
+		if len(dangers) > 0 && !params.ConfirmDangerousSQL {
+			return &models.PluginImportResponse{
+				DangerousSQLs: dangers,
+				IsWarning:     true,
+			}, nil
+		}
+		if len(dangers) > 0 {
+			app.ZapLog.Warn("插件导入将执行含危险关键字的SQL(用户已确认)",
+				zap.Uint("userId", params.UserID),
+				zap.Int("dangerousCount", len(dangers)))
+		}
 		if err := pms.importDatabase(zipReader); err != nil {
 			return nil, fmt.Errorf("导入数据库失败: %v", err)
 		}
@@ -1079,33 +1097,18 @@ func (pms *PluginsManagerService) extractFile(file *zip.File, destPath string) e
 
 // importDatabase 导入数据库
 func (pms *PluginsManagerService) importDatabase(zipReader *zip.Reader) error {
-	// 查找database.sql文件
-	var sqlContent string
-	for _, file := range zipReader.File {
-		if file.Name == "database.sql" {
-			rc, err := file.Open()
-			if err != nil {
-				return fmt.Errorf("读取database.sql失败: %v", err)
-			}
-			defer rc.Close()
-
-			data, err := io.ReadAll(rc)
-			if err != nil {
-				return fmt.Errorf("读取database.sql内容失败: %v", err)
-			}
-			sqlContent = string(data)
-			break
-		}
+	// 读取并分句database.sql（zip中无该文件时跳过）
+	statements, err := readDatabaseSQLStatements(zipReader)
+	if err != nil {
+		return err
 	}
-
-	if sqlContent == "" {
-		return nil // 没有database.sql文件，跳过
+	if len(statements) == 0 {
+		return nil
 	}
 
 	// 执行SQL
 	dbType := app.ConfigYml.GetString("gormv2.usedbtype")
 	var db *gorm.DB
-	var err error
 
 	switch dbType {
 	case "mysql":
@@ -1123,8 +1126,6 @@ func (pms *PluginsManagerService) importDatabase(zipReader *zip.Reader) error {
 	}
 
 	// 执行SQL语句
-	// 使用更智能的SQL语句分割，避免字符串内容中的分号造成的问题
-	statements := splitSQLStatements(sqlContent)
 	for _, stmt := range statements {
 		if stmt == "" {
 			continue
