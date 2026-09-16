@@ -14,6 +14,7 @@ import (
 	"gin-fast/app/utils/tenanthelper"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -82,24 +83,33 @@ func (ac *AuthController) Login(c *gin.Context) {
 	// 如果启用了登录锁定功能
 	if loginLockThreshold > 0 {
 		// 检查账户是否被锁定
-		if locked, _ := app.Cache.Exists(context.Background(), lockKey); locked > 0 {
+		// 缓存故障时记日志并放行（fail-open）：锁定是辅助安全措施，不可用时不应阻断全部登录
+		locked, lockCheckErr := app.Cache.Exists(context.Background(), lockKey)
+		if lockCheckErr != nil {
+			app.ZapLog.Error("查询账户锁定状态失败", zap.String("username", req.Username), zap.Error(lockCheckErr))
+		} else if locked > 0 {
 			ac.FailAndAbort(c, "失败次数过多，账户已被锁定，请稍后再试", nil)
 			return
 		}
 
 		// 验证密码
 		if err = passwordhelper.ComparePassword(user.Password, req.Password); err != nil {
-			// 密码错误，原子自增失败计数（替代 Get+Set，消除并发竞态）
-			failCount, _ := app.Cache.Incr(context.Background(), failCountKey)
-			// Incr 不设置过期时间，首次计数时补 TTL
-			if failCount == 1 {
-				_ = app.Cache.Expire(context.Background(), failCountKey, time.Duration(loginLockExpire)*time.Second)
+			// 密码错误，原子自增失败计数（INCR + 首次自增时设置 TTL，固定窗口语义），
+			// 消除原"Incr 后仅首次补 Expire"两步非原子导致的计数键永不过期问题
+			failCount, incrErr := app.Cache.IncrWithExpire(context.Background(), failCountKey, time.Duration(loginLockExpire)*time.Second)
+			if incrErr != nil {
+				// 缓存故障时记日志并放行（fail-open），此时无法给出剩余次数提示
+				app.ZapLog.Error("记录登录失败计数失败", zap.String("username", req.Username), zap.Error(incrErr))
+				ac.FailAndAbort(c, "用户名或密码错误", nil)
+				return
 			}
 
 			// 检查是否达到锁定阈值
 			if failCount >= int64(loginLockThreshold) {
 				// 锁定
-				app.Cache.Set(context.Background(), lockKey, "1", time.Duration(loginLockDuration)*time.Second)
+				if lockErr := app.Cache.Set(context.Background(), lockKey, "1", time.Duration(loginLockDuration)*time.Second); lockErr != nil {
+					app.ZapLog.Error("写入账户锁定标记失败", zap.String("username", req.Username), zap.Error(lockErr))
+				}
 				ac.FailAndAbort(c, "失败次数过多，账户已被锁定，请稍后再试", nil)
 				return
 			}
@@ -109,8 +119,10 @@ func (ac *AuthController) Login(c *gin.Context) {
 			return
 		}
 
-		// 密码正确，清除失败次数
-		app.Cache.Del(context.Background(), failCountKey)
+		// 密码正确，清除失败次数（失败仅记日志：残留计数会在 loginLockExpire 后自动过期）
+		if delErr := app.Cache.Del(context.Background(), failCountKey); delErr != nil {
+			app.ZapLog.Error("清除登录失败计数失败", zap.String("username", req.Username), zap.Error(delErr))
+		}
 	} else {
 		// 未启用登录锁定功能
 		// 验证密码

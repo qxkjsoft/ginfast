@@ -88,6 +88,10 @@ func (m *MockCacheInterf) Incr(ctx context.Context, key string) (int64, error) {
 	return 0, nil
 }
 
+func (m *MockCacheInterf) IncrWithExpire(ctx context.Context, key string, expiration time.Duration) (int64, error) {
+	return 0, nil
+}
+
 func (m *MockCacheInterf) Decr(ctx context.Context, key string) (int64, error) {
 	return 0, nil
 }

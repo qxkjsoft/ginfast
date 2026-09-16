@@ -137,6 +137,27 @@ func (r *redisHelper) Incr(ctx context.Context, key string) (int64, error) {
 	return r.client.Incr(ctx, key).Result()
 }
 
+// incrWithExpireScript 原子执行"自增 + 首次自增时设置过期时间"（固定窗口计数语义），
+// 避免 INCR 与 EXPIRE 两步之间进程崩溃或遗漏导致计数键永不过期
+var incrWithExpireScript = redis.NewScript(`
+local v = redis.call('INCR', KEYS[1])
+if v == 1 then
+	redis.call('EXPIRE', KEYS[1], ARGV[1])
+end
+return v
+`)
+
+// IncrWithExpire 原子地执行"自增 + 首次自增时设置过期时间"（固定窗口计数语义）
+// 自增结果为 1（即本次为新计数）时设置 expiration，已有计数沿用原过期时间
+func (r *redisHelper) IncrWithExpire(ctx context.Context, key string, expiration time.Duration) (int64, error) {
+	seconds := int64(expiration / time.Second)
+	if seconds < 1 {
+		// 过期时间不足 1 秒时退化为纯 INCR，避免 Redis EXPIRE 0 报错
+		return r.client.Incr(ctx, key).Result()
+	}
+	return incrWithExpireScript.Run(ctx, r.client, []string{key}, seconds).Int64()
+}
+
 // Decr 指定 key 的数值减 1
 func (r *redisHelper) Decr(ctx context.Context, key string) (int64, error) {
 	return r.client.Decr(ctx, key).Result()
