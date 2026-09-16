@@ -173,7 +173,7 @@ type UpdateBasicInfoRequest struct {
 	Validator
 	NickName    string `form:"nickName" validate:"required" message:"昵称不能为空"`
 	Sex         string `form:"sex" validate:"required" message:"性别不能为空"`
-	Description string `form:"description" validate:"required" message:"描述不能为空"`
+	Description string `form:"description"`
 }
 
 func (r *UpdateBasicInfoRequest) Validate(c *gin.Context) error {

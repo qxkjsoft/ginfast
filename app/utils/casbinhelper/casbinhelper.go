@@ -28,8 +28,10 @@ const (
 // CasbinService Casbin服务
 // 实现 app.CasbinInterf 接口
 type CasbinHelper struct {
-	enforcer *casbin.Enforcer
-	stopChan chan struct{} // 用于停止定期重载goroutine
+	enforcer    *casbin.Enforcer
+	stopChan    chan struct{} // 用于停止定期重载goroutine
+	tablePrefix string        // casbin策略表前缀（构造事务视图时复用）
+	tableName   string        // casbin策略表名（构造事务视图时复用）
 }
 
 // 编译时检查是否实现了接口
@@ -66,6 +68,8 @@ func (s *CasbinHelper) InitCasbin(db *gorm.DB, config string) error {
 	// 创建Casbin适配器
 	tablePrefix := app.ConfigYml.GetString("casbin.tableprefix")
 	tableName := app.ConfigYml.GetString("casbin.tablename")
+	s.tablePrefix = tablePrefix
+	s.tableName = tableName
 	// 禁用自动迁移，避免SQL Server因索引导致ALTER失败
 	//gormadapter.TurnOffAutoMigrate(db)
 	adapter, err := gormadapter.NewAdapterByDBUseTableName(db, tablePrefix, tableName)
@@ -129,6 +133,83 @@ func (s *CasbinHelper) GetEnforcer() *casbin.Enforcer {
 	return s.enforcer
 }
 
+// NewTxCasbin 构造绑定指定数据库事务(tx)的临时casbin操作视图，将casbin策略写入纳入DB事务，
+// 与业务表写实现原子提交/回滚。
+//
+// 背景：全局enforcer挂全局DB连接，策略写完立即落库生效、无法随业务事务回滚；
+// 而gorm-adapter的所有策略读写都经由构造时传入的*gorm.DB执行——传入事务tx后，
+// 临时enforcer对sys_casbin_rule表的写即自动加入外层事务。
+//
+// 用法（见 casbinservice.RunWithCasbin）：
+//
+//	err := app.DB().Transaction(func(tx *gorm.DB) error {
+//	    ops, err := app.CasbinV2.NewTxCasbin(tx) // 本方法
+//	    if err != nil { return err }
+//	    // 闭包内：tx 做业务表写，ops 做casbin策略写（经 PermissionService.Use(ops)）
+//	    return fn(tx, ops)
+//	})
+//	// 任一步失败整体回滚；提交成功后需调用 ReloadPolicy 刷新全局enforcer内存
+//
+// 注意：返回的视图仅供该事务闭包内使用，事务结束后即弃，勿长期持有、勿用于鉴权中间件。
+func (s *CasbinHelper) NewTxCasbin(tx *gorm.DB) (app.CasbinInterf, error) {
+	// 全局casbin未初始化（InitCasbin未执行或失败）时直接报错；
+	// tablePrefix/tableName也是初始化时才写入结构体的，此时继续构造视图会指向错表
+	if s.enforcer == nil {
+		return nil, fmt.Errorf("casbin enforcer not initialized")
+	}
+
+	// casbin的model（p/g段匹配表达式等）来自配置文本；enforcer实例独占持有自己的model
+	// （model带运行时状态，不能与全局enforcer共用），因此每个事务视图都要重新解析
+	m, err := model.NewModelFromString(app.ConfigYml.GetString("casbin.modelconfig"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create model: %v", err)
+	}
+
+	// 关闭adapter的自动建表：AutoMigrate属于DDL，MySQL下DDL会隐式提交事务——
+	// 事务内一旦执行建表/改表，整个事务立即提交、后续回滚失效，原子性被破坏。
+	// 表在启动初始化时已由全局adapter建好，事务内无需也不允许再建。
+	// TurnOffAutoMigrate通过gorm的context值机制给tx打标记，原地修改、无返回值
+	gormadapter.TurnOffAutoMigrate(tx)
+
+	// 构造策略存储适配器并指向tx：此后该adapter对sys_casbin_rule的所有INSERT/DELETE
+	// 都在事务内执行，外层回滚时casbin策略写随业务表写一起回滚（本方法的核心）
+	adapter, err := gormadapter.NewAdapterByDBUseTableName(tx, s.tablePrefix, s.tableName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tx Casbin adapter: %v", err)
+	}
+
+	// 用刚解析的model和tx适配器实例化全新的临时enforcer，与全局enforcer互不共享状态
+	txEnforcer, err := casbin.NewEnforcer(m, adapter)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tx enforcer: %v", err)
+	}
+
+	// 重放与全局enforcer相同的g段域匹配函数：这是enforcer的内存配置、不落库，
+	// 新建的enforcer默认没有；不补注册会导致同一条g策略在两个enforcer中解释不同
+	// （多租户域匹配下角色继承判定出错）
+	txEnforcer.AddNamedDomainMatchingFunc("g", "KeyMatch2", util.KeyMatch2)
+
+	// 加载全量策略到内存作为操作基线：casbin的写接口内部有存在性/去重检查
+	// （AddPoliciesForRole查重、RemoveAllPoliciesForRole需知道现有策略），
+	// 空基线会让这些判断全错。读走tx，看到的是本事务的一致性快照
+	if err := txEnforcer.LoadPolicy(); err != nil {
+		return nil, fmt.Errorf("failed to load policy in transaction: %v", err)
+	}
+
+	// 包装为与全局单例同接口的视图返回：其策略写方法（AddRolesForUserByID等）全部落在tx上。
+	// 仅赋enforcer、不赋stopChan：定期自动重载goroutine只在InitCasbin中启动，
+	// 视图寿命仅一个事务闭包；即便误调StopAutoLoadPolicy也有stopChan!=nil保护
+	return &CasbinHelper{enforcer: txEnforcer}, nil
+}
+
+// ReloadPolicy 重新加载全部策略到全局enforcer内存
+func (s *CasbinHelper) ReloadPolicy() error {
+	if s.enforcer == nil {
+		return fmt.Errorf("casbin enforcer not initialized")
+	}
+	return s.enforcer.LoadPolicy()
+}
+
 // CasbinMiddleware Casbin权限中间件
 func (s *CasbinHelper) CasbinMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -147,9 +228,16 @@ func (s *CasbinHelper) CasbinMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// 获取请求路径和方法
-		path := c.Request.URL.Path
-		method := c.Request.Method
+	// 获取请求路径和方法
+	path := c.Request.URL.Path
+	method := c.Request.Method
+
+	// 自服务接口免 casbin 鉴权（个人中心相关，均强制只操作当前登录用户本人数据）：
+	// 登录即可用，不依赖角色菜单授权，避免角色漏配隐藏菜单导致个人中心不可用
+	if common.IsSelfServiceAPI(path, method) {
+		c.Next()
+		return
+	}
 
 		// 使用带前缀的用户ID进行权限检查
 		userSubject := s.PrefixUser(userID)

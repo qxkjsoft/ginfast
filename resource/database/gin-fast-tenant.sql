@@ -462,7 +462,7 @@ CREATE TABLE `sys_tenants` (
   `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '状态 0停用 1启用',
   `domain` varchar(255) DEFAULT NULL COMMENT '租户域名',
   `platform_domain` varchar(255) DEFAULT NULL COMMENT '主域名',
-  `menu_permission` varchar(1000) DEFAULT NULL COMMENT '菜单权限',
+  `menu_permission` text COMMENT '菜单权限',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `code` (`code`) USING BTREE,
   UNIQUE KEY `domain` (`domain`) USING BTREE,

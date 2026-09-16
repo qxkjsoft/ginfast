@@ -72,13 +72,16 @@ func (s *SysRoleService) Update(c *gin.Context, req models.SysRoleUpdateRequest)
 	role.Description = req.Description
 	role.ParentID = req.ParentID
 
-	err = app.DB().WithContext(c).Save(role).Error
-	if err != nil {
-		return nil, err
-	}
+	// 使用事务更新角色与casbin继承关系（任一步失败整体回滚）
+	err = s.CasbinService.RunWithCasbin(c, func(tx *gorm.DB, ops app.CasbinInterf) error {
+		if err := tx.Save(role).Error; err != nil {
+			return err
+		}
 
-	// 编辑角色继承关系
-	if err := s.CasbinService.EditRoleInheritance(c, role.ID, req.ParentID); err != nil {
+		// 编辑角色继承关系
+		return s.CasbinService.Use(ops).EditRoleInheritance(c, role.ID, req.ParentID)
+	})
+	if err != nil {
 		return nil, err
 	}
 	return role, nil

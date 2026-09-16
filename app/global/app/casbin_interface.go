@@ -60,6 +60,13 @@ type CasbinInterf interface {
 	// StopAutoLoadPolicy 停止定期重载策略
 	StopAutoLoadPolicy()
 
+	// NewTxCasbin 构造绑定指定数据库事务的临时casbin操作视图，
+	// 用于将策略写入纳入DB事务，与业务表写原子提交/回滚（提交后需ReloadPolicy刷新全局内存）
+	NewTxCasbin(tx *gorm.DB) (CasbinInterf, error)
+
+	// ReloadPolicy 重新加载全部策略到enforcer内存
+	ReloadPolicy() error
+
 	// PrefixDomain
 	PrefixDomain(tenantID uint) string
 }

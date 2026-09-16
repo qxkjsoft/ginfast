@@ -267,8 +267,8 @@ func (uc *UserController) Add(c *gin.Context) {
 		uc.FailAndAbort(c, "Failed to hash password", err)
 	}
 
-	// 使用事务创建用户和角色关联
-	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
+	// 使用事务创建用户、角色关联与casbin策略（任一步失败整体回滚）
+	err = uc.CasbinService.RunWithCasbin(c, func(tx *gorm.DB, ops app.CasbinInterf) error {
 		// 创建用户
 		user.Username = req.UserName
 		user.NickName = req.NickName
@@ -311,14 +311,11 @@ func (uc *UserController) Add(c *gin.Context) {
 			}
 		}
 
-		return nil
+		// 写入casbin用户角色关系（与业务表写同一事务）
+		return uc.CasbinService.Use(ops).AddRoleForUser(c, user.ID, req.Roles)
 	})
 
 	if err != nil {
-		uc.FailAndAbort(c, "Failed to create user", err)
-	}
-
-	if err = uc.CasbinService.AddRoleForUser(c, user.ID, req.Roles); err != nil {
 		uc.FailAndAbort(c, "Failed to create user", err)
 	}
 
@@ -403,8 +400,8 @@ func (uc *UserController) Update(c *gin.Context) {
 		}
 	}
 
-	// 使用事务更新用户和角色关联
-	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
+	// 使用事务更新用户、角色关联与casbin策略（任一步失败整体回滚）
+	err = uc.CasbinService.RunWithCasbin(c, func(tx *gorm.DB, ops app.CasbinInterf) error {
 		// 更新用户信息
 		user.Username = req.UserName
 		user.NickName = req.NickName
@@ -448,14 +445,11 @@ func (uc *UserController) Update(c *gin.Context) {
 			}
 		}
 
-		return nil
+		// 同步casbin用户角色关系（与业务表写同一事务）
+		return uc.CasbinService.Use(ops).EditUserRoles(c, user.ID, req.Roles)
 	})
 
 	if err != nil {
-		uc.FailAndAbort(c, "更新用户失败", err)
-	}
-
-	if err = uc.CasbinService.EditUserRoles(c, user.ID, req.Roles); err != nil {
 		uc.FailAndAbort(c, "更新用户失败", err)
 	}
 
@@ -492,8 +486,8 @@ func (uc *UserController) Delete(c *gin.Context) {
 		uc.FailAndAbort(c, "用户不存在", nil)
 	}
 
-	// 使用事务删除用户和角色关联
-	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
+	// 使用事务删除用户、角色关联与casbin策略（任一步失败整体回滚）
+	err = uc.CasbinService.RunWithCasbin(c, func(tx *gorm.DB, ops app.CasbinInterf) error {
 		// 删除用户角色关联
 		if err := tx.Where("user_id = ?", user.ID).Delete(&models.SysUserRole{}).Error; err != nil {
 			return err
@@ -507,14 +501,11 @@ func (uc *UserController) Delete(c *gin.Context) {
 			return err
 		}
 
-		return nil
+		// 移除casbin用户角色关系（与业务表写同一事务）
+		return uc.CasbinService.Use(ops).DeleteUserRoles(c, user.ID, nil)
 	})
 
 	if err != nil {
-		uc.FailAndAbort(c, "删除用户失败", err)
-	}
-
-	if err = uc.CasbinService.DeleteUserRoles(c, user.ID, nil); err != nil {
 		uc.FailAndAbort(c, "删除用户失败", err)
 	}
 	uc.SuccessWithMessage(c, "删除成功", nil)

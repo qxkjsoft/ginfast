@@ -570,7 +570,7 @@ CREATE TABLE sys_tenants (
     status SMALLINT NOT NULL DEFAULT 1,
     domain VARCHAR(255),
     platform_domain VARCHAR(255),
-    menu_permission VARCHAR(1000),
+    menu_permission TEXT,
     PRIMARY KEY (id)
 );
 

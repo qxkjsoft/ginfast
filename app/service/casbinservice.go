@@ -6,6 +6,7 @@ import (
 	"gin-fast/app/models"
 	"gin-fast/app/utils/common"
 
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -16,8 +17,8 @@ func NewPermissionService() *PermissionService {
 	return &PermissionService{}
 }
 
-// 获取当前租户的Casbin域
-func (ps *PermissionService) GetDomain(c context.Context) []string {
+// getDomain 获取当前租户的Casbin域
+func getDomain(c context.Context) []string {
 	tenantID := common.GetCurrentTenantID(common.TryConvertToGinContext(c))
 	if tenantID == 0 {
 		return nil
@@ -25,75 +26,67 @@ func (ps *PermissionService) GetDomain(c context.Context) []string {
 	return []string{app.CasbinV2.PrefixDomain(tenantID)}
 }
 
-func (ps *PermissionService) PrefixDomain(tenantID uint) string {
-	return app.CasbinV2.PrefixDomain(tenantID)
-}
-
-// 处理租户ID，若未指定则使用当前登录用户所处的租户的ID，返回nil时代表全局租户
-func (ps *PermissionService) HandleTenantID(c context.Context, tenantID ...uint) []string {
-	var domain []string
+// handleTenantID 处理租户ID：显式传非0用之，显式传0表示全局租户(nil)，缺省取当前登录用户所处租户
+func handleTenantID(c context.Context, tenantID ...uint) []string {
 	if len(tenantID) > 0 {
 		if tenantID[0] == 0 {
 			return nil
 		}
-		domain = []string{ps.PrefixDomain(tenantID[0])}
-	} else {
-		domain = ps.GetDomain(c)
+		return []string{app.CasbinV2.PrefixDomain(tenantID[0])}
 	}
-	return domain
+	return getDomain(c)
 }
 
-// 删除角色的所有权限
-func (ps *PermissionService) DeleteRoleApis(c context.Context, roleID uint, tenantID ...uint) (err error) {
-	domain := ps.HandleTenantID(c, tenantID...)
+// deleteRoleApis 删除角色的所有权限
+// ops 为策略操作目标：全局 enforcer（app.CasbinV2）或 RunWithCasbin 事务闭包内的事务视图
+func deleteRoleApis(ops app.CasbinInterf, c context.Context, roleID uint, tenantID ...uint) error {
+	domain := handleTenantID(c, tenantID...)
 
-	// 删除该角色的所有权限
-	app.CasbinV2.RemoveAllPoliciesForRole(roleID, domain...)
-	return
+	// 删除该角色的所有权限（失败必须返回错误，保证事务回滚语义）
+	return ops.RemoveAllPoliciesForRole(roleID, domain...)
 }
 
-// 为角色分配资源权限，原有权限会被清除
-func (ps *PermissionService) AddPoliciesForRole(c context.Context, roleID uint, sysapilist models.SysApiList, tenantID ...uint) (err error) {
-	domain := ps.HandleTenantID(c, tenantID...)
+// addPoliciesForRole 为角色分配资源权限，原有权限会被清除
+func addPoliciesForRole(ops app.CasbinInterf, c context.Context, roleID uint, sysapilist models.SysApiList, tenantID ...uint) error {
+	domain := handleTenantID(c, tenantID...)
 
-	// 删除该角色的所有权限
-	app.CasbinV2.RemoveAllPoliciesForRole(roleID, domain...)
+	// 删除该角色的所有权限（失败必须返回错误，保证事务回滚语义）
+	if err := ops.RemoveAllPoliciesForRole(roleID, domain...); err != nil {
+		return err
+	}
 	// 如果有API权限，则添加到casbin
-	if !sysapilist.IsEmpty() {
-		// 构建权限策略列表
-		var policies [][]string
-		for _, api := range sysapilist {
-			// 处理路径中的参数，将 :roleId 等参数转换为 *
-			path := api.Path
-			// 使用正则表达式替换路径参数为通配符 *
-			//path = common.ConvertPathToWildcard(path)
+	if sysapilist.IsEmpty() {
+		return nil
+	}
+	// 构建权限策略列表
+	var policies [][]string
+	for _, api := range sysapilist {
+		// 处理路径中的参数，将 :roleId 等参数转换为 *
+		path := api.Path
+		// 使用正则表达式替换路径参数为通配符 *
+		//path = common.ConvertPathToWildcard(path)
 
-			// 构建策略：[obj, act]
-			policy := []string{path, api.Method}
-			policies = append(policies, policy)
-		}
-		// 对policies进行去重处理（按obj和act）
-		policyMap := make(map[string]bool)
-		var deduplicatedPolicies [][]string
-		for _, policy := range policies {
-			key := policy[0] + "|" + policy[1]
-			if !policyMap[key] {
-				policyMap[key] = true
-				deduplicatedPolicies = append(deduplicatedPolicies, policy)
-			}
-		}
-		// 批量添加权限策略
-		if err = app.CasbinV2.AddPoliciesForRole(roleID, deduplicatedPolicies, domain...); err != nil {
-			return
+		// 构建策略：[obj, act]
+		policy := []string{path, api.Method}
+		policies = append(policies, policy)
+	}
+	// 对policies进行去重处理（按obj和act）
+	policyMap := make(map[string]bool)
+	var deduplicatedPolicies [][]string
+	for _, policy := range policies {
+		key := policy[0] + "|" + policy[1]
+		if !policyMap[key] {
+			policyMap[key] = true
+			deduplicatedPolicies = append(deduplicatedPolicies, policy)
 		}
 	}
-	return
+	// 批量添加权限策略
+	return ops.AddPoliciesForRole(roleID, deduplicatedPolicies, domain...)
 }
 
-// 添加角色继承关系
-func (ps *PermissionService) AddRoleInheritance(c context.Context, roleID uint, parentRoleID uint, tenantID ...uint) (err error) {
-
-	domain := ps.HandleTenantID(c, tenantID...)
+// addRoleInheritance 添加角色继承关系
+func addRoleInheritance(ops app.CasbinInterf, c context.Context, roleID uint, parentRoleID uint, tenantID ...uint) error {
+	domain := handleTenantID(c, tenantID...)
 
 	// 检查角色是否已继承自父角色
 	if roleID == parentRoleID || parentRoleID == 0 {
@@ -102,38 +95,33 @@ func (ps *PermissionService) AddRoleInheritance(c context.Context, roleID uint, 
 	}
 
 	// 添加角色继承关系
-	err = app.CasbinV2.AddRoleInheritance(roleID, parentRoleID, domain...)
-	return
+	return ops.AddRoleInheritance(roleID, parentRoleID, domain...)
 }
 
-// 编辑角色继承关系
-func (ps *PermissionService) EditRoleInheritance(c context.Context, roleID uint, parentRoleID uint, tenantID ...uint) (err error) {
-
-	domain := ps.HandleTenantID(c, tenantID...)
+// editRoleInheritance 编辑角色继承关系
+func editRoleInheritance(ops app.CasbinInterf, c context.Context, roleID uint, parentRoleID uint, tenantID ...uint) error {
+	domain := handleTenantID(c, tenantID...)
 
 	if roleID == parentRoleID {
 		app.ZapLog.Warn("child role ID cannot be equal to parent role ID")
 		return nil
 	}
 	// 删除角色的所有继承关系
-	err = app.CasbinV2.DeleteRoleInheritance(roleID, 0, domain...)
-	if err != nil {
-		return
+	if err := ops.DeleteRoleInheritance(roleID, 0, domain...); err != nil {
+		return err
 	}
 	if parentRoleID > 0 {
 		// 添加角色继承关系
-		err = app.CasbinV2.AddRoleInheritance(roleID, parentRoleID, domain...)
-		if err != nil {
-			return
+		if err := ops.AddRoleInheritance(roleID, parentRoleID, domain...); err != nil {
+			return err
 		}
 	}
-	return
+	return nil
 }
 
-// 删除角色继承关系
-func (ps *PermissionService) DeleteRoleInheritance(c context.Context, roleID uint, parentRoleID uint, tenantID ...uint) (err error) {
-
-	domain := ps.HandleTenantID(c, tenantID...)
+// deleteRoleInheritance 删除角色继承关系
+func deleteRoleInheritance(ops app.CasbinInterf, c context.Context, roleID uint, parentRoleID uint, tenantID ...uint) error {
+	domain := handleTenantID(c, tenantID...)
 
 	// 检查角色是否已继承自父角色
 	if roleID == parentRoleID || parentRoleID == 0 {
@@ -141,40 +129,161 @@ func (ps *PermissionService) DeleteRoleInheritance(c context.Context, roleID uin
 		return nil
 	}
 	// 删除角色的继承关系
-	err = app.CasbinV2.DeleteRoleInheritance(roleID, parentRoleID, domain...)
-	return
+	return ops.DeleteRoleInheritance(roleID, parentRoleID, domain...)
 }
 
-// 为用户分配角色
-func (ps *PermissionService) AddRoleForUser(c context.Context, userID uint, roles []uint, tenantID ...uint) (err error) {
-	domain := ps.HandleTenantID(c, tenantID...)
+// addRoleForUser 为用户分配角色
+func addRoleForUser(ops app.CasbinInterf, c context.Context, userID uint, roles []uint, tenantID ...uint) error {
+	domain := handleTenantID(c, tenantID...)
 	// 添加用户角色关系
-	err = app.CasbinV2.AddRolesForUserByID(userID, roles, domain...)
-	return
+	return ops.AddRolesForUserByID(userID, roles, domain...)
 }
 
-// 编辑用户的角色
-func (ps *PermissionService) EditUserRoles(c context.Context, userID uint, roles []uint, tenantID ...uint) (err error) {
-	domain := ps.HandleTenantID(c, tenantID...)
+// editUserRoles 编辑用户的角色
+func editUserRoles(ops app.CasbinInterf, c context.Context, userID uint, roles []uint, tenantID ...uint) error {
+	domain := handleTenantID(c, tenantID...)
 	// 删除用户的所有角色
-	err = app.CasbinV2.DeleteRolesForUserByID(userID, nil, domain...)
-	if err != nil {
-		return
+	if err := ops.DeleteRolesForUserByID(userID, nil, domain...); err != nil {
+		return err
 	}
 	// 添加用户角色关系
-	err = app.CasbinV2.AddRolesForUserByID(userID, roles, domain...)
-	return
+	return ops.AddRolesForUserByID(userID, roles, domain...)
 }
 
-// 删除用户的角色关系
-func (ps *PermissionService) DeleteUserRoles(c context.Context, userID uint, roles []uint, tenantID ...uint) (err error) {
-	domain := ps.HandleTenantID(c, tenantID...)
+// deleteUserRoles 删除用户的角色关系
+func deleteUserRoles(ops app.CasbinInterf, c context.Context, userID uint, roles []uint, tenantID ...uint) error {
+	domain := handleTenantID(c, tenantID...)
 	// 删除用户角色关系
-	err = app.CasbinV2.DeleteRolesForUserByID(userID, roles, domain...)
-	return
+	return ops.DeleteRolesForUserByID(userID, roles, domain...)
 }
 
-// 根据菜单ID调整与该菜单关联的角色的API权限
+// RunWithCasbin 将业务DB写与casbin策略写包进同一事务：fn 内用 tx 做库写、用 ops 做策略写
+// （经 PermissionService.Use(ops) 调用），任一步失败整体回滚；
+// 提交成功后刷新全局enforcer内存（失败仅告警，由定期自动重载兜底，数据已一致）
+func (ps *PermissionService) RunWithCasbin(c context.Context, fn func(tx *gorm.DB, ops app.CasbinInterf) error) error {
+	err := app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
+		ops, err := app.CasbinV2.NewTxCasbin(tx)
+		if err != nil {
+			return err
+		}
+		return fn(tx, ops)
+	})
+	if err != nil {
+		return err
+	}
+	if err := app.CasbinV2.ReloadPolicy(); err != nil {
+		app.ZapLog.Warn("事务提交后刷新全局casbin策略失败，等待自动重载", zap.Error(err))
+	}
+	return nil
+}
+
+// Use 返回绑定指定casbin操作目标的权限操作视图，用于RunWithCasbin事务闭包内调用，
+// 使策略写入与业务表写在同一事务中提交/回滚
+func (ps *PermissionService) Use(ops app.CasbinInterf) *ScopedPermissionService {
+	return &ScopedPermissionService{ops: ops}
+}
+
+// ScopedPermissionService 事务内权限操作视图（目标为绑定事务的casbin enforcer）
+type ScopedPermissionService struct {
+	ops app.CasbinInterf
+}
+
+// DeleteRoleApis 删除角色的所有权限
+func (s *ScopedPermissionService) DeleteRoleApis(c context.Context, roleID uint, tenantID ...uint) error {
+	return deleteRoleApis(s.ops, c, roleID, tenantID...)
+}
+
+// AddPoliciesForRole 为角色分配资源权限，原有权限会被清除
+func (s *ScopedPermissionService) AddPoliciesForRole(c context.Context, roleID uint, sysapilist models.SysApiList, tenantID ...uint) error {
+	return addPoliciesForRole(s.ops, c, roleID, sysapilist, tenantID...)
+}
+
+// AddRoleInheritance 添加角色继承关系
+func (s *ScopedPermissionService) AddRoleInheritance(c context.Context, roleID uint, parentRoleID uint, tenantID ...uint) error {
+	return addRoleInheritance(s.ops, c, roleID, parentRoleID, tenantID...)
+}
+
+// EditRoleInheritance 编辑角色继承关系
+func (s *ScopedPermissionService) EditRoleInheritance(c context.Context, roleID uint, parentRoleID uint, tenantID ...uint) error {
+	return editRoleInheritance(s.ops, c, roleID, parentRoleID, tenantID...)
+}
+
+// DeleteRoleInheritance 删除角色继承关系
+func (s *ScopedPermissionService) DeleteRoleInheritance(c context.Context, roleID uint, parentRoleID uint, tenantID ...uint) error {
+	return deleteRoleInheritance(s.ops, c, roleID, parentRoleID, tenantID...)
+}
+
+// AddRoleForUser 为用户分配角色
+func (s *ScopedPermissionService) AddRoleForUser(c context.Context, userID uint, roles []uint, tenantID ...uint) error {
+	return addRoleForUser(s.ops, c, userID, roles, tenantID...)
+}
+
+// EditUserRoles 编辑用户的角色
+func (s *ScopedPermissionService) EditUserRoles(c context.Context, userID uint, roles []uint, tenantID ...uint) error {
+	return editUserRoles(s.ops, c, userID, roles, tenantID...)
+}
+
+// DeleteUserRoles 删除用户的角色关系
+func (s *ScopedPermissionService) DeleteUserRoles(c context.Context, userID uint, roles []uint, tenantID ...uint) error {
+	return deleteUserRoles(s.ops, c, userID, roles, tenantID...)
+}
+
+// GetDomain 获取当前租户的Casbin域
+func (ps *PermissionService) GetDomain(c context.Context) []string {
+	return getDomain(c)
+}
+
+// PrefixDomain 为租户ID添加域前缀
+func (ps *PermissionService) PrefixDomain(tenantID uint) string {
+	return app.CasbinV2.PrefixDomain(tenantID)
+}
+
+// HandleTenantID 处理租户ID，若未指定则使用当前登录用户所处的租户的ID，返回nil时代表全局租户
+func (ps *PermissionService) HandleTenantID(c context.Context, tenantID ...uint) []string {
+	return handleTenantID(c, tenantID...)
+}
+
+// DeleteRoleApis 删除角色的所有权限
+func (ps *PermissionService) DeleteRoleApis(c context.Context, roleID uint, tenantID ...uint) error {
+	return deleteRoleApis(app.CasbinV2, c, roleID, tenantID...)
+}
+
+// AddPoliciesForRole 为角色分配资源权限，原有权限会被清除
+func (ps *PermissionService) AddPoliciesForRole(c context.Context, roleID uint, sysapilist models.SysApiList, tenantID ...uint) error {
+	return addPoliciesForRole(app.CasbinV2, c, roleID, sysapilist, tenantID...)
+}
+
+// AddRoleInheritance 添加角色继承关系
+func (ps *PermissionService) AddRoleInheritance(c context.Context, roleID uint, parentRoleID uint, tenantID ...uint) error {
+	return addRoleInheritance(app.CasbinV2, c, roleID, parentRoleID, tenantID...)
+}
+
+// EditRoleInheritance 编辑角色继承关系
+func (ps *PermissionService) EditRoleInheritance(c context.Context, roleID uint, parentRoleID uint, tenantID ...uint) error {
+	return editRoleInheritance(app.CasbinV2, c, roleID, parentRoleID, tenantID...)
+}
+
+// DeleteRoleInheritance 删除角色继承关系
+func (ps *PermissionService) DeleteRoleInheritance(c context.Context, roleID uint, parentRoleID uint, tenantID ...uint) error {
+	return deleteRoleInheritance(app.CasbinV2, c, roleID, parentRoleID, tenantID...)
+}
+
+// AddRoleForUser 为用户分配角色
+func (ps *PermissionService) AddRoleForUser(c context.Context, userID uint, roles []uint, tenantID ...uint) error {
+	return addRoleForUser(app.CasbinV2, c, userID, roles, tenantID...)
+}
+
+// EditUserRoles 编辑用户的角色
+func (ps *PermissionService) EditUserRoles(c context.Context, userID uint, roles []uint, tenantID ...uint) error {
+	return editUserRoles(app.CasbinV2, c, userID, roles, tenantID...)
+}
+
+// DeleteUserRoles 删除用户的角色关系
+func (ps *PermissionService) DeleteUserRoles(c context.Context, userID uint, roles []uint, tenantID ...uint) error {
+	return deleteUserRoles(app.CasbinV2, c, userID, roles, tenantID...)
+}
+
+// UpdateRoleApiPermissionsByMenuID 根据菜单ID调整与该菜单关联的角色的API权限
 func (ps *PermissionService) UpdateRoleApiPermissionsByMenuID(c context.Context, menuID uint, tenantID ...uint) (err error) {
 	//domain := ps.HandleTenantID(c, tenantID...)
 
@@ -205,7 +314,9 @@ func (ps *PermissionService) UpdateRoleApiPermissionsByMenuID(c context.Context,
 		domain := ps.HandleTenantID(c, role.TenantID)
 		// 如果角色没有关联任何菜单，则清除该角色的所有API权限
 		if roleMenusForRole.IsEmpty() {
-			app.CasbinV2.RemoveAllPoliciesForRole(role.ID, domain...)
+			if err = app.CasbinV2.RemoveAllPoliciesForRole(role.ID, domain...); err != nil {
+				return
+			}
 			continue
 		}
 
@@ -240,7 +351,7 @@ func (ps *PermissionService) UpdateRoleApiPermissionsByMenuID(c context.Context,
 	return
 }
 
-// 根据API ID调整与该API关联的角色的权限
+// UpdateRoleApiPermissionsByApiID 根据API ID调整与该API关联的角色的权限
 func (ps *PermissionService) UpdateRoleApiPermissionsByApiID(c context.Context, apiID uint, tenantID ...uint) (err error) {
 	domain := ps.HandleTenantID(c, tenantID...)
 
@@ -287,7 +398,9 @@ func (ps *PermissionService) UpdateRoleApiPermissionsByApiID(c context.Context, 
 
 		// 如果角色没有关联任何菜单，则清除该角色的所有API权限
 		if roleMenusForRole.IsEmpty() {
-			app.CasbinV2.RemoveAllPoliciesForRole(roleID, domain...)
+			if err = app.CasbinV2.RemoveAllPoliciesForRole(roleID, domain...); err != nil {
+				return
+			}
 			continue
 		}
 

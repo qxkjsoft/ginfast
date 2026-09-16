@@ -2,6 +2,7 @@ package common
 
 import (
 	"gin-fast/app/global/app"
+	"net/http"
 	"regexp"
 	"strings"
 	"unicode"
@@ -30,6 +31,22 @@ func IsSkipAuthUser(userID uint) bool {
 		return true
 	}
 	return false
+}
+
+// selfServiceAPIs 自服务接口白名单：这些接口在控制器内部强制只操作当前登录用户本人数据
+// （如个人中心的查看/修改个人信息、改密码、传头像，不接受外部用户ID参数），无越权面。
+// 个人中心属于全员基础功能，任何已登录用户都应可用，不依赖角色菜单授权（前端右上角入口为硬编码跳转，
+// 若按角色挂菜单鉴权，角色漏配隐藏菜单时页面即不可用）。
+var selfServiceAPIs = map[string]string{
+	"/api/users/profile":         http.MethodGet,
+	"/api/users/updateAccount":   http.MethodPut,
+	"/api/users/updateBasicInfo": http.MethodPut,
+	"/api/users/uploadAvatar":    http.MethodPost,
+}
+
+// IsSelfServiceAPI 判断请求是否为自服务接口（路径与方法均精确匹配才算命中）
+func IsSelfServiceAPI(path, method string) bool {
+	return selfServiceAPIs[path] == method
 }
 
 // KeepLettersOnly 只保留字符串中的英文字母和下划线，并且全部转换为小写

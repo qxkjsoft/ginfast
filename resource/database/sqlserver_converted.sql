@@ -392,7 +392,7 @@ CREATE TABLE [sys_tenants] (
     [status] TINYINT NOT NULL DEFAULT 1,
     [domain] NVARCHAR(255),
     [platform_domain] NVARCHAR(255),
-    [menu_permission] NVARCHAR(1000),
+    [menu_permission] NVARCHAR(MAX),
     PRIMARY KEY ([id])
 );
 

@@ -108,7 +108,34 @@ casbin:
   autoloadpolicyseconds: 120 # 扫描数据库策略的频率(单位：秒)
   tableprefix: "sys_"
   tablename: "casbin_rule" 
-  modelconfig: | # 竖线 | 表示以下整段文本保持换行格式
+  # modelconfig：Casbin 访问控制模型（竖线 | 表示以下整段文本保持换行格式）
+  # ============ 请求定义 ============
+  # [request_definition] 定义一次鉴权请求携带的参数及顺序，与代码中 Enforce(sub, obj, act, dom) 传参一一对应
+  #   sub：请求主体，带前缀的用户ID（如 user_1），见 casbinhelper.PrefixUser
+  #   obj：请求对象，即接口路径（如 /api/users）
+  #   act：操作，即 HTTP 方法（如 GET、POST）
+  #   dom：域，即租户，格式 domain_租户ID（如 domain_1）；无租户的请求传 *，代表全局权限
+  # ============ 策略定义 ============
+  # [policy_definition] 定义 sys_casbin_rule 表中 ptype='p' 的策略行格式，表中 v0~v3 列按此顺序对应
+  #   sub：策略主体，带前缀的角色ID（如 role_1），权限挂在角色上而非直接挂用户
+  #   obj：被授权的接口路径，支持 KeyMatch2 通配写法
+  #   act：被授权的 HTTP 方法，匹配时按正则处理
+  #   dom：授权域（租户）：写精确 domain_x 仅对该租户生效；写 * 对所有租户生效（见匹配器末段）
+  # ============ 角色定义 ============
+  # [role_definition] 定义 sys_casbin_rule 表中 ptype='g' 的规则格式（用户-角色分配、角色-角色继承）
+  #   三个下划线表示每条 g 规则带域参数：v0=成员(用户或子角色)、v1=角色(或父角色)、v2=域(租户)
+  #   g 规则的域支持模式匹配（如 * 表示所有租户生效），因为代码给 g 段注册了 KeyMatch2 域匹配函数
+  # ============ 策略效果 ============
+  # [policy_effect] 多条策略的裁决方式：只要存在任意一条 p 策略匹配成功（p.eft == allow），请求即放行
+  # ============ 匹配器 ============
+  # [matchers] 请求与策略的匹配规则，四段条件 && 连接、全部满足才有权限：
+  #   ① g(r.sub, p.sub, r.dom)：在请求租户 r.dom 下，用户 r.sub 经 g 规则链（含角色继承）关联到策略主体 p.sub
+  #   ② keyMatch2(r.obj, p.obj)：请求路径与授权路径按 KeyMatch2 匹配（支持 /api/**、:id 等 RESTful 通配）
+  #   ③ regexMatch(r.act, p.act)：HTTP 方法按正则匹配（策略中可写 GET|POST 这类表达式）
+  #   ④ (r.dom == p.dom || p.dom == "*")：请求租户与策略租户精确相等，或策略域为 * 通配所有租户
+  #      注意 p.dom 不走 KeyMatch2，只能写精确 domain_x 或 *，写 domain_* 之类的模式无效
+  # 注意：若在下方模型文本内加注释，只能整行以 # 开头（casbin 解析器会跳过），不可追加在 [xxx] 行尾（会破坏段识别）
+  modelconfig: |
     [request_definition]
     r = sub, obj, act, dom
     [policy_definition]

@@ -229,15 +229,19 @@ func (sc *SysRoleController) Add(c *gin.Context) {
 	role.Description = req.Description
 	role.ParentID = req.ParentID
 
-	err = app.DB().WithContext(c).Create(role).Error
+	// 使用事务创建角色与casbin继承关系（任一步失败整体回滚）
+	err = sc.CasbinService.RunWithCasbin(c, func(tx *gorm.DB, ops app.CasbinInterf) error {
+		if err := tx.Create(role).Error; err != nil {
+			return err
+		}
+		// casbin 添加角色继承关系
+		if req.ParentID > 0 {
+			return sc.CasbinService.Use(ops).AddRoleInheritance(c, role.ID, req.ParentID)
+		}
+		return nil
+	})
 	if err != nil {
 		sc.FailAndAbort(c, "新增角色失败", err)
-	}
-	// casbin 添加角色继承关系
-	if req.ParentID > 0 {
-		if err = sc.CasbinService.AddRoleInheritance(c, role.ID, req.ParentID); err != nil {
-			sc.FailAndAbort(c, "添加角色继承关系失败", err)
-		}
 	}
 	sc.SuccessWithMessage(c, "角色创建成功", role)
 }
@@ -320,8 +324,8 @@ func (sc *SysRoleController) Delete(c *gin.Context) {
 		sc.FailAndAbort(c, "存在用户关联此角色，无法删除", nil)
 	}
 
-	// 使用事务删除角色和相关数据
-	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
+	// 使用事务删除角色相关数据与casbin策略（任一步失败整体回滚）
+	err = sc.CasbinService.RunWithCasbin(c, func(tx *gorm.DB, ops app.CasbinInterf) error {
 		// 删除角色菜单关联
 		if err := tx.Where("role_id = ?", req.ID).Delete(&models.SysRoleMenu{}).Error; err != nil {
 			return err
@@ -332,19 +336,19 @@ func (sc *SysRoleController) Delete(c *gin.Context) {
 			return err
 		}
 
+		// 删除角色继承关系
+		if err := sc.CasbinService.Use(ops).DeleteRoleInheritance(c, role.ID, role.ParentID); err != nil {
+			return fmt.Errorf("删除角色继承关系失败: %w", err)
+		}
+		// 删除角色关联的api权限
+		if err := sc.CasbinService.Use(ops).DeleteRoleApis(c, role.ID); err != nil {
+			return fmt.Errorf("删除角色关联的api权限失败: %w", err)
+		}
 		return nil
 	})
 
 	if err != nil {
 		sc.FailAndAbort(c, "删除角色失败", err)
-	}
-	// 删除角色继承关系
-	if err := sc.CasbinService.DeleteRoleInheritance(c, role.ID, role.ParentID); err != nil {
-		sc.FailAndAbort(c, "删除角色继承关系失败", err)
-	}
-	// 删除角色关联的api权限
-	if err := sc.CasbinService.DeleteRoleApis(c, role.ID); err != nil {
-		sc.FailAndAbort(c, "删除角色关联的api权限失败", err)
 	}
 	sc.SuccessWithMessage(c, "角色删除成功", nil)
 }
@@ -400,8 +404,9 @@ func (sm *SysRoleController) AddRoleMenu(c *gin.Context) {
 		}
 	}
 
-	// 使用事务处理角色菜单权限分配
-	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
+	// 使用事务处理角色菜单权限分配与casbin策略同步（任一步失败整体回滚）
+	apis := menuList.GetApis().Unique()
+	err = sm.CasbinService.RunWithCasbin(c, func(tx *gorm.DB, ops app.CasbinInterf) error {
 		// 先删除该角色的所有菜单权限
 		if err := tx.Where("role_id = ?", req.RoleID).Delete(&models.SysRoleMenu{}).Error; err != nil {
 			app.ZapLog.Error("删除角色菜单权限失败", zap.Error(err), zap.Uint("roleId", req.RoleID))
@@ -424,18 +429,14 @@ func (sm *SysRoleController) AddRoleMenu(c *gin.Context) {
 			}
 		}
 
-		return nil
+		// 同步调整casbin权限（与业务表写同一事务）
+		return sm.CasbinService.Use(ops).AddPoliciesForRole(c, req.RoleID, apis)
 	})
 
 	if err != nil {
 		sm.FailAndAbort(c, "分配角色菜单权限失败", err)
 	}
 
-	// // 调整casbin权限
-	apis := menuList.GetApis().Unique()
-	if err := sm.CasbinService.AddPoliciesForRole(c, req.RoleID, apis); err != nil {
-		sm.FailAndAbort(c, "添加角色权限策略失败", err)
-	}
 	sm.SuccessWithMessage(c, "分配角色菜单权限成功", nil)
 }
 
