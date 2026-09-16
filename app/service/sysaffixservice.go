@@ -6,6 +6,7 @@ import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
 	"gin-fast/app/utils/filehelper"
+	"gin-fast/app/utils/goroutinehelper"
 	"io"
 	"os"
 	"path/filepath"
@@ -281,10 +282,17 @@ func (s *SysAffixService) MergeChunks(ctx context.Context, req *models.ChunkMerg
 	models.UpdateChunkStatus(ctx, req.UploadId, tenantID, 1)
 
 	// 异步清理临时分片文件
-	go func() {
-		os.RemoveAll(tmpDir)
-		models.DeleteChunksByUploadId(ctx, req.UploadId, tenantID)
-	}()
+	// context.WithoutCancel 断开与已结束请求的关联，避免异步读取已被复用的 gin.Context；
+	// GoSafe 捕获 panic，防止异步任务拖垮进程
+	cleanCtx := context.WithoutCancel(ctx)
+	goroutinehelper.GoSafe("sysaffix.mergeCleanup", func() {
+		if err := os.RemoveAll(tmpDir); err != nil {
+			app.ZapLog.Warn("清理临时分片目录失败", zap.Error(err))
+		}
+		if err := models.DeleteChunksByUploadId(cleanCtx, req.UploadId, tenantID); err != nil {
+			app.ZapLog.Warn("清理分片记录失败", zap.Error(err))
+		}
+	})
 
 	return affix, nil
 }
