@@ -245,7 +245,9 @@ func (s *SysMenuService) Import(c *gin.Context, menuList models.SysMenuList, use
 		allPaths := menuList.GetAllPaths()
 		if len(allPaths) > 0 {
 			var pathCount int64
-			app.DB().WithContext(c).Model(&models.SysMenu{}).Where("path IN ? AND type IN (1, 2)", allPaths).Count(&pathCount)
+			if err := app.DB().WithContext(c).Model(&models.SysMenu{}).Where("path IN ? AND type IN (1, 2)", allPaths).Count(&pathCount).Error; err != nil {
+				return nil, fmt.Errorf("查询路由路径重复失败: %w", err)
+			}
 			if pathCount > 0 {
 				return nil, fmt.Errorf("存在重复的路由路径:%s", strings.Join(allPaths, ","))
 			}
@@ -255,7 +257,9 @@ func (s *SysMenuService) Import(c *gin.Context, menuList models.SysMenuList, use
 		allPermission := menuList.GetAllPermission()
 		if len(allPermission) > 0 {
 			var permissionCount int64
-			app.DB().WithContext(c).Model(&models.SysMenu{}).Where("permission IN ? AND type = 3", allPermission).Count(&permissionCount)
+			if err := app.DB().WithContext(c).Model(&models.SysMenu{}).Where("permission IN ? AND type = 3", allPermission).Count(&permissionCount).Error; err != nil {
+				return nil, fmt.Errorf("查询权限标识重复失败: %w", err)
+			}
 			if permissionCount > 0 {
 				return nil, fmt.Errorf("存在重复的权限标识:%s", strings.Join(allPermission, ","))
 			}

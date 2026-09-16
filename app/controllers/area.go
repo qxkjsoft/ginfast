@@ -178,7 +178,10 @@ func (ac *AreaController) Add(c *gin.Context) {
 	}
 
 	exist := models.NewAreaModel()
-	_ = exist.FindByValue(c, req.Value)
+	// 查无数据时 gormhelper.MaskNotDataError 已全局屏蔽 ErrRecordNotFound，err != nil 即真实异常
+	if err := exist.FindByValue(c, req.Value); err != nil {
+		ac.FailAndAbort(c, "查询地区信息失败", err)
+	}
 	if !exist.IsEmpty() {
 		ac.FailAndAbort(c, "地区编码已存在", nil)
 	}
@@ -187,7 +190,9 @@ func (ac *AreaController) Add(c *gin.Context) {
 	level := 1
 	if req.Parent != "" {
 		parent := models.NewAreaModel()
-		_ = parent.FindByValue(c, req.Parent)
+		if err := parent.FindByValue(c, req.Parent); err != nil {
+			ac.FailAndAbort(c, "查询父级地区失败", err)
+		}
 		if parent.IsEmpty() {
 			ac.FailAndAbort(c, "父级地区不存在", nil)
 		}
@@ -235,7 +240,10 @@ func (ac *AreaController) Update(c *gin.Context) {
 	// 编码变化时校验新编码不冲突
 	if req.Value != area.Value {
 		exist := models.NewAreaModel()
-		_ = exist.FindByValue(c, req.Value)
+		// 查无数据时 gormhelper.MaskNotDataError 已全局屏蔽 ErrRecordNotFound，err != nil 即真实异常
+		if err := exist.FindByValue(c, req.Value); err != nil {
+			ac.FailAndAbort(c, "查询地区信息失败", err)
+		}
 		if !exist.IsEmpty() {
 			ac.FailAndAbort(c, "地区编码已被使用", nil)
 		}

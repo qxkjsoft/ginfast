@@ -158,19 +158,23 @@ func (s *SysAffixService) SaveChunk(ctx context.Context, req *models.ChunkUpload
 
 	// 检查是否已存在该分片记录（幂等处理）
 	var existingCount int64
-	app.DB().WithContext(ctx).Model(&models.SysAffixChunk{}).
+	if err := app.DB().WithContext(ctx).Model(&models.SysAffixChunk{}).
 		Where("upload_id = ? AND chunk_index = ? AND tenant_id = ?", req.UploadId, req.ChunkIndex, tenantID).
-		Count(&existingCount)
+		Count(&existingCount).Error; err != nil {
+		return fmt.Errorf("查询分片记录失败: %v", err)
+	}
 
 	if existingCount > 0 {
 		// 更新已有记录
-		app.DB().WithContext(ctx).Model(&models.SysAffixChunk{}).
+		if err := app.DB().WithContext(ctx).Model(&models.SysAffixChunk{}).
 			Where("upload_id = ? AND chunk_index = ? AND tenant_id = ?", req.UploadId, req.ChunkIndex, tenantID).
 			Updates(map[string]interface{}{
 				"chunk_path": chunkPath,
 				"chunk_size": req.File.Size,
 				"status":     0,
-			})
+			}).Error; err != nil {
+			return fmt.Errorf("更新分片记录失败: %v", err)
+		}
 	} else {
 		// 创建新记录
 		if err := chunk.Create(ctx); err != nil {
@@ -278,8 +282,11 @@ func (s *SysAffixService) MergeChunks(ctx context.Context, req *models.ChunkMerg
 		return nil, fmt.Errorf("保存文件记录失败: %v", err)
 	}
 
-	// 更新分片记录状态为已合并
-	models.UpdateChunkStatus(ctx, req.UploadId, tenantID, 1)
+	// 更新分片记录状态为已合并（失败不中断主流程：附件已落库，返回失败会诱导
+	// 客户端重试合并造成重复附件；但状态残留会留下脏数据，记 Error 便于排查）
+	if err := models.UpdateChunkStatus(ctx, req.UploadId, tenantID, 1); err != nil {
+		app.ZapLog.Error("更新分片合并状态失败", zap.Error(err))
+	}
 
 	// 异步清理临时分片文件
 	// context.WithoutCancel 断开与已结束请求的关联，避免异步读取已被复用的 gin.Context；
@@ -309,11 +316,15 @@ func (s *SysAffixService) CancelChunkUpload(ctx context.Context, uploadId string
 		app.ZapLog.Warn("清理临时分片目录失败", zap.Error(err))
 	}
 
-	// 更新分片记录状态为已取消
-	models.UpdateChunkStatus(ctx, uploadId, tenantID, 2)
+	// 更新分片记录状态为已取消（清理路径：失败仅记日志，不中断取消流程）
+	if err := models.UpdateChunkStatus(ctx, uploadId, tenantID, 2); err != nil {
+		app.ZapLog.Error("更新分片取消状态失败", zap.Error(err))
+	}
 
-	// 删除分片记录
-	models.DeleteChunksByUploadId(ctx, uploadId, tenantID)
+	// 删除分片记录（清理路径：失败仅记日志，不中断取消流程）
+	if err := models.DeleteChunksByUploadId(ctx, uploadId, tenantID); err != nil {
+		app.ZapLog.Warn("删除分片记录失败", zap.Error(err))
+	}
 
 	return nil
 }
