@@ -254,6 +254,8 @@ func InitRoutes(engine *gin.Engine) {
 			{
 				// API列表
 				sysApi.GET("/list", sysApiControllers.List)
+				// API分组列表
+				sysApi.GET("/groupList", sysApiControllers.GroupList)
 				// 根据ID获取API信息
 				sysApi.GET("/:id", sysApiControllers.GetByID)
 				// 新增API

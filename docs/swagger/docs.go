@@ -24,6 +24,238 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/plugins/simplemall/members/edit": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "更新会员信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "微信会员管理"
+                ],
+                "summary": "更新会员信息",
+                "parameters": [
+                    {
+                        "description": "会员信息",
+                        "name": "member",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PluWxMembersUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "会员更新成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/plugins/simplemall/members/list": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "获取微信会员列表，支持分页和搜索",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "微信会员管理"
+                ],
+                "summary": "获取微信会员列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "pageNum",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "用户名",
+                        "name": "username",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "昵称",
+                        "name": "nickName",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "手机号",
+                        "name": "phone",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "状态",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功返回会员列表",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/plugins/simplemall/members/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "根据会员ID获取详细信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "微信会员管理"
+                ],
+                "summary": "根据ID获取会员详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "会员ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功返回会员信息",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "会员ID格式错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "删除指定会员（软删除）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "微信会员管理"
+                ],
+                "summary": "删除会员",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "会员ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "会员删除成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "会员ID格式错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/captcha/verify": {
             "get": {
                 "description": "获取验证码图片字符串，返回验证码ID和base64图片",
@@ -496,6 +728,396 @@ const docTemplate = `{
                 }
             }
         },
+        "/plugins/simplemall/plushoporder/expressconfig/companies": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "simplemall-电子面单"
+                ],
+                "summary": "支持的快递公司列表",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/plugins/simplemall/plushoporder/expressconfig/list": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "simplemall-电子面单"
+                ],
+                "summary": "快递公司配置列表",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/plugins/simplemall/plushoporder/expressconfig/save": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "simplemall-电子面单"
+                ],
+                "summary": "快递公司配置新增/编辑",
+                "parameters": [
+                    {
+                        "description": "快递公司配置",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PluExpressCompanyConfigSaveRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/plugins/simplemall/plushoporder/sender/add": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "simplemall-电子面单"
+                ],
+                "summary": "新增/编辑寄件人",
+                "parameters": [
+                    {
+                        "description": "寄件人信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PluExpressSenderSaveRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/plugins/simplemall/plushoporder/sender/default": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "simplemall-电子面单"
+                ],
+                "summary": "设置默认寄件人",
+                "parameters": [
+                    {
+                        "description": "寄件人ID",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PluExpressSenderSetDefaultRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/plugins/simplemall/plushoporder/sender/delete": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "simplemall-电子面单"
+                ],
+                "summary": "删除寄件人",
+                "parameters": [
+                    {
+                        "description": "寄件人ID",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PluExpressSenderDeleteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/plugins/simplemall/plushoporder/sender/list": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "simplemall-电子面单"
+                ],
+                "summary": "寄件人分页列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "pageNum",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "寄件人姓名(模糊)",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "状态",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/plugins/simplemall/plushoporder/waybill/list": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "simplemall-电子面单"
+                ],
+                "summary": "面单记录分页列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "pageNum",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "订单号",
+                        "name": "orderNo",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "快递公司",
+                        "name": "companyName",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/plugins/simplemall/plushoporder/waybill/print": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "simplemall-电子面单"
+                ],
+                "summary": "电子面单打单取号",
+                "parameters": [
+                    {
+                        "description": "打单参数",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PluExpressWaybillPrintRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/plugins/simplemall/plushoporder/waybill/reprint": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "simplemall-电子面单"
+                ],
+                "summary": "面单补打",
+                "parameters": [
+                    {
+                        "description": "订单ID",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PluExpressWaybillReprintRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/plugins/simplemall/plushoporder/waybill/ship": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "simplemall-电子面单"
+                ],
+                "summary": "电子面单打单并发货",
+                "parameters": [
+                    {
+                        "description": "打单参数",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PluExpressWaybillShipRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/pluginsmanager/export": {
             "post": {
                 "security": [
@@ -758,6 +1380,251 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "刷新令牌无效或过期",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/simplemall/wx/captcha": {
+            "get": {
+                "description": "生成验证码图片，返回验证码ID和base64图片（用于账号密码登录）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "微信会员"
+                ],
+                "summary": "获取验证码图片",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/simplemall/wx/loginByPassword": {
+            "post": {
+                "description": "使用用户名或邮箱+密码登录，需携带图形验证码（由 WxCaptchaMiddleware 强制校验）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "微信会员"
+                ],
+                "summary": "账号密码登录",
+                "parameters": [
+                    {
+                        "description": "登录参数",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.WxLoginByPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/simplemall/wx/member/updatePassword": {
+            "put": {
+                "description": "修改当前登录会员的密码；已设置过密码必须提供正确的旧密码，未设置过密码可直接设置新密码",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "微信会员"
+                ],
+                "summary": "修改密码",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "修改密码参数",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.WxUpdatePasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/simplemall/wx/member/updateProfile": {
+            "put": {
+                "description": "更新当前登录会员的昵称、头像及邮箱（邮箱选填，填写时校验格式及唯一性）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "微信会员"
+                ],
+                "summary": "更新用户昵称、头像及邮箱",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "更新参数",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.WxUpdateProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/simplemall/wx/register": {
+            "post": {
+                "description": "使用用户名+密码注册会员，必填 username/password/phone/email，昵称选填；需携带图形验证码（由 WxCaptchaMiddleware 强制校验）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "微信会员"
+                ],
+                "summary": "注册账号",
+                "parameters": [
+                    {
+                        "description": "注册参数",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.WxRegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/simplemall/wx/resetPassword": {
+            "post": {
+                "description": "通过邮箱验证码重置密码，成功后可使用新密码登录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "微信会员"
+                ],
+                "summary": "找回密码",
+                "parameters": [
+                    {
+                        "description": "重置参数",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.WxResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/simplemall/wx/sendEmailCode": {
+            "post": {
+                "description": "向已注册邮箱发送找回密码验证码（6位数字，5分钟有效）；需携带图形验证码（由 WxCaptchaMiddleware 强制校验），同邮箱60秒内仅可发送一次",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "微信会员"
+                ],
+                "summary": "发送邮箱验证码",
+                "parameters": [
+                    {
+                        "description": "发送参数",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.WxSendEmailCodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1441,6 +2308,42 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/sysApi/groupList": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "获取已使用的API分组（去重，按组内最新创建时间降序）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "API管理"
+                ],
+                "summary": "API分组列表",
+                "responses": {
+                    "200": {
+                        "description": "成功返回API分组列表",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -5548,7 +6451,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.DeleteRequest"
+                            "$ref": "#/definitions/gin-fast_app_models.DeleteRequest"
                         }
                     }
                 ],
@@ -5602,7 +6505,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.UpdateRequest"
+                            "$ref": "#/definitions/gin-fast_app_models.UpdateRequest"
                         }
                     }
                 ],
@@ -6048,6 +6951,66 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "gin-fast_app_models.DeleteRequest": {
+            "type": "object",
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "gin-fast_app_models.UpdateRequest": {
+            "type": "object",
+            "required": [
+                "deptId",
+                "id",
+                "nickName",
+                "roles",
+                "sex",
+                "userName"
+            ],
+            "properties": {
+                "deptId": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "nickName": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "sex": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "userName": {
+                    "type": "string"
+                }
+            }
+        },
         "models.AddRequest": {
             "type": "object",
             "required": [
@@ -6219,17 +7182,6 @@ const docTemplate = `{
                 }
             }
         },
-        "models.DeleteRequest": {
-            "type": "object",
-            "required": [
-                "id"
-            ],
-            "properties": {
-                "id": {
-                    "type": "integer"
-                }
-            }
-        },
         "models.LoginRequest": {
             "type": "object",
             "required": [
@@ -6245,6 +7197,201 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "models.PluExpressCompanyConfigSaveRequest": {
+            "type": "object",
+            "required": [
+                "companyName",
+                "shipperCode"
+            ],
+            "properties": {
+                "companyName": {
+                    "type": "string"
+                },
+                "customerName": {
+                    "type": "string"
+                },
+                "customerPwd": {
+                    "type": "string"
+                },
+                "expType": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isReturnSignBill": {
+                    "type": "integer"
+                },
+                "isSendMessage": {
+                    "type": "integer"
+                },
+                "isSubscribe": {
+                    "type": "integer"
+                },
+                "monthCode": {
+                    "type": "string"
+                },
+                "payType": {
+                    "type": "integer"
+                },
+                "sendSite": {
+                    "type": "string"
+                },
+                "shipperCode": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "templateSize": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.PluExpressSenderDeleteRequest": {
+            "type": "object",
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.PluExpressSenderSaveRequest": {
+            "type": "object",
+            "required": [
+                "address",
+                "city",
+                "mobile",
+                "name",
+                "province"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "company": {
+                    "type": "string"
+                },
+                "district": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isDefault": {
+                    "type": "integer"
+                },
+                "mobile": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "province": {
+                    "type": "string"
+                },
+                "sortOrder": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.PluExpressSenderSetDefaultRequest": {
+            "type": "object",
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.PluExpressWaybillPrintRequest": {
+            "type": "object",
+            "required": [
+                "orderId",
+                "shipperCode"
+            ],
+            "properties": {
+                "orderId": {
+                    "type": "integer"
+                },
+                "senderId": {
+                    "description": "寄件人ID,不传取默认寄件人",
+                    "type": "integer"
+                },
+                "shipperCode": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.PluExpressWaybillReprintRequest": {
+            "type": "object",
+            "required": [
+                "orderId"
+            ],
+            "properties": {
+                "orderId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.PluExpressWaybillShipRequest": {
+            "type": "object",
+            "required": [
+                "orderId",
+                "shipperCode"
+            ],
+            "properties": {
+                "orderId": {
+                    "type": "integer"
+                },
+                "senderId": {
+                    "type": "integer"
+                },
+                "shipperCode": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.PluWxMembersUpdateRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "id",
+                "nickName",
+                "phone"
+            ],
+            "properties": {
+                "avatar": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "nickName": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
                 }
             }
         },
@@ -7115,28 +8262,44 @@ const docTemplate = `{
                 }
             }
         },
-        "models.UpdateRequest": {
+        "models.WxLoginByPasswordRequest": {
             "type": "object",
             "required": [
-                "deptId",
-                "id",
-                "nickName",
-                "roles",
-                "sex",
-                "userName"
+                "account",
+                "captchaId",
+                "captchaValue",
+                "password"
             ],
             "properties": {
-                "deptId": {
-                    "type": "integer"
+                "account": {
+                    "type": "string"
                 },
-                "description": {
+                "captchaId": {
+                    "type": "string"
+                },
+                "captchaValue": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.WxRegisterRequest": {
+            "type": "object",
+            "required": [
+                "captchaId",
+                "captchaValue"
+            ],
+            "properties": {
+                "captchaId": {
+                    "type": "string"
+                },
+                "captchaValue": {
                     "type": "string"
                 },
                 "email": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "nickName": {
                     "type": "string"
@@ -7147,19 +8310,67 @@ const docTemplate = `{
                 "phone": {
                     "type": "string"
                 },
-                "roles": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "sex": {
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.WxResetPasswordRequest": {
+            "type": "object",
+            "required": [
+                "emailCode"
+            ],
+            "properties": {
+                "email": {
                     "type": "string"
                 },
-                "status": {
-                    "type": "integer"
+                "emailCode": {
+                    "type": "string"
                 },
-                "userName": {
+                "newPassword": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.WxSendEmailCodeRequest": {
+            "type": "object",
+            "required": [
+                "captchaId",
+                "captchaValue"
+            ],
+            "properties": {
+                "captchaId": {
+                    "type": "string"
+                },
+                "captchaValue": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.WxUpdatePasswordRequest": {
+            "type": "object",
+            "properties": {
+                "newPassword": {
+                    "type": "string"
+                },
+                "oldPassword": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.WxUpdateProfileRequest": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "nickname": {
                     "type": "string"
                 }
             }

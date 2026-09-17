@@ -1,5 +1,46 @@
 basePath: /api
 definitions:
+  gin-fast_app_models.DeleteRequest:
+    properties:
+      id:
+        type: integer
+    required:
+    - id
+    type: object
+  gin-fast_app_models.UpdateRequest:
+    properties:
+      deptId:
+        type: integer
+      description:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      nickName:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+      roles:
+        items:
+          type: integer
+        type: array
+      sex:
+        type: string
+      status:
+        type: integer
+      userName:
+        type: string
+    required:
+    - deptId
+    - id
+    - nickName
+    - roles
+    - sex
+    - userName
+    type: object
   models.AddRequest:
     properties:
       deptId:
@@ -116,13 +157,6 @@ definitions:
     - fileSize
     - totalChunks
     type: object
-  models.DeleteRequest:
-    properties:
-      id:
-        type: integer
-    required:
-    - id
-    type: object
   models.LoginRequest:
     properties:
       password:
@@ -134,6 +168,137 @@ definitions:
     required:
     - password
     - username
+    type: object
+  models.PluExpressCompanyConfigSaveRequest:
+    properties:
+      companyName:
+        type: string
+      customerName:
+        type: string
+      customerPwd:
+        type: string
+      expType:
+        type: integer
+      id:
+        type: integer
+      isReturnSignBill:
+        type: integer
+      isSendMessage:
+        type: integer
+      isSubscribe:
+        type: integer
+      monthCode:
+        type: string
+      payType:
+        type: integer
+      sendSite:
+        type: string
+      shipperCode:
+        type: string
+      status:
+        type: integer
+      templateSize:
+        type: string
+    required:
+    - companyName
+    - shipperCode
+    type: object
+  models.PluExpressSenderDeleteRequest:
+    properties:
+      id:
+        type: integer
+    required:
+    - id
+    type: object
+  models.PluExpressSenderSaveRequest:
+    properties:
+      address:
+        type: string
+      city:
+        type: string
+      company:
+        type: string
+      district:
+        type: string
+      id:
+        type: integer
+      isDefault:
+        type: integer
+      mobile:
+        type: string
+      name:
+        type: string
+      province:
+        type: string
+      sortOrder:
+        type: integer
+      status:
+        type: integer
+    required:
+    - address
+    - city
+    - mobile
+    - name
+    - province
+    type: object
+  models.PluExpressSenderSetDefaultRequest:
+    properties:
+      id:
+        type: integer
+    required:
+    - id
+    type: object
+  models.PluExpressWaybillPrintRequest:
+    properties:
+      orderId:
+        type: integer
+      senderId:
+        description: 寄件人ID,不传取默认寄件人
+        type: integer
+      shipperCode:
+        type: string
+    required:
+    - orderId
+    - shipperCode
+    type: object
+  models.PluExpressWaybillReprintRequest:
+    properties:
+      orderId:
+        type: integer
+    required:
+    - orderId
+    type: object
+  models.PluExpressWaybillShipRequest:
+    properties:
+      orderId:
+        type: integer
+      senderId:
+        type: integer
+      shipperCode:
+        type: string
+    required:
+    - orderId
+    - shipperCode
+    type: object
+  models.PluWxMembersUpdateRequest:
+    properties:
+      avatar:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      nickName:
+        type: string
+      phone:
+        type: string
+      status:
+        type: integer
+    required:
+    - email
+    - id
+    - nickName
+    - phone
     type: object
   models.RefreshRequest:
     properties:
@@ -722,39 +887,80 @@ definitions:
     - id
     - name
     type: object
-  models.UpdateRequest:
+  models.WxLoginByPasswordRequest:
     properties:
-      deptId:
-        type: integer
-      description:
+      account:
+        type: string
+      captchaId:
+        type: string
+      captchaValue:
+        type: string
+      password:
+        type: string
+    required:
+    - account
+    - captchaId
+    - captchaValue
+    - password
+    type: object
+  models.WxRegisterRequest:
+    properties:
+      captchaId:
+        type: string
+      captchaValue:
         type: string
       email:
         type: string
-      id:
-        type: integer
       nickName:
         type: string
       password:
         type: string
       phone:
         type: string
-      roles:
-        items:
-          type: integer
-        type: array
-      sex:
-        type: string
-      status:
-        type: integer
-      userName:
+      username:
         type: string
     required:
-    - deptId
-    - id
-    - nickName
-    - roles
-    - sex
-    - userName
+    - captchaId
+    - captchaValue
+    type: object
+  models.WxResetPasswordRequest:
+    properties:
+      email:
+        type: string
+      emailCode:
+        type: string
+      newPassword:
+        type: string
+    required:
+    - emailCode
+    type: object
+  models.WxSendEmailCodeRequest:
+    properties:
+      captchaId:
+        type: string
+      captchaValue:
+        type: string
+      email:
+        type: string
+    required:
+    - captchaId
+    - captchaValue
+    type: object
+  models.WxUpdatePasswordRequest:
+    properties:
+      newPassword:
+        type: string
+      oldPassword:
+        type: string
+    type: object
+  models.WxUpdateProfileRequest:
+    properties:
+      avatar:
+        type: string
+      email:
+        type: string
+      nickname:
+        type: string
     type: object
 host: localhost:8080
 info:
@@ -770,6 +976,158 @@ info:
   title: Gin-Fast API
   version: "1.0"
 paths:
+  /api/plugins/simplemall/members/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定会员（软删除）
+      parameters:
+      - description: 会员ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 会员删除成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 会员ID格式错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 删除会员
+      tags:
+      - 微信会员管理
+    get:
+      consumes:
+      - application/json
+      description: 根据会员ID获取详细信息
+      parameters:
+      - description: 会员ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回会员信息
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 会员ID格式错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 根据ID获取会员详情
+      tags:
+      - 微信会员管理
+  /api/plugins/simplemall/members/edit:
+    put:
+      consumes:
+      - application/json
+      description: 更新会员信息
+      parameters:
+      - description: 会员信息
+        in: body
+        name: member
+        required: true
+        schema:
+          $ref: '#/definitions/models.PluWxMembersUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 会员更新成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 更新会员信息
+      tags:
+      - 微信会员管理
+  /api/plugins/simplemall/members/list:
+    get:
+      consumes:
+      - application/json
+      description: 获取微信会员列表，支持分页和搜索
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: pageNum
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 用户名
+        in: query
+        name: username
+        type: string
+      - description: 昵称
+        in: query
+        name: nickName
+        type: string
+      - description: 手机号
+        in: query
+        name: phone
+        type: string
+      - description: 状态
+        in: query
+        name: status
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回会员列表
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取微信会员列表
+      tags:
+      - 微信会员管理
   /captcha/verify:
     get:
       description: 获取验证码图片字符串，返回验证码ID和base64图片
@@ -1081,6 +1439,246 @@ paths:
       summary: 用户登录
       tags:
       - 认证
+  /plugins/simplemall/plushoporder/expressconfig/companies:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 支持的快递公司列表
+      tags:
+      - simplemall-电子面单
+  /plugins/simplemall/plushoporder/expressconfig/list:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 快递公司配置列表
+      tags:
+      - simplemall-电子面单
+  /plugins/simplemall/plushoporder/expressconfig/save:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 快递公司配置
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.PluExpressCompanyConfigSaveRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 快递公司配置新增/编辑
+      tags:
+      - simplemall-电子面单
+  /plugins/simplemall/plushoporder/sender/add:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 寄件人信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.PluExpressSenderSaveRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 新增/编辑寄件人
+      tags:
+      - simplemall-电子面单
+  /plugins/simplemall/plushoporder/sender/default:
+    put:
+      parameters:
+      - description: 寄件人ID
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.PluExpressSenderSetDefaultRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 设置默认寄件人
+      tags:
+      - simplemall-电子面单
+  /plugins/simplemall/plushoporder/sender/delete:
+    delete:
+      parameters:
+      - description: 寄件人ID
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.PluExpressSenderDeleteRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 删除寄件人
+      tags:
+      - simplemall-电子面单
+  /plugins/simplemall/plushoporder/sender/list:
+    get:
+      parameters:
+      - description: 页码
+        in: query
+        name: pageNum
+        required: true
+        type: integer
+      - description: 每页数量
+        in: query
+        name: pageSize
+        required: true
+        type: integer
+      - description: 寄件人姓名(模糊)
+        in: query
+        name: name
+        type: string
+      - description: 状态
+        in: query
+        name: status
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 寄件人分页列表
+      tags:
+      - simplemall-电子面单
+  /plugins/simplemall/plushoporder/waybill/list:
+    get:
+      parameters:
+      - description: 页码
+        in: query
+        name: pageNum
+        required: true
+        type: integer
+      - description: 每页数量
+        in: query
+        name: pageSize
+        required: true
+        type: integer
+      - description: 订单号
+        in: query
+        name: orderNo
+        type: string
+      - description: 快递公司
+        in: query
+        name: companyName
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 面单记录分页列表
+      tags:
+      - simplemall-电子面单
+  /plugins/simplemall/plushoporder/waybill/print:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 打单参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.PluExpressWaybillPrintRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 电子面单打单取号
+      tags:
+      - simplemall-电子面单
+  /plugins/simplemall/plushoporder/waybill/reprint:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 订单ID
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.PluExpressWaybillReprintRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 面单补打
+      tags:
+      - simplemall-电子面单
+  /plugins/simplemall/plushoporder/waybill/ship:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 打单参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.PluExpressWaybillShipRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 电子面单打单并发货
+      tags:
+      - simplemall-电子面单
   /pluginsmanager/export:
     post:
       consumes:
@@ -1259,6 +1857,169 @@ paths:
       summary: 刷新访问令牌
       tags:
       - 认证
+  /simplemall/wx/captcha:
+    get:
+      description: 生成验证码图片，返回验证码ID和base64图片（用于账号密码登录）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取验证码图片
+      tags:
+      - 微信会员
+  /simplemall/wx/loginByPassword:
+    post:
+      consumes:
+      - application/json
+      description: 使用用户名或邮箱+密码登录，需携带图形验证码（由 WxCaptchaMiddleware 强制校验）
+      parameters:
+      - description: 登录参数
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.WxLoginByPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 账号密码登录
+      tags:
+      - 微信会员
+  /simplemall/wx/member/updatePassword:
+    put:
+      consumes:
+      - application/json
+      description: 修改当前登录会员的密码；已设置过密码必须提供正确的旧密码，未设置过密码可直接设置新密码
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: 修改密码参数
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.WxUpdatePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 修改密码
+      tags:
+      - 微信会员
+  /simplemall/wx/member/updateProfile:
+    put:
+      consumes:
+      - application/json
+      description: 更新当前登录会员的昵称、头像及邮箱（邮箱选填，填写时校验格式及唯一性）
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: 更新参数
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.WxUpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 更新用户昵称、头像及邮箱
+      tags:
+      - 微信会员
+  /simplemall/wx/register:
+    post:
+      consumes:
+      - application/json
+      description: 使用用户名+密码注册会员，必填 username/password/phone/email，昵称选填；需携带图形验证码（由 WxCaptchaMiddleware
+        强制校验）
+      parameters:
+      - description: 注册参数
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.WxRegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 注册账号
+      tags:
+      - 微信会员
+  /simplemall/wx/resetPassword:
+    post:
+      consumes:
+      - application/json
+      description: 通过邮箱验证码重置密码，成功后可使用新密码登录
+      parameters:
+      - description: 重置参数
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.WxResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 找回密码
+      tags:
+      - 微信会员
+  /simplemall/wx/sendEmailCode:
+    post:
+      consumes:
+      - application/json
+      description: 向已注册邮箱发送找回密码验证码（6位数字，5分钟有效）；需携带图形验证码（由 WxCaptchaMiddleware 强制校验），同邮箱60秒内仅可发送一次
+      parameters:
+      - description: 发送参数
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.WxSendEmailCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 发送邮箱验证码
+      tags:
+      - 微信会员
   /sysAffix/{id}:
     get:
       consumes:
@@ -1739,6 +2500,29 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 更新API
+      tags:
+      - API管理
+  /sysApi/groupList:
+    get:
+      consumes:
+      - application/json
+      description: 获取已使用的API分组（去重，按组内最新创建时间降序）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回API分组列表
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: API分组列表
       tags:
       - API管理
   /sysApi/list:
@@ -4394,7 +5178,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/models.DeleteRequest'
+          $ref: '#/definitions/gin-fast_app_models.DeleteRequest'
       produces:
       - application/json
       responses:
@@ -4429,7 +5213,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/models.UpdateRequest'
+          $ref: '#/definitions/gin-fast_app_models.UpdateRequest'
       produces:
       - application/json
       responses:

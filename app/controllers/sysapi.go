@@ -74,6 +74,27 @@ func (sc *SysApiController) List(c *gin.Context) {
 	})
 }
 
+// GroupList API分组列表
+// @Summary API分组列表
+// @Description 获取已使用的API分组（去重，按组内最新创建时间降序）
+// @Tags API管理
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{} "成功返回API分组列表"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /sysApi/groupList [get]
+// @Security ApiKeyAuth
+func (sc *SysApiController) GroupList(c *gin.Context) {
+	groups, err := models.NewSysApi().GetGroupList(c)
+	if err != nil {
+		sc.FailAndAbort(c, "获取API分组列表失败", err)
+	}
+
+	sc.Success(c, gin.H{
+		"list": groups,
+	})
+}
+
 // GetByID 根据ID获取API信息
 // @Summary 根据ID获取API信息
 // @Description 根据API ID获取API详细信息
