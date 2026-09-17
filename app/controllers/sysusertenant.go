@@ -4,6 +4,8 @@ import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
 	"gin-fast/app/service"
+	"gin-fast/app/utils/common"
+	"gin-fast/app/utils/tenanthelper"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -119,6 +121,11 @@ func (sut *SysUserTenantController) BatchAdd(c *gin.Context) {
 		sut.FailAndAbort(c, err.Error(), err)
 	}
 
+	// 跨租户归属校验：防止租户管理员操作其他租户的用户关联
+	if !sut.CanManageTenant(c, req.TenantID) {
+		sut.FailAndAbort(c, "无权操作目标租户", nil)
+	}
+
 	// 创建用户租户关联列表
 	var sysUserTenants []*models.SysUserTenant
 	for _, userID := range req.UserIDs {
@@ -184,6 +191,11 @@ func (sut *SysUserTenantController) BatchDelete(c *gin.Context) {
 		sut.FailAndAbort(c, err.Error(), err)
 	}
 
+	// 跨租户归属校验：防止租户管理员操作其他租户的用户关联
+	if !sut.CanManageTenant(c, req.TenantID) {
+		sut.FailAndAbort(c, "无权操作目标租户", nil)
+	}
+
 	// 检查是否有默认租户关联，如果有则不允许删除
 	defaultSysUserTenant := &models.SysUserTenant{}
 	err := defaultSysUserTenant.Find(c, func(d *gorm.DB) *gorm.DB {
@@ -246,13 +258,28 @@ func (sut *SysUserTenantController) UserListAll(c *gin.Context) {
 		sut.FailAndAbort(c, err.Error(), err)
 	}
 
+	// 跨租户数据收敛：超管/全局租户用户（平台级账号）保持全库查询；
+	// 普通租户用户强制追加本租户过滤，防止借该接口枚举全库用户的手机号/邮箱
+	currentTenantID := sut.GetCurrentTenantID(c)
+	tenantFiltered := tenanthelper.MultiTenantEnabled() && currentTenantID > 0 &&
+		!common.IsSkipAuthUser(sut.GetCurrentUserID(c))
+
 	userList := models.NewUserList()
-	total, err := userList.GetTotal(c, req.Handle())
+	total, err := userList.GetTotal(c, req.Handle(), func(d *gorm.DB) *gorm.DB {
+		if tenantFiltered {
+			return d.Where("tenant_id = ?", currentTenantID)
+		}
+		return d
+	})
 	if err != nil {
 		sut.FailAndAbort(c, err.Error(), err)
 	}
 	err = userList.Find(c, req.Paginate(), req.Handle(), func(d *gorm.DB) *gorm.DB {
-		return d.Omit("password").Preload("Roles").Preload("Department").Preload("Tenant")
+		base := d.Omit("password").Preload("Roles").Preload("Department").Preload("Tenant")
+		if tenantFiltered {
+			return base.Where("tenant_id = ?", currentTenantID)
+		}
+		return base
 	})
 	if err != nil {
 		sut.FailAndAbort(c, err.Error(), err)
@@ -348,6 +375,11 @@ func (sut *SysUserTenantController) SetUserRoles(c *gin.Context) {
 	var req models.SysUserTenantSetRolesRequest
 	if err := req.Validate(c); err != nil {
 		sut.FailAndAbort(c, err.Error(), err)
+	}
+
+	// 跨租户归属校验：防止租户管理员操作其他租户的用户角色
+	if !sut.CanManageTenant(c, req.TenantID) {
+		sut.FailAndAbort(c, "无权操作目标租户", nil)
 	}
 
 	// 验证角色是否属于指定的租户
