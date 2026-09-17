@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
@@ -804,16 +805,24 @@ func (sm *SysMenuController) Import(c *gin.Context) {
 
 // Backup 备份菜单数据
 // @Summary 备份菜单数据
-// @Description 将当前全部菜单（含关联API）以JSON格式备份到服务器 resource/database/menu_backup 目录，文件名按时间生成
+// @Description 将当前菜单（含关联API）以JSON格式备份到服务器 resource/database/menu_backup 目录，文件名按时间生成；请求体传 menuIds 时仅备份勾选菜单及其子级与父级链，为空时备份全部
 // @Tags 菜单管理
 // @Accept json
 // @Produce json
+// @Param menuIds body models.SysMenuBackupRequest false "菜单ID列表，为空时备份全部"
 // @Success 200 {object} map[string]interface{} "备份成功，返回文件名和菜单数量"
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"
 // @Router /sysMenu/backup [post]
 // @Security ApiKeyAuth
 func (sm *SysMenuController) Backup(c *gin.Context) {
-	result, err := sm.menuService.Backup(c)
+	// 请求体可选：无 body 或 menuIds 为空时备份全部菜单
+	var req models.SysMenuBackupRequest
+	if err := req.Validate(c); err != nil && !errors.Is(err, io.EOF) {
+		sm.FailAndAbort(c, err.Error(), err)
+		return
+	}
+
+	result, err := sm.menuService.Backup(c, req.MenuIDs)
 	if err != nil {
 		sm.FailAndAbort(c, err.Error(), err)
 		return

@@ -124,6 +124,16 @@ func (r *SysMenuBackupDeleteRequest) Validate(c *gin.Context) error {
 	return r.Check(c, r)
 }
 
+// SysMenuBackupRequest 菜单备份请求结构（menuIds 为空时备份全部菜单，非空时仅备份勾选菜单及其子级与父级链）
+type SysMenuBackupRequest struct {
+	Validator
+	MenuIDs []uint `form:"menuIds" json:"menuIds"`
+}
+
+func (r *SysMenuBackupRequest) Validate(c *gin.Context) error {
+	return r.Check(c, r)
+}
+
 // SysMenuBackupFile 菜单备份文件信息
 type SysMenuBackupFile struct {
 	Filename string    `json:"filename"`          // 文件名

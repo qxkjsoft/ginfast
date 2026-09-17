@@ -4266,7 +4266,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "将当前全部菜单（含关联API）以JSON格式备份到服务器 resource/database/menu_backup 目录，文件名按时间生成",
+                "description": "将当前菜单（含关联API）以JSON格式备份到服务器 resource/database/menu_backup 目录，文件名按时间生成；请求体传 menuIds 时仅备份勾选菜单及其子级与父级链，为空时备份全部",
                 "consumes": [
                     "application/json"
                 ],
@@ -4277,6 +4277,16 @@ const docTemplate = `{
                     "菜单管理"
                 ],
                 "summary": "备份菜单数据",
+                "parameters": [
+                    {
+                        "description": "菜单ID列表，为空时备份全部",
+                        "name": "menuIds",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/models.SysMenuBackupRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "备份成功，返回文件名和菜单数量",
@@ -7898,6 +7908,17 @@ const docTemplate = `{
                 },
                 "menuId": {
                     "type": "integer"
+                }
+            }
+        },
+        "models.SysMenuBackupRequest": {
+            "type": "object",
+            "properties": {
+                "menuIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 }
             }
         },

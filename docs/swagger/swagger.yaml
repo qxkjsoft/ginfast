@@ -646,6 +646,13 @@ definitions:
     required:
     - menuId
     type: object
+  models.SysMenuBackupRequest:
+    properties:
+      menuIds:
+        items:
+          type: integer
+        type: array
+    type: object
   models.SysMenuBatchDeleteRequest:
     properties:
       menuIds:
@@ -3758,7 +3765,14 @@ paths:
     post:
       consumes:
       - application/json
-      description: 将当前全部菜单（含关联API）以JSON格式备份到服务器 resource/database/menu_backup 目录，文件名按时间生成
+      description: 将当前菜单（含关联API）以JSON格式备份到服务器 resource/database/menu_backup 目录，文件名按时间生成；请求体传
+        menuIds 时仅备份勾选菜单及其子级与父级链，为空时备份全部
+      parameters:
+      - description: 菜单ID列表，为空时备份全部
+        in: body
+        name: menuIds
+        schema:
+          $ref: '#/definitions/models.SysMenuBackupRequest'
       produces:
       - application/json
       responses:

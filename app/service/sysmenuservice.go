@@ -715,8 +715,9 @@ func menuIdentity(menu *models.SysMenu) string {
 	return menu.Path
 }
 
-// Backup 备份全部菜单数据（含关联API）到服务器备份目录，文件名按时间生成
-func (s *SysMenuService) Backup(c *gin.Context) (*models.SysMenuBackupResult, error) {
+// Backup 备份菜单数据（含关联API）到服务器备份目录，文件名按时间生成
+// menuIDs 为空时备份全部菜单；非空时仅备份勾选菜单及其子级与父级链，文件名带 _part 后缀
+func (s *SysMenuService) Backup(c *gin.Context, menuIDs []uint) (*models.SysMenuBackupResult, error) {
 	// 获取全部菜单数据（含关联API）
 	menuList := models.NewSysMenuList()
 	err := menuList.Find(c, func(db *gorm.DB) *gorm.DB {
@@ -727,6 +728,15 @@ func (s *SysMenuService) Backup(c *gin.Context) (*models.SysMenuBackupResult, er
 	}
 	if menuList.IsEmpty() {
 		return nil, fmt.Errorf("当前没有菜单数据，无法备份")
+	}
+
+	// 部分备份：筛选勾选菜单及其子级与父级链
+	isPartial := len(menuIDs) > 0
+	if isPartial {
+		menuList = mergeBackupMenus(menuList, menuIDs)
+		if menuList.IsEmpty() {
+			return nil, fmt.Errorf("勾选的菜单不存在，无法备份")
+		}
 	}
 
 	// 此时的menuList是平铺列表，长度即菜单总数；BuildTree后仅剩根级节点
@@ -743,16 +753,47 @@ func (s *SysMenuService) Backup(c *gin.Context) (*models.SysMenuBackupResult, er
 	}
 
 	filename := "menu_backup_" + time.Now().Format("20060102150405") + ".json"
+	if isPartial {
+		filename = "menu_backup_" + time.Now().Format("20060102150405") + "_part.json"
+	}
 	if err = os.WriteFile(filepath.Join(backupDir, filename), []byte(content), 0644); err != nil {
 		return nil, fmt.Errorf("写入备份文件失败: %w", err)
 	}
 
+	backupScope := "全部菜单"
+	if isPartial {
+		backupScope = fmt.Sprintf("勾选菜单 %d 项", len(menuIDs))
+	}
 	app.ZapLog.Info("菜单备份完成",
 		zap.String("文件名", filename),
 		zap.Int("菜单数量", menuCount),
+		zap.String("备份范围", backupScope),
 	)
 
 	return &models.SysMenuBackupResult{Filename: filename, MenuCount: menuCount}, nil
+}
+
+// mergeBackupMenus 部分备份的菜单集合：勾选菜单及其全部子级，再补充父级链按 ID 去重合并，
+// 保证备份树合法（如单独勾选按钮时，缺少父级链会导致备份根级出现按钮，恢复时树校验不通过）
+func mergeBackupMenus(list models.SysMenuList, menuIDs []uint) models.SysMenuList {
+	withChildren := list.GetMenusWithChildern(menuIDs...)
+	withParents := list.GetMenusWithParents(menuIDs...)
+
+	merged := make(models.SysMenuList, 0, len(withChildren)+len(withParents))
+	added := make(map[uint]bool, len(withChildren)+len(withParents))
+	for _, menu := range withChildren {
+		if !added[menu.ID] {
+			added[menu.ID] = true
+			merged = append(merged, menu)
+		}
+	}
+	for _, menu := range withParents {
+		if !added[menu.ID] {
+			added[menu.ID] = true
+			merged = append(merged, menu)
+		}
+	}
+	return merged
 }
 
 // BackupList 获取菜单备份文件列表（按文件名倒序，最新在前）
