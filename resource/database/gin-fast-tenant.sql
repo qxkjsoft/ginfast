@@ -463,6 +463,7 @@ CREATE TABLE `sys_tenants` (
   `domain` varchar(255) DEFAULT NULL COMMENT '租户域名',
   `platform_domain` varchar(255) DEFAULT NULL COMMENT '主域名',
   `menu_permission` text COMMENT '菜单权限',
+  `menu_filter_enabled` tinyint(1) NOT NULL DEFAULT '0' COMMENT '菜单权限过滤开关 0关闭 1开启',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `code` (`code`) USING BTREE,
   UNIQUE KEY `domain` (`domain`) USING BTREE,

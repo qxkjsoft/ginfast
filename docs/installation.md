@@ -584,3 +584,31 @@ VITE_APP_BASE_URL = http://localhost:8080
 ### 总结
 
 通过以上步骤，您应该已经成功安装了 Gin-Fast 系统。如果遇到问题，请参考常见问题部分或提交 Issue。
+
+## 存量库升级
+
+### 租户菜单权限过滤开关（menu_filter_enabled）
+
+租户新增「菜单权限过滤」按租户开关（`sys_tenants.menu_filter_enabled`）。开启后该租户的左侧导航（`getRouters`）与菜单管理/角色授权页面（`getMenuList`）均按租户「菜单权限」勾选的菜单集合过滤；关闭则不限制。存量库需手工执行以下语句加列（已配置过菜单权限的租户默认开启，未配置的默认关闭）：
+
+```sql
+-- MySQL
+ALTER TABLE `sys_tenants`
+  ADD COLUMN `menu_filter_enabled` tinyint(1) NOT NULL DEFAULT 0 COMMENT '菜单权限过滤开关 0关闭 1开启' AFTER `menu_permission`;
+UPDATE `sys_tenants` SET `menu_filter_enabled` = IF(`menu_permission` IS NULL OR `menu_permission` = '', 0, 1);
+
+-- PostgreSQL
+ALTER TABLE sys_tenants ADD COLUMN menu_filter_enabled SMALLINT NOT NULL DEFAULT 0;
+COMMENT ON COLUMN sys_tenants.menu_filter_enabled IS '菜单权限过滤开关 0关闭 1开启';
+UPDATE sys_tenants SET menu_filter_enabled = CASE WHEN menu_permission IS NULL OR menu_permission = '' THEN 0 ELSE 1 END;
+
+-- SQL Server
+ALTER TABLE sys_tenants ADD menu_filter_enabled BIT NOT NULL DEFAULT 0;
+UPDATE sys_tenants SET menu_filter_enabled = CASE WHEN menu_permission IS NULL OR menu_permission = '' THEN 0 ELSE 1 END;
+```
+
+升级后行为变化提示：
+
+- 开关关闭的租户：菜单管理/角色授权页面从「被过滤」变为「可见全部菜单」（旧版本为强制过滤）。
+- 开关开启的租户：左侧导航从「纯角色过滤」收窄为「角色 ∩ 租户菜单权限」（旧版本 `getRouters` 不受租户菜单权限约束）。
+- 前端菜单权限树父子节点独立勾选：只勾子不勾父时父目录不会下发，为既有语义。

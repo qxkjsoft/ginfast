@@ -8,13 +8,14 @@ import (
 // SysTenantAddRequest 新增租户请求结构
 type SysTenantAddRequest struct {
 	Validator
-	Name           string `form:"name" json:"name" validate:"required" message:"租户名称不能为空"`
-	Code           string `form:"code" json:"code" validate:"required" message:"租户编码不能为空"`
-	Description    string `form:"description" json:"description"`
-	Status         int8   `form:"status" json:"status" validate:"in:0,1" message:"状态值必须为0或1"`
-	Domain         string `form:"domain" json:"domain" validate:"required" message:"域名不能为空"`
-	PlatformDomain string `form:"platformDomain" json:"platformDomain"`
-	MenuPermission string `form:"menuPermission" json:"menuPermission"`
+	Name              string `form:"name" json:"name" validate:"required" message:"租户名称不能为空"`
+	Code              string `form:"code" json:"code" validate:"required" message:"租户编码不能为空"`
+	Description       string `form:"description" json:"description"`
+	Status            int8   `form:"status" json:"status" validate:"in:0,1" message:"状态值必须为0或1"`
+	Domain            string `form:"domain" json:"domain" validate:"required" message:"域名不能为空"`
+	PlatformDomain    string `form:"platformDomain" json:"platformDomain"`
+	MenuPermission    string `form:"menuPermission" json:"menuPermission"`
+	MenuFilterEnabled bool   `form:"menuFilterEnabled" json:"menuFilterEnabled"`
 }
 
 func (r *SysTenantAddRequest) Validate(c *gin.Context) error {
@@ -24,14 +25,15 @@ func (r *SysTenantAddRequest) Validate(c *gin.Context) error {
 // SysTenantUpdateRequest 更新租户请求结构
 type SysTenantUpdateRequest struct {
 	Validator
-	ID             uint   `form:"id" json:"id" validate:"required" message:"租户ID不能为空"`
-	Name           string `form:"name" json:"name" validate:"required" message:"租户名称不能为空"`
-	Code           string `form:"code" json:"code" validate:"required" message:"租户编码不能为空"`
-	Description    string `form:"description" json:"description"`
-	Status         int8   `form:"status" json:"status" validate:"in:0,1" message:"状态值必须为0或1"`
-	Domain         string `form:"domain" json:"domain" validate:"required" message:"域名不能为空"`
-	PlatformDomain string `form:"platformDomain" json:"platformDomain"`
-	MenuPermission string `form:"menuPermission" json:"menuPermission"`
+	ID                uint   `form:"id" json:"id" validate:"required" message:"租户ID不能为空"`
+	Name              string `form:"name" json:"name" validate:"required" message:"租户名称不能为空"`
+	Code              string `form:"code" json:"code" validate:"required" message:"租户编码不能为空"`
+	Description       string `form:"description" json:"description"`
+	Status            int8   `form:"status" json:"status" validate:"in:0,1" message:"状态值必须为0或1"`
+	Domain            string `form:"domain" json:"domain" validate:"required" message:"域名不能为空"`
+	PlatformDomain    string `form:"platformDomain" json:"platformDomain"`
+	MenuPermission    string `form:"menuPermission" json:"menuPermission"`
+	MenuFilterEnabled bool   `form:"menuFilterEnabled" json:"menuFilterEnabled"`
 }
 
 func (r *SysTenantUpdateRequest) Validate(c *gin.Context) error {

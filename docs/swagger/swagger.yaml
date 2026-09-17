@@ -1,58 +1,5 @@
 basePath: /api
 definitions:
-  gin-fast_app_models.DeleteRequest:
-    properties:
-      id:
-        type: integer
-    required:
-    - id
-    type: object
-  gin-fast_app_models.LoginRequest:
-    properties:
-      password:
-        type: string
-      tenantCode:
-        type: string
-      username:
-        type: string
-    required:
-    - password
-    - username
-    type: object
-  gin-fast_app_models.UpdateRequest:
-    properties:
-      deptId:
-        type: integer
-      description:
-        type: string
-      email:
-        type: string
-      id:
-        type: integer
-      nickName:
-        type: string
-      password:
-        type: string
-      phone:
-        type: string
-      roles:
-        items:
-          type: integer
-        type: array
-      sex:
-        type: string
-      status:
-        type: integer
-      userName:
-        type: string
-    required:
-    - deptId
-    - id
-    - nickName
-    - roles
-    - sex
-    - userName
-    type: object
   models.AddRequest:
     properties:
       deptId:
@@ -168,6 +115,25 @@ definitions:
     - fileName
     - fileSize
     - totalChunks
+    type: object
+  models.DeleteRequest:
+    properties:
+      id:
+        type: integer
+    required:
+    - id
+    type: object
+  models.LoginRequest:
+    properties:
+      password:
+        type: string
+      tenantCode:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
     type: object
   models.RefreshRequest:
     properties:
@@ -641,6 +607,8 @@ definitions:
         type: string
       domain:
         type: string
+      menuFilterEnabled:
+        type: boolean
       menuPermission:
         type: string
       name:
@@ -664,6 +632,8 @@ definitions:
         type: string
       id:
         type: integer
+      menuFilterEnabled:
+        type: boolean
       menuPermission:
         type: string
       name:
@@ -739,7 +709,6 @@ definitions:
       sex:
         type: string
     required:
-    - description
     - nickName
     - sex
     type: object
@@ -752,6 +721,40 @@ definitions:
     required:
     - id
     - name
+    type: object
+  models.UpdateRequest:
+    properties:
+      deptId:
+        type: integer
+      description:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      nickName:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+      roles:
+        items:
+          type: integer
+        type: array
+      sex:
+        type: string
+      status:
+        type: integer
+      userName:
+        type: string
+    required:
+    - deptId
+    - id
+    - nickName
+    - roles
+    - sex
+    - userName
     type: object
 host: localhost:8080
 info:
@@ -1056,7 +1059,7 @@ paths:
         name: loginReq
         required: true
         schema:
-          $ref: '#/definitions/gin-fast_app_models.LoginRequest'
+          $ref: '#/definitions/models.LoginRequest'
       produces:
       - application/json
       responses:
@@ -1160,6 +1163,11 @@ paths:
         description: 是否覆盖文件 (0:否, 1:是)
         in: formData
         name: overwriteFiles
+        type: integer
+      - default: 0
+        description: 已确认database.sql中的危险语句，允许继续执行 (0:否, 1:是)
+        in: formData
+        name: confirmDangerousSQL
         type: integer
       produces:
       - application/json
@@ -4386,7 +4394,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/gin-fast_app_models.DeleteRequest'
+          $ref: '#/definitions/models.DeleteRequest'
       produces:
       - application/json
       responses:
@@ -4421,7 +4429,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/gin-fast_app_models.UpdateRequest'
+          $ref: '#/definitions/models.UpdateRequest'
       produces:
       - application/json
       responses:

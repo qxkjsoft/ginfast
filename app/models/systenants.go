@@ -3,6 +3,8 @@ package models
 import (
 	"context"
 	"gin-fast/app/global/app"
+	"strconv"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -18,6 +20,27 @@ type Tenant struct {
 	PlatformDomain string `gorm:"column:platform_domain;size:255;comment:平台基础域名(如:yourplatform.com)" json:"platformDomain"`
 	CreatedBy      uint   `gorm:"column:created_by;comment:创建人" json:"createdBy"`
 	MenuPermission string `gorm:"column:menu_permission;type:text;comment:菜单权限" json:"menuPermission"`
+	// MenuFilterEnabled 租户级菜单权限过滤开关；开启时菜单下发（左侧导航、菜单管理、角色授权）均按 MenuPermission 集合过滤，关闭则不受限
+	MenuFilterEnabled bool `gorm:"column:menu_filter_enabled;comment:菜单权限过滤开关 0关闭 1开启" json:"menuFilterEnabled"`
+}
+
+// MenuPermissionIDs 解析 MenuPermission（逗号分隔的菜单ID）为 ID 切片；容忍空格与非法片段，非法项跳过
+func (t *Tenant) MenuPermissionIDs() []uint {
+	if t.MenuPermission == "" {
+		return nil
+	}
+	parts := strings.Split(t.MenuPermission, ",")
+	menuIDs := make([]uint, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		if id, err := strconv.ParseUint(part, 10, 32); err == nil {
+			menuIDs = append(menuIDs, uint(id))
+		}
+	}
+	return menuIDs
 }
 
 // TableName 设置表名

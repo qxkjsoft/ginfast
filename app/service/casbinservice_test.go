@@ -223,3 +223,27 @@ func TestPermissionService_PublicMethodsUseGlobal(t *testing.T) {
 	assert.NoError(t, NewPermissionService().DeleteRoleApis(context.Background(), 7, 5))
 	assert.Len(t, stub.removeAllCalls, 1)
 }
+
+// buildRoleTenantMap 构建 roleID → TenantID 映射，用于 casbin 域以角色自身租户为准
+func TestBuildRoleTenantMap(t *testing.T) {
+	roles := models.SysRoleList{
+		{BaseModel: models.BaseModel{ID: 1}, TenantID: 10},
+		{BaseModel: models.BaseModel{ID: 2}, TenantID: 20},
+		// 同租户多个角色
+		{BaseModel: models.BaseModel{ID: 3}, TenantID: 10},
+		// 全局租户角色（TenantID=0）
+		{BaseModel: models.BaseModel{ID: 4}, TenantID: 0},
+	}
+
+	m := buildRoleTenantMap(roles)
+	assert.Len(t, m, 4)
+	assert.Equal(t, uint(10), m[1])
+	assert.Equal(t, uint(20), m[2])
+	assert.Equal(t, uint(10), m[3])
+	assert.Equal(t, uint(0), m[4])
+
+	// 空列表返回空映射（非 nil）
+	empty := buildRoleTenantMap(models.SysRoleList{})
+	assert.NotNil(t, empty)
+	assert.Len(t, empty, 0)
+}

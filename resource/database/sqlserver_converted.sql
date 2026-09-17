@@ -393,6 +393,7 @@ CREATE TABLE [sys_tenants] (
     [domain] NVARCHAR(255),
     [platform_domain] NVARCHAR(255),
     [menu_permission] NVARCHAR(MAX),
+    [menu_filter_enabled] BIT NOT NULL DEFAULT 0,
     PRIMARY KEY ([id])
 );
 

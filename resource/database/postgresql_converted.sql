@@ -571,6 +571,7 @@ CREATE TABLE sys_tenants (
     domain VARCHAR(255),
     platform_domain VARCHAR(255),
     menu_permission TEXT,
+    menu_filter_enabled SMALLINT NOT NULL DEFAULT 0,
     PRIMARY KEY (id)
 );
 
@@ -580,6 +581,7 @@ COMMENT ON COLUMN sys_tenants.status IS '状态 0停用 1启用';
 COMMENT ON COLUMN sys_tenants.domain IS '租户域名';
 COMMENT ON COLUMN sys_tenants.platform_domain IS '主域名';
 COMMENT ON COLUMN sys_tenants.menu_permission IS '菜单权限';
+COMMENT ON COLUMN sys_tenants.menu_filter_enabled IS '菜单权限过滤开关 0关闭 1开启';
 COMMENT ON COLUMN sys_tenants.created_by IS '创建人';
 COMMENT ON COLUMN sys_tenants.name IS '租户名称';
 

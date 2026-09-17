@@ -467,7 +467,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gin-fast_app_models.LoginRequest"
+                            "$ref": "#/definitions/models.LoginRequest"
                         }
                     }
                 ],
@@ -630,6 +630,13 @@ const docTemplate = `{
                         "default": 0,
                         "description": "是否覆盖文件 (0:否, 1:是)",
                         "name": "overwriteFiles",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "已确认database.sql中的危险语句，允许继续执行 (0:否, 1:是)",
+                        "name": "confirmDangerousSQL",
                         "in": "formData"
                     }
                 ],
@@ -5541,7 +5548,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gin-fast_app_models.DeleteRequest"
+                            "$ref": "#/definitions/models.DeleteRequest"
                         }
                     }
                 ],
@@ -5595,7 +5602,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gin-fast_app_models.UpdateRequest"
+                            "$ref": "#/definitions/models.UpdateRequest"
                         }
                     }
                 ],
@@ -6041,84 +6048,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "gin-fast_app_models.DeleteRequest": {
-            "type": "object",
-            "required": [
-                "id"
-            ],
-            "properties": {
-                "id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "gin-fast_app_models.LoginRequest": {
-            "type": "object",
-            "required": [
-                "password",
-                "username"
-            ],
-            "properties": {
-                "password": {
-                    "type": "string"
-                },
-                "tenantCode": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "gin-fast_app_models.UpdateRequest": {
-            "type": "object",
-            "required": [
-                "deptId",
-                "id",
-                "nickName",
-                "roles",
-                "sex",
-                "userName"
-            ],
-            "properties": {
-                "deptId": {
-                    "type": "integer"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "nickName": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "roles": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "sex": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "integer"
-                },
-                "userName": {
-                    "type": "string"
-                }
-            }
-        },
         "models.AddRequest": {
             "type": "object",
             "required": [
@@ -6286,6 +6215,35 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "uploadId": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.DeleteRequest": {
+            "type": "object",
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.LoginRequest": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "tenantCode": {
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 }
             }
@@ -6992,6 +6950,9 @@ const docTemplate = `{
                 "domain": {
                     "type": "string"
                 },
+                "menuFilterEnabled": {
+                    "type": "boolean"
+                },
                 "menuPermission": {
                     "type": "string"
                 },
@@ -7026,6 +6987,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "menuFilterEnabled": {
+                    "type": "boolean"
                 },
                 "menuPermission": {
                     "type": "string"
@@ -7121,7 +7085,6 @@ const docTemplate = `{
         "models.UpdateBasicInfoRequest": {
             "type": "object",
             "required": [
-                "description",
                 "nickName",
                 "sex"
             ],
@@ -7148,6 +7111,55 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.UpdateRequest": {
+            "type": "object",
+            "required": [
+                "deptId",
+                "id",
+                "nickName",
+                "roles",
+                "sex",
+                "userName"
+            ],
+            "properties": {
+                "deptId": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "nickName": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "sex": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "userName": {
                     "type": "string"
                 }
             }
