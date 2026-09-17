@@ -10,6 +10,7 @@ import (
 	"gin-fast/app/models"
 	"gin-fast/app/service"
 	"gin-fast/app/utils/common"
+	"gin-fast/app/utils/gormhelper"
 	"gin-fast/app/utils/passwordhelper"
 	"gin-fast/app/utils/tenanthelper"
 
@@ -316,6 +317,10 @@ func (uc *UserController) Add(c *gin.Context) {
 	})
 
 	if err != nil {
+		// 前置查重后仍可能因并发提交触发唯一索引冲突（用户名全局唯一），转友好提示避免 500
+		if gormhelper.IsDuplicateKeyError(err) {
+			uc.FailAndAbort(c, "保存失败：用户名、手机号或邮箱已被使用", err)
+		}
 		uc.FailAndAbort(c, "Failed to create user", err)
 	}
 
@@ -450,6 +455,10 @@ func (uc *UserController) Update(c *gin.Context) {
 	})
 
 	if err != nil {
+		// 并发提交触发唯一索引冲突（用户名全局唯一）时转友好提示
+		if gormhelper.IsDuplicateKeyError(err) {
+			uc.FailAndAbort(c, "保存失败：用户名、手机号或邮箱已被使用", err)
+		}
 		uc.FailAndAbort(c, "更新用户失败", err)
 	}
 
@@ -592,6 +601,10 @@ func (uc *UserController) UpdateAccount(c *gin.Context) {
 	}
 
 	if err := app.DB().WithContext(c).Save(user).Error; err != nil {
+		// 该接口仅修改手机号/邮箱，冲突提示文案相应收窄
+		if gormhelper.IsDuplicateKeyError(err) {
+			uc.FailAndAbort(c, "保存失败：手机号或邮箱已被使用", err)
+		}
 		uc.FailAndAbort(c, "更新用户信息失败", err)
 	}
 
