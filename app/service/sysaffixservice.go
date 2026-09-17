@@ -8,6 +8,7 @@ import (
 	"gin-fast/app/utils/filehelper"
 	"gin-fast/app/utils/goroutinehelper"
 	"gin-fast/app/utils/gormhelper"
+	"gin-fast/app/utils/uploadhelper"
 	"io"
 	"os"
 	"path/filepath"
@@ -180,6 +181,20 @@ func (s *SysAffixService) SaveChunk(ctx context.Context, req *models.ChunkUpload
 		}
 	}
 
+	// 首片做内容类型嗅探（中间片为文件切片无魔数，合并后在 MergeChunks 整体校验）
+	if req.ChunkIndex == 1 {
+		f, openErr := os.Open(chunkPath)
+		if openErr != nil {
+			return fmt.Errorf("打开分片文件失败: %v", openErr)
+		}
+		magicErr := uploadhelper.VerifyMagicNumber(filepath.Ext(req.File.Filename), f)
+		f.Close()
+		if magicErr != nil {
+			os.Remove(chunkPath)
+			return magicErr
+		}
+	}
+
 	// 记录分片到数据库
 	chunk := models.NewSysAffixChunk()
 	chunk.UploadId = req.UploadId
@@ -323,6 +338,19 @@ func (s *SysAffixService) MergeChunks(ctx context.Context, req *models.ChunkMerg
 	if !strings.EqualFold(actualFileMd5, req.FileMd5) {
 		os.Remove(finalPath)
 		return nil, fmt.Errorf("文件校验失败，请重新上传")
+	}
+
+	// 服务端嗅探合并后文件的实际类型，与扩展名声明比对（magic bytes，防伪造扩展名）
+	mf, openErr := os.Open(finalPath)
+	if openErr != nil {
+		os.Remove(finalPath)
+		return nil, fmt.Errorf("打开合并文件失败: %v", openErr)
+	}
+	magicErr := uploadhelper.VerifyMagicNumber(ext, mf)
+	mf.Close()
+	if magicErr != nil {
+		os.Remove(finalPath)
+		return nil, magicErr
 	}
 
 	// 获取文件URL

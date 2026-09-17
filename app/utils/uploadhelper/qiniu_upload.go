@@ -1,17 +1,20 @@
 package uploadhelper
 
 import (
+	"bytes"
 	"context"
-	"crypto/tls"
 	"fmt"
 	"gin-fast/app/global/app"
+	"io"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/google/uuid"
 	"github.com/qiniu/go-sdk/v7/auth/qbox"
 	"github.com/qiniu/go-sdk/v7/storage"
@@ -263,11 +266,19 @@ func getZone(zoneName string) *storage.Zone {
 
 // DownloadAndSaveRemoteImage 下载并保存远程图片到七牛云
 func (s *QiniuUploadService) DownloadAndSaveRemoteImage(imageUrl string) (*app.UploadResponse, error) {
-	// 创建HTTP客户端，设置超时和跳过SSL验证（某些情况下需要）
+	// SSRF 防护：仅允许公网 http/https 地址
+	if err := ValidateRemoteImageURL(imageUrl, net.LookupIP); err != nil {
+		return nil, err
+	}
+
+	// 创建HTTP客户端（默认启用 TLS 证书校验），限制重定向次数并对每一跳做 SSRF 校验
 	client := &http.Client{
 		Timeout: 30 * time.Second,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 3 {
+				return fmt.Errorf("重定向次数过多")
+			}
+			return ValidateRemoteImageURL(req.URL.String(), net.LookupIP)
 		},
 	}
 
@@ -283,21 +294,36 @@ func (s *QiniuUploadService) DownloadAndSaveRemoteImage(imageUrl string) (*app.U
 		return nil, fmt.Errorf("下载图片失败，状态码: %d", resp.StatusCode)
 	}
 
-	// 检查Content-Type是否为图片
-	contentType := resp.Header.Get("Content-Type")
-	if !strings.HasPrefix(contentType, "image/") {
-		return nil, fmt.Errorf("下载的文件不是图片类型: %s", contentType)
+	// 限制下载大小读入内存（超限拒绝）
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxRemoteImageSize+1))
+	if err != nil {
+		return nil, fmt.Errorf("读取图片内容失败: %v", err)
+	}
+	if int64(len(data)) > maxRemoteImageSize {
+		return nil, fmt.Errorf("图片超过大小限制（最大 %d MB）", maxRemoteImageSize>>20)
 	}
 
-	// 从Content-Type中获取文件扩展名
-	ext := ".jpg" // 默认扩展名
-	if strings.Contains(contentType, "png") {
+	// 内容嗅探：必须是真实图片且不允许 SVG（文本型、可携带脚本）
+	detected := mimetype.Detect(data)
+	if detected.Is("image/svg+xml") {
+		return nil, fmt.Errorf("不支持 SVG 图片")
+	}
+	if !strings.HasPrefix(detected.String(), "image/") {
+		return nil, fmt.Errorf("下载的文件不是图片类型: %s", detected.String())
+	}
+
+	// 由嗅探结果确定扩展名
+	var ext string
+	switch {
+	case detected.Is("image/png"):
 		ext = ".png"
-	} else if strings.Contains(contentType, "gif") {
+	case detected.Is("image/gif"):
 		ext = ".gif"
-	} else if strings.Contains(contentType, "webp") {
+	case detected.Is("image/webp"):
 		ext = ".webp"
-	} else if strings.Contains(contentType, "jpeg") {
+	case detected.Is("image/bmp"):
+		ext = ".bmp"
+	default:
 		ext = ".jpg"
 	}
 
@@ -316,7 +342,7 @@ func (s *QiniuUploadService) DownloadAndSaveRemoteImage(imageUrl string) (*app.U
 		Scope: s.bucket,
 	}
 	upToken := putPolicy.UploadToken(s.mac)
-	err = formUploader.Put(context.Background(), &ret, upToken, fileName, resp.Body, resp.ContentLength, &putExtra)
+	err = formUploader.Put(context.Background(), &ret, upToken, fileName, bytes.NewReader(data), int64(len(data)), &putExtra)
 	if err != nil {
 		return nil, fmt.Errorf("上传图片到七牛云失败: %v", err)
 	}
@@ -325,7 +351,7 @@ func (s *QiniuUploadService) DownloadAndSaveRemoteImage(imageUrl string) (*app.U
 	response := &app.UploadResponse{
 		Url:      s.GetFileUrl(fileName),
 		FileName: fileName,
-		Size:     resp.ContentLength,
+		Size:     int64(len(data)),
 		FileType: ext,
 		Path:     fileName,
 	}

@@ -1,11 +1,11 @@
 package uploadhelper
 
 import (
-	"crypto/tls"
 	"fmt"
 	"gin-fast/app/global/app"
 	"io"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,6 +15,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/gabriel-vasile/mimetype"
 )
 
 // LocalUploadService 本地文件上传服务
@@ -189,6 +190,11 @@ func (s *LocalUploadService) ValidateFile(file *multipart.FileHeader) (bool, err
 		}
 	}
 
+	// 校验文件内容与扩展名一致（magic bytes 嗅探，防伪造扩展名上传）
+	if err := VerifyFileMagic(file); err != nil {
+		return false, err
+	}
+
 	return true, nil
 }
 
@@ -246,13 +252,24 @@ func (s *LocalUploadService) getFilePathFromUrl(relativePath string) string {
 	return ""
 }
 
+// maxRemoteImageSize 远程图片下载大小上限（10MB，覆盖头像等远程图片场景）
+const maxRemoteImageSize = 10 << 20
+
 // DownloadAndSaveRemoteImage 下载并保存远程图片
 func (s *LocalUploadService) DownloadAndSaveRemoteImage(imageUrl string) (*app.UploadResponse, error) {
-	// 创建HTTP客户端，设置超时和跳过SSL验证（某些情况下需要）
+	// SSRF 防护：仅允许公网 http/https 地址
+	if err := ValidateRemoteImageURL(imageUrl, net.LookupIP); err != nil {
+		return nil, err
+	}
+
+	// 创建HTTP客户端（默认启用 TLS 证书校验），限制重定向次数并对每一跳做 SSRF 校验
 	client := &http.Client{
 		Timeout: 30 * time.Second,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 3 {
+				return fmt.Errorf("重定向次数过多")
+			}
+			return ValidateRemoteImageURL(req.URL.String(), net.LookupIP)
 		},
 	}
 
@@ -268,21 +285,36 @@ func (s *LocalUploadService) DownloadAndSaveRemoteImage(imageUrl string) (*app.U
 		return nil, fmt.Errorf("下载图片失败，状态码: %d", resp.StatusCode)
 	}
 
-	// 检查Content-Type是否为图片
-	contentType := resp.Header.Get("Content-Type")
-	if !strings.HasPrefix(contentType, "image/") {
-		return nil, fmt.Errorf("下载的文件不是图片类型: %s", contentType)
+	// 限制下载大小读入内存（超限拒绝），避免超大响应拖垮磁盘/内存
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxRemoteImageSize+1))
+	if err != nil {
+		return nil, fmt.Errorf("读取图片内容失败: %v", err)
+	}
+	if int64(len(data)) > maxRemoteImageSize {
+		return nil, fmt.Errorf("图片超过大小限制（最大 %d MB）", maxRemoteImageSize>>20)
 	}
 
-	// 从URL或Content-Type中获取文件扩展名
-	ext := ".jpg" // 默认扩展名
-	if strings.Contains(contentType, "png") {
+	// 内容嗅探：必须是真实图片且不允许 SVG（文本型、可携带脚本）
+	detected := mimetype.Detect(data)
+	if detected.Is("image/svg+xml") {
+		return nil, fmt.Errorf("不支持 SVG 图片")
+	}
+	if !strings.HasPrefix(detected.String(), "image/") {
+		return nil, fmt.Errorf("下载的文件不是图片类型: %s", detected.String())
+	}
+
+	// 由嗅探结果确定扩展名
+	var ext string
+	switch {
+	case detected.Is("image/png"):
 		ext = ".png"
-	} else if strings.Contains(contentType, "gif") {
+	case detected.Is("image/gif"):
 		ext = ".gif"
-	} else if strings.Contains(contentType, "webp") {
+	case detected.Is("image/webp"):
 		ext = ".webp"
-	} else if strings.Contains(contentType, "jpeg") {
+	case detected.Is("image/bmp"):
+		ext = ".bmp"
+	default:
 		ext = ".jpg"
 	}
 
@@ -300,33 +332,16 @@ func (s *LocalUploadService) DownloadAndSaveRemoteImage(imageUrl string) (*app.U
 		return nil, fmt.Errorf("创建目录失败: %v", err)
 	}
 
-	// 创建文件
-	out, err := os.Create(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("创建文件失败: %v", err)
-	}
-	defer out.Close()
-
-	// 复制下载的内容到文件
-	written, err := io.Copy(out, resp.Body)
-	if err != nil {
+	// 写入文件
+	if err := os.WriteFile(filePath, data, 0644); err != nil {
 		return nil, fmt.Errorf("保存图片失败: %v", err)
-	}
-
-	// 获取文件信息以获取文件大小
-	fileInfo, _ := out.Stat()
-	var fileSize int64
-	if fileInfo != nil {
-		fileSize = fileInfo.Size()
-	} else {
-		fileSize = written
 	}
 
 	// 构建响应
 	response := &app.UploadResponse{
 		Url:      s.GetFileUrl(fmt.Sprintf("%s/%s", dateFolder, fileName)),
 		FileName: fileName,
-		Size:     fileSize,
+		Size:     int64(len(data)),
 		FileType: ext,
 		Path:     filePath,
 	}

@@ -12,6 +12,7 @@ import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/middleware"
 	"gin-fast/app/utils/cachehelper"
+	"gin-fast/app/utils/ginhelper"
 	"gin-fast/app/utils/tenanthelper"
 )
 
@@ -43,8 +44,8 @@ func InitRoutes(engine *gin.Engine) {
 		engine.Use(middleware.CorsNext())
 	}
 
-	// 静态文件
-	engine.Static(app.ConfigYml.GetString("httpserver.serverrootpath"), app.ConfigYml.GetString("httpserver.serverroot"))
+	// 静态文件（安全加固：nosniff、uploads 下 svg 禁脚本 CSP、html 类强制下载、关闭目录列表）
+	ginhelper.SecureStatic(engine, app.ConfigYml.GetString("httpserver.serverrootpath"), app.ConfigYml.GetString("httpserver.serverroot"))
 
 	//	调试模式下注册Swagger路由、查看内存缓存项
 	if app.ConfigYml.GetBool("server.appdebug") {
