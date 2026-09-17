@@ -165,6 +165,9 @@ COMMENT ON COLUMN sys_affix_chunk.id IS 'ID';
 COMMENT ON COLUMN sys_affix_chunk.upload_id IS '上传会话ID';
 COMMENT ON COLUMN sys_affix_chunk.file_md5 IS '文件MD5';
 
+-- 分片唯一索引：同一上传会话内分片序号唯一（防并发重片）
+CREATE UNIQUE INDEX sys_affix_chunk_uk_upload_chunk ON sys_affix_chunk (upload_id, chunk_index);
+
 -- Table structure for sys_api
 DROP TABLE IF EXISTS sys_api;
 CREATE TABLE sys_api (

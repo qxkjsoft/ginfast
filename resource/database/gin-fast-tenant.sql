@@ -129,6 +129,7 @@ CREATE TABLE `sys_affix_chunk` (
   `created_by` int(11) DEFAULT NULL COMMENT '创建者ID',
   `tenant_id` int(11) unsigned DEFAULT '0' COMMENT '租户ID',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_upload_chunk` (`upload_id`, `chunk_index`),
   KEY `idx_upload_id` (`upload_id`),
   KEY `idx_file_md5` (`file_md5`)
 ) ENGINE=InnoDB AUTO_INCREMENT=165 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;

@@ -7,6 +7,7 @@ import (
 	"gin-fast/app/models"
 	"gin-fast/app/utils/filehelper"
 	"gin-fast/app/utils/goroutinehelper"
+	"gin-fast/app/utils/gormhelper"
 	"io"
 	"os"
 	"path/filepath"
@@ -74,14 +75,28 @@ func (s *SysAffixService) InitChunkUpload(ctx context.Context, req *models.Chunk
 		return nil, err
 	}
 
+	// 校验分片总数不超过配置推导的上限（防恶意声明超大 TotalChunks 刷海量分片）
+	uploadConfig := app.UploadService.GetUploadConfig()
+	if req.TotalChunks < 1 || req.TotalChunks > maxTotalChunks(uploadConfig) {
+		return nil, fmt.Errorf("分片总数超出允许范围(1~%d)", maxTotalChunks(uploadConfig))
+	}
+
 	// 秒传检测：根据MD5查找是否已有相同文件
 	existAffix, _ := models.GetAffixByMd5(ctx, req.FileMd5, req.FileSize, tenantID)
 	if existAffix != nil && existAffix.ID > 0 {
-		return &models.ChunkInitResult{
-			UploadId:       "",
-			UploadedChunks: []int{},
-			ExistFile:      existAffix,
-		}, nil
+		// 服务端复核源文件实际MD5，防止凭伪造/脏MD5引用他人已上传文件；
+		// 复核未通过（内容不符或磁盘文件缺失）时降级为正常分片上传
+		actualMd5, md5Err := filehelper.CalculateFileMD5(existAffix.Path)
+		if md5Err != nil || !strings.EqualFold(actualMd5, req.FileMd5) {
+			app.ZapLog.Warn("秒传源文件MD5复核未通过，降级为分片上传",
+				zap.Uint("affixId", existAffix.ID), zap.Error(md5Err))
+		} else {
+			return &models.ChunkInitResult{
+				UploadId:       "",
+				UploadedChunks: []int{},
+				ExistFile:      existAffix,
+			}, nil
+		}
 	}
 
 	// 生成唯一uploadId
@@ -117,6 +132,15 @@ func (s *SysAffixService) SaveChunk(ctx context.Context, req *models.ChunkUpload
 
 	// 获取上传配置
 	uploadConfig := app.UploadService.GetUploadConfig()
+
+	// 校验分片总数上限与分片序号范围（防越界/恶意刷分片）
+	if req.TotalChunks < 1 || req.TotalChunks > maxTotalChunks(uploadConfig) {
+		return fmt.Errorf("分片总数超出允许范围(1~%d)", maxTotalChunks(uploadConfig))
+	}
+	if req.ChunkIndex < 1 || req.ChunkIndex > req.TotalChunks {
+		return fmt.Errorf("分片序号超出范围(1~%d)", req.TotalChunks)
+	}
+
 	localPath := uploadConfig.LocalPath
 
 	// 创建临时分片目录
@@ -141,6 +165,19 @@ func (s *SysAffixService) SaveChunk(ctx context.Context, req *models.ChunkUpload
 
 	if _, err := io.Copy(dst, src); err != nil {
 		return fmt.Errorf("保存分片文件失败: %v", err)
+	}
+
+	// 客户端声明分片MD5时校验分片实际内容（可选增强：当前前端未传该字段，非空才校验）
+	if req.ChunkMd5 != "" {
+		chunkActualMd5, md5Err := filehelper.CalculateFileMD5(chunkPath)
+		if md5Err != nil {
+			os.Remove(chunkPath)
+			return fmt.Errorf("计算分片MD5失败: %v", md5Err)
+		}
+		if !strings.EqualFold(chunkActualMd5, req.ChunkMd5) {
+			os.Remove(chunkPath)
+			return fmt.Errorf("分片内容校验失败，请重新上传该分片")
+		}
 	}
 
 	// 记录分片到数据库
@@ -176,9 +213,20 @@ func (s *SysAffixService) SaveChunk(ctx context.Context, req *models.ChunkUpload
 			return fmt.Errorf("更新分片记录失败: %v", err)
 		}
 	} else {
-		// 创建新记录
+		// 创建新记录；并发重传同分片触发唯一索引冲突时转更新，保持幂等
 		if err := chunk.Create(ctx); err != nil {
-			return fmt.Errorf("保存分片记录失败: %v", err)
+			if !gormhelper.IsDuplicateKeyError(err) {
+				return fmt.Errorf("保存分片记录失败: %v", err)
+			}
+			if uerr := app.DB().WithContext(ctx).Model(&models.SysAffixChunk{}).
+				Where("upload_id = ? AND chunk_index = ? AND tenant_id = ?", req.UploadId, req.ChunkIndex, tenantID).
+				Updates(map[string]interface{}{
+					"chunk_path": chunkPath,
+					"chunk_size": req.File.Size,
+					"status":     0,
+				}).Error; uerr != nil {
+				return fmt.Errorf("更新分片记录失败: %v", uerr)
+			}
 		}
 	}
 
@@ -198,13 +246,21 @@ func (s *SysAffixService) MergeChunks(ctx context.Context, req *models.ChunkMerg
 		return nil, fmt.Errorf("获取分片记录失败: %v", err)
 	}
 
-	// 验证分片数量
-	if len(*chunkList) != req.TotalChunks {
-		return nil, fmt.Errorf("分片不完整，已上传 %d/%d", len(*chunkList), req.TotalChunks)
+	// 校验分片总数上限
+	uploadConfig := app.UploadService.GetUploadConfig()
+	if req.TotalChunks < 1 || req.TotalChunks > maxTotalChunks(uploadConfig) {
+		return nil, fmt.Errorf("分片总数超出允许范围(1~%d)", maxTotalChunks(uploadConfig))
 	}
 
-	// 获取上传配置
-	uploadConfig := app.UploadService.GetUploadConfig()
+	// 校验分片序号恰好为 1..TotalChunks（连续、无缺失、无重复）
+	chunkIndexes := make([]int, len(*chunkList))
+	for i, chunk := range *chunkList {
+		chunkIndexes[i] = chunk.ChunkIndex
+	}
+	if err := validateChunkIndexes(chunkIndexes, req.TotalChunks); err != nil {
+		return nil, err
+	}
+
 	localPath := uploadConfig.LocalPath
 
 	// 生成最终文件名
@@ -258,6 +314,17 @@ func (s *SysAffixService) MergeChunks(ctx context.Context, req *models.ChunkMerg
 		return nil, fmt.Errorf("文件大小不一致，声明 %d 字节，实际 %d 字节", req.FileSize, totalSize)
 	}
 
+	// 服务端计算合并后文件实际MD5并与声明值比对（完整性校验，防伪造/传输损坏）
+	actualFileMd5, err := filehelper.CalculateFileMD5(finalPath)
+	if err != nil {
+		os.Remove(finalPath)
+		return nil, fmt.Errorf("计算文件MD5失败: %v", err)
+	}
+	if !strings.EqualFold(actualFileMd5, req.FileMd5) {
+		os.Remove(finalPath)
+		return nil, fmt.Errorf("文件校验失败，请重新上传")
+	}
+
 	// 获取文件URL
 	serverRootPath := app.ConfigYml.GetString("httpserver.serverrootpath")
 	fileUrl := fmt.Sprintf("%s/uploads/%s/%s", strings.TrimSuffix(serverRootPath, "/"), dateFolder, newFileName)
@@ -273,7 +340,8 @@ func (s *SysAffixService) MergeChunks(ctx context.Context, req *models.ChunkMerg
 	affix.Size = int(totalSize)
 	affix.Suffix = ext
 	affix.Ftype = filehelper.GetFileTypeBySuffix(ext)
-	affix.FileMd5 = req.FileMd5
+	// 存服务端计算的实际MD5（作为后续秒传检测的可信依据）
+	affix.FileMd5 = actualFileMd5
 	affix.CreatedBy = userID
 	affix.TenantID = tenantID
 
@@ -326,5 +394,42 @@ func (s *SysAffixService) CancelChunkUpload(ctx context.Context, uploadId string
 		app.ZapLog.Warn("删除分片记录失败", zap.Error(err))
 	}
 
+	return nil
+}
+
+// defaultMaxTotalChunks 上传配置缺失时的分片总数兜底上限
+const defaultMaxTotalChunks = 10000
+
+// maxTotalChunks 根据上传配置推导分片总数上限（文件总大小上限/单分片上限，向上取整），
+// 防止恶意声明超大 TotalChunks 刷海量分片耗磁盘；单分片配置非法时常量兜底
+func maxTotalChunks(uploadConfig app.UploadConfig) int {
+	if uploadConfig.MaxChunkSize <= 0 {
+		return defaultMaxTotalChunks
+	}
+	limit := (uploadConfig.ChunkMaxSize + uploadConfig.MaxChunkSize - 1) / uploadConfig.MaxChunkSize
+	if limit < 1 {
+		limit = 1
+	}
+	return limit
+}
+
+// validateChunkIndexes 校验分片序号集合恰好为 1..total（1-based，连续、无缺失、无重复）
+func validateChunkIndexes(indexes []int, total int) error {
+	if total < 1 {
+		return fmt.Errorf("分片总数不合法")
+	}
+	seen := make(map[int]bool, len(indexes))
+	for _, idx := range indexes {
+		if idx < 1 || idx > total {
+			return fmt.Errorf("分片序号 %d 超出范围(1~%d)", idx, total)
+		}
+		if seen[idx] {
+			return fmt.Errorf("分片 %d 重复", idx)
+		}
+		seen[idx] = true
+	}
+	if len(indexes) != total {
+		return fmt.Errorf("分片不完整，已上传 %d/%d", len(indexes), total)
+	}
 	return nil
 }
