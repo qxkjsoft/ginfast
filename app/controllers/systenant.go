@@ -3,6 +3,7 @@ package controllers
 import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
+	"gin-fast/app/service"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -12,12 +13,15 @@ import (
 // TenantController 租户控制器
 type TenantController struct {
 	Common
+	// CasbinService 删租户时级联清理 casbin 域策略所需的权限服务
+	CasbinService *service.PermissionService
 }
 
 // NewTenantController 创建租户控制器
 func NewTenantController() *TenantController {
 	return &TenantController{
-		Common: Common{},
+		Common:        Common{},
+		CasbinService: service.NewPermissionService(),
 	}
 }
 
@@ -287,13 +291,38 @@ func (tc *TenantController) Delete(c *gin.Context) {
 		tc.FailAndAbort(c, "租户不存在", nil, 404)
 	}
 
-	// 使用事务删除租户
-	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
+	// 级联清理与租户删除同事务原子提交/回滚（RunWithCasbin 机制，casbin 策略写经事务视图落库）。
+	// 清理范围：用户-租户关联（纯关联表硬删，用户主数据不动）、该租户角色与部门（软删）、
+	// casbin 该域全部 p/g 策略（p 段域在 v3、g 段域在 v2，见 casbin.modelconfig）；
+	// 附件、操作日志等业务数据不清理
+	domain := app.CasbinV2.PrefixDomain(uint(id))
+	err = tc.CasbinService.RunWithCasbin(c, func(tx *gorm.DB, ops app.CasbinInterf) error {
 		// 软删除租户
 		if err := tx.Where("id = ?", id).Delete(tenant).Error; err != nil {
 			return err
 		}
 
+		// 硬删该租户的用户关联（sys_user_tenant 无软删字段）
+		if err := tx.Where("tenant_id = ?", id).Delete(&models.SysUserTenant{}).Error; err != nil {
+			return err
+		}
+
+		// 软删该租户的角色与部门
+		if err := tx.Where("tenant_id = ?", id).Delete(&models.SysRole{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("tenant_id = ?", id).Delete(&models.SysDepartment{}).Error; err != nil {
+			return err
+		}
+
+		// 清 casbin 该域策略：p 段 v3=域、g 段 v2=域，经 tx enforcer 写入随事务提交/回滚
+		enforcer := ops.GetEnforcer()
+		if _, err := enforcer.RemoveFilteredPolicy(3, domain); err != nil {
+			return err
+		}
+		if _, err := enforcer.RemoveFilteredGroupingPolicy(2, domain); err != nil {
+			return err
+		}
 		return nil
 	})
 
