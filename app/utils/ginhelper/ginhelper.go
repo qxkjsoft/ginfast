@@ -45,9 +45,9 @@ func GetEngine() *gin.Engine {
 		- /debug/pprof/goroutine - Goroutine信息
 		- /debug/pprof/block - 阻塞分析
 		- /debug/pprof/threadcreate - 线程创建分析
-		端点挂 JWT 鉴权，避免调试模式下性能数据对外裸奔
+		端点挂 JWT + 超管校验，避免调试模式下性能数据对外裸奔，也防普通登录用户拉取
 		**/
-		pprof.Register(engine.Group("", middleware.JWTAuthMiddleware()))
+		pprof.Register(engine.Group("", middleware.JWTAuthMiddleware(), middleware.SuperAdminMiddleware()))
 	}
 	return engine
 
