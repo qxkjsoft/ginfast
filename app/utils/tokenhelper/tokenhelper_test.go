@@ -12,13 +12,14 @@ import (
 )
 
 // newTestTokenService 构造带内存缓存的测试用TokenService
+// TokenExpire/RefreshExpire 为真实时长（bootstrap 侧已按秒换算，tokenhelper 不再二次乘 time.Second）
 func newTestTokenService() *TokenService {
 	return &TokenService{
 		Ctx:            context.Background(),
 		RedisHelper:    NewMockCacheInterf(),
 		JWTSecret:      "test_secret",
-		TokenExpire:    3600,
-		RefreshExpire:  86400,
+		TokenExpire:    3600 * time.Second,
+		RefreshExpire:  86400 * time.Second,
 		CacheKeyPrefix: "test:",
 	}
 }
@@ -103,8 +104,8 @@ func TestRotateRefreshToken(t *testing.T) {
 		Ctx:            context.Background(),
 		RedisHelper:    mockCache,
 		JWTSecret:      "test_secret",
-		TokenExpire:    3600,
-		RefreshExpire:  86400,
+		TokenExpire:    3600 * time.Second,
+		RefreshExpire:  86400 * time.Second,
 		CacheKeyPrefix: "test:",
 	}
 
@@ -151,8 +152,8 @@ func TestRotateRefreshToken_ExpiredToken(t *testing.T) {
 		Ctx:            context.Background(),
 		RedisHelper:    mockCache,
 		JWTSecret:      "test_secret",
-		TokenExpire:    3600,
-		RefreshExpire:  1, // 1秒过期，用于测试
+		TokenExpire:    3600 * time.Second,
+		RefreshExpire:  1 * time.Second, // 1秒过期，用于测试
 		CacheKeyPrefix: "test:",
 	}
 
@@ -177,8 +178,8 @@ func TestRotateRefreshToken_InvalidToken(t *testing.T) {
 		Ctx:            context.Background(),
 		RedisHelper:    mockCache,
 		JWTSecret:      "test_secret",
-		TokenExpire:    3600,
-		RefreshExpire:  86400,
+		TokenExpire:    3600 * time.Second,
+		RefreshExpire:  86400 * time.Second,
 		CacheKeyPrefix: "test:",
 	}
 

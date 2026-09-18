@@ -31,7 +31,7 @@ func (s *TokenService) GenerateToken(user *app.ClaimsUser) (string, error) {
 		ClaimsUser: *user,
 		TokenType:  app.TokenTypeAccess,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.TokenExpire * time.Second)), // 过期时间
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.TokenExpire)), // 过期时间
 			IssuedAt:  jwt.NewNumericDate(time.Now()),                                  // 签发时间
 			NotBefore: jwt.NewNumericDate(time.Now()),                                  // 生效时间
 		},
@@ -80,7 +80,7 @@ func (s *TokenService) GenerateTokenWithCache(user *app.ClaimsUser) (string, err
 		tokenInfo := &app.TokenInfo{
 			UserID:    user.UserID,
 			Token:     tokenString,
-			ExpiresAt: time.Now().Add(s.TokenExpire * time.Second),
+			ExpiresAt: time.Now().Add(s.TokenExpire),
 			CreatedAt: time.Now(),
 		}
 		err = s.storeTokenWithCache(tokenInfo)
@@ -145,7 +145,7 @@ func (s *TokenService) getTokenKeyWithCache(userID uint, tokenString string) str
 /*****************************************refreshToken管理****************************************************/
 // GenerateRefreshToken 生成Refresh Token
 func (s *TokenService) GenerateRefreshToken(userID uint, tenantID uint, tenantCode string) (string, error) {
-	expirationTime := time.Now().Add(s.RefreshExpire * time.Second)
+	expirationTime := time.Now().Add(s.RefreshExpire)
 	claims := &app.RefreshTokenClaims{
 		UserID:     userID,
 		TenantID:   tenantID,
