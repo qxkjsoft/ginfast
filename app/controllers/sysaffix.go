@@ -158,11 +158,11 @@ func (ac *SysAffixController) Delete(c *gin.Context) {
 	// 查找文件记录（限定当前租户，防止跨租户删除）
 	affix := models.NewSysAffix()
 	if err := affix.GetByID(c, req.ID, tenanthelper.TenantScope(c)); err != nil {
-		ac.FailAndAbort(c, "文件不存在", err)
+		ac.FailAndAbort(c, "文件不存在", err, 404)
 	}
 	// 全局屏蔽 ErrRecordNotFound，查无数据不报错，需判零值
 	if affix.IsEmpty() {
-		ac.FailAndAbort(c, "文件不存在", nil)
+		ac.FailAndAbort(c, "文件不存在", nil, 404)
 	}
 
 	// 删除物理文件
@@ -209,11 +209,11 @@ func (ac *SysAffixController) UpdateName(c *gin.Context) {
 	// 查找文件记录（限定当前租户，防止跨租户改名）
 	affix := models.NewSysAffix()
 	if err := affix.GetByID(c, req.ID, tenanthelper.TenantScope(c)); err != nil {
-		ac.FailAndAbort(c, "文件不存在", err)
+		ac.FailAndAbort(c, "文件不存在", err, 404)
 	}
 	// 全局屏蔽 ErrRecordNotFound，查无数据不报错，需判零值
 	if affix.IsEmpty() {
-		ac.FailAndAbort(c, "文件不存在", nil)
+		ac.FailAndAbort(c, "文件不存在", nil, 404)
 	}
 
 	// 更新文件名
@@ -302,11 +302,11 @@ func (ac *SysAffixController) GetByID(c *gin.Context) {
 	// 查找文件记录（限定当前租户，防止跨租户读取）
 	affix := models.NewSysAffix()
 	if err := affix.GetByID(c, uint(id), tenanthelper.TenantScope(c)); err != nil {
-		ac.FailAndAbort(c, "文件不存在", err)
+		ac.FailAndAbort(c, "文件不存在", err, 404)
 	}
 	// 全局屏蔽 ErrRecordNotFound，查无数据不报错，需判零值
 	if affix.IsEmpty() {
-		ac.FailAndAbort(c, "文件不存在", nil)
+		ac.FailAndAbort(c, "文件不存在", nil, 404)
 	}
 
 	// 返回成功响应
@@ -343,11 +343,11 @@ func (ac *SysAffixController) Download(c *gin.Context) {
 	// 查找文件记录（限定当前租户，防止跨租户读取）
 	affix := models.NewSysAffix()
 	if err := affix.GetByID(c, uint(id), tenanthelper.TenantScope(c)); err != nil {
-		ac.FailAndAbort(c, "文件不存在", err)
+		ac.FailAndAbort(c, "文件不存在", err, 404)
 	}
 	// 全局屏蔽 ErrRecordNotFound，查无数据不报错，需判零值
 	if affix.IsEmpty() {
-		ac.FailAndAbort(c, "文件不存在", nil)
+		ac.FailAndAbort(c, "文件不存在", nil, 404)
 	}
 
 	// 从URL中提取文件路径

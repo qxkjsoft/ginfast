@@ -61,7 +61,7 @@ func (sc *SysRoleController) GetUserPermission(c *gin.Context) {
 		sc.FailAndAbort(c, "查询角色失败", err)
 	}
 	if role.IsEmpty() {
-		sc.FailAndAbort(c, "角色不存在", nil)
+		sc.FailAndAbort(c, "角色不存在", nil, 404)
 	}
 
 	sysRoleMenuList := models.NewSysRoleMenuList()
@@ -171,7 +171,7 @@ func (sc *SysRoleController) GetByID(c *gin.Context) {
 		sc.FailAndAbort(c, "查询角色失败", err)
 	}
 	if role.IsEmpty() {
-		sc.FailAndAbort(c, "角色不存在", nil)
+		sc.FailAndAbort(c, "角色不存在", nil, 404)
 	}
 
 	sc.Success(c, role)
@@ -217,7 +217,7 @@ func (sc *SysRoleController) Add(c *gin.Context) {
 			sc.FailAndAbort(c, "检查父级角色失败", err)
 		}
 		if parentRole.IsEmpty() {
-			sc.FailAndAbort(c, "父级角色不存在", nil)
+			sc.FailAndAbort(c, "父级角色不存在", nil, 404)
 		}
 	}
 
@@ -299,7 +299,7 @@ func (sc *SysRoleController) Delete(c *gin.Context) {
 		sc.FailAndAbort(c, "查询角色失败", err)
 	}
 	if role.IsEmpty() {
-		sc.FailAndAbort(c, "角色不存在", nil)
+		sc.FailAndAbort(c, "角色不存在", nil, 404)
 	}
 
 	// 检查是否有子角色
@@ -380,7 +380,7 @@ func (sm *SysRoleController) AddRoleMenu(c *gin.Context) {
 		sm.FailAndAbort(c, "查询角色失败", err)
 	}
 	if role.IsEmpty() {
-		sm.FailAndAbort(c, "角色不存在", nil)
+		sm.FailAndAbort(c, "角色不存在", nil, 404)
 	}
 
 	// 检查菜单ID是否存在 - 优化为批量查询
@@ -467,7 +467,7 @@ func (sc *SysRoleController) UpdateDataScope(c *gin.Context) {
 		sc.FailAndAbort(c, "查询角色失败", err)
 	}
 	if role.IsEmpty() {
-		sc.FailAndAbort(c, "角色不存在", nil)
+		sc.FailAndAbort(c, "角色不存在", nil, 404)
 	}
 
 	// 更新数据权限字段

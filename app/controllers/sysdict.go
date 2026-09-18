@@ -75,7 +75,7 @@ func (sdc *SysDictController) GetDictByCode(c *gin.Context) {
 	dict := models.NewSysDict()
 	err := dict.FindByCode(c, code)
 	if err != nil {
-		sdc.FailAndAbort(c, "字典不存在", err)
+		sdc.FailAndAbort(c, "字典不存在", err, 404)
 	}
 
 	// 获取该字典下的所有字典项
@@ -238,7 +238,7 @@ func (sdc *SysDictController) Update(c *gin.Context) {
 	dict := models.NewSysDict()
 	err := dict.FindByID(c, req.ID)
 	if err != nil {
-		sdc.FailAndAbort(c, "字典不存在", err)
+		sdc.FailAndAbort(c, "字典不存在", err, 404)
 	}
 
 	// 检查字典编码是否已被其他字典使用
@@ -284,7 +284,7 @@ func (sdc *SysDictController) Delete(c *gin.Context) {
 	dict := models.NewSysDict()
 	err := dict.FindByID(c, req.ID)
 	if err != nil {
-		sdc.FailAndAbort(c, "字典不存在", err)
+		sdc.FailAndAbort(c, "字典不存在", err, 404)
 	}
 
 	// 检查该字典下是否有字典项

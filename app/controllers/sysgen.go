@@ -140,7 +140,7 @@ func (sgc *SysGenController) GetByID(c *gin.Context) {
 
 	// 检查数据是否存在
 	if gen.IsEmpty() {
-		sgc.FailAndAbort(c, "代码生成配置不存在", nil)
+		sgc.FailAndAbort(c, "代码生成配置不存在", nil, 404)
 	}
 
 	// 返回成功响应

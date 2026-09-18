@@ -125,7 +125,7 @@ func (sc *SysApiController) GetByID(c *gin.Context) {
 	}
 	if api.IsEmpty() {
 
-		sc.FailAndAbort(c, "API不存在", nil)
+		sc.FailAndAbort(c, "API不存在", nil, 404)
 		return
 	}
 
@@ -204,7 +204,7 @@ func (sc *SysApiController) Update(c *gin.Context) {
 		sc.FailAndAbort(c, "查询API失败", err)
 	}
 	if api.IsEmpty() {
-		sc.FailAndAbort(c, "API不存在", nil)
+		sc.FailAndAbort(c, "API不存在", nil, 404)
 	}
 
 	// 检查API路径和方法是否与其他API冲突（排除当前API）
@@ -263,7 +263,7 @@ func (sc *SysApiController) Delete(c *gin.Context) {
 		sc.FailAndAbort(c, "查询API失败", err)
 	}
 	if api.IsEmpty() {
-		sc.FailAndAbort(c, "API不存在", nil)
+		sc.FailAndAbort(c, "API不存在", nil, 404)
 	}
 
 	// 检查API是否与菜单有关联

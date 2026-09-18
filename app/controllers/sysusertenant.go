@@ -97,7 +97,7 @@ func (sut *SysUserTenantController) GetByID(c *gin.Context) {
 		sut.FailAndAbort(c, "查询用户租户关联失败", err)
 	}
 	if sysUserTenant.IsEmpty() {
-		sut.FailAndAbort(c, "用户租户关联不存在", nil)
+		sut.FailAndAbort(c, "用户租户关联不存在", nil, 404)
 	}
 
 	sut.Success(c, sysUserTenant)
@@ -138,7 +138,7 @@ func (sut *SysUserTenantController) BatchAdd(c *gin.Context) {
 			sut.FailAndAbort(c, "获取用户失败", err)
 		}
 		if user.IsEmpty() {
-			sut.FailAndAbort(c, "用户不存在", nil)
+			sut.FailAndAbort(c, "用户不存在", nil, 404)
 		}
 		// 如果用户是全局租户，不允许关联其他租户
 		if user.TenantID == 0 {

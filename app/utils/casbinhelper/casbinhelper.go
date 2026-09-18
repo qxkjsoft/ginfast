@@ -217,8 +217,7 @@ func (s *CasbinHelper) CasbinMiddleware() gin.HandlerFunc {
 		userID := common.GetCurrentUserID(c)
 		if userID == 0 {
 			// 403 禁止访问
-			c.JSON(http.StatusForbidden, gin.H{"message": "user ID not found"})
-			c.Abort()
+			app.Response.Fail(c, "未获取到用户ID", http.StatusForbidden)
 			return
 		}
 
@@ -262,8 +261,7 @@ func (s *CasbinHelper) CasbinMiddleware() gin.HandlerFunc {
 		if err != nil {
 			app.ZapLog.Error("Permission check error", zap.Error(err))
 			// 500 服务器内部错误
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "权限检查时出现错误"})
-			c.Abort()
+			app.Response.Fail(c, "权限检查时出现错误", http.StatusInternalServerError)
 			return
 		}
 
@@ -273,8 +271,7 @@ func (s *CasbinHelper) CasbinMiddleware() gin.HandlerFunc {
 				zap.String("path", path),
 				zap.String("method", method))
 			// 403 禁止访问
-			c.JSON(http.StatusForbidden, gin.H{"message": "您没有权限访问此资源"})
-			c.Abort()
+			app.Response.Fail(c, "您没有权限访问此资源", http.StatusForbidden)
 			return
 		}
 

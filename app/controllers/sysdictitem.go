@@ -108,7 +108,7 @@ func (sdic *SysDictItemController) Add(c *gin.Context) {
 	dict := models.NewSysDict()
 	err := dict.FindByID(c, req.DictID)
 	if err != nil {
-		sdic.FailAndAbort(c, "所属字典不存在", err)
+		sdic.FailAndAbort(c, "所属字典不存在", err, 404)
 	}
 
 	// 检查同一字典下字典项值是否已存在
@@ -160,14 +160,14 @@ func (sdic *SysDictItemController) Update(c *gin.Context) {
 	dictItem := models.NewSysDictItem()
 	err := dictItem.FindByID(c, req.ID)
 	if err != nil {
-		sdic.FailAndAbort(c, "字典项不存在", err)
+		sdic.FailAndAbort(c, "字典项不存在", err, 404)
 	}
 
 	// 检查所属字典是否存在
 	dict := models.NewSysDict()
 	err = dict.FindByID(c, req.DictID)
 	if err != nil {
-		sdic.FailAndAbort(c, "所属字典不存在", err)
+		sdic.FailAndAbort(c, "所属字典不存在", err, 404)
 	}
 
 	// 检查同一字典下字典项值是否已被其他字典项使用
@@ -218,7 +218,7 @@ func (sdic *SysDictItemController) Delete(c *gin.Context) {
 	dictItem := models.NewSysDictItem()
 	err := dictItem.FindByID(c, req.ID)
 	if err != nil {
-		sdic.FailAndAbort(c, "字典项不存在", err)
+		sdic.FailAndAbort(c, "字典项不存在", err, 404)
 	}
 
 	// 执行删除
@@ -254,7 +254,7 @@ func (sdic *SysDictItemController) GetByDictID(c *gin.Context) {
 	dict := models.NewSysDict()
 	err = dict.FindByID(c, uint(dictId))
 	if err != nil {
-		sdic.FailAndAbort(c, "字典不存在", err)
+		sdic.FailAndAbort(c, "字典不存在", err, 404)
 	}
 
 	// 查询字典项列表
@@ -292,7 +292,7 @@ func (sdic *SysDictItemController) GetByDictCode(c *gin.Context) {
 	dict := models.NewSysDict()
 	err := dict.FindByCode(c, dictCode)
 	if err != nil {
-		sdic.FailAndAbort(c, "字典不存在", err)
+		sdic.FailAndAbort(c, "字典不存在", err, 404)
 	}
 
 	// 查询字典项列表

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 
+	"gin-fast/app/global/consts"
 	"gin-fast/app/models"
 	"gin-fast/app/service"
 	"gin-fast/app/utils/common"
@@ -148,13 +149,14 @@ func (pmc *PluginsManagerController) ImportPlugin(c *gin.Context) {
 	}
 
 	// 存在警告项（database.sql含危险语句，或已存在文件/表）时返回警告，
-	// 由前端弹窗确认后携带确认参数重新提交，未确认前不执行任何导入
+	// 由前端弹窗确认后携带确认参数重新提交，未确认前不执行任何导入；
+	// 业务码用专门的警告码（2），不与失败码 1 混淆（前端 code===0 为成功，非 0 进警告分支）
 	if !existingItems.IsEmpty() {
 		if len(existingItems.DangerousSQLs) > 0 {
-			pmc.SuccessWithMessage(c, "导入的database.sql包含危险语句，请确认是否继续导入", existingItems, 1)
+			pmc.SuccessWithMessage(c, "导入的database.sql包含危险语句，请确认是否继续导入", existingItems, consts.ResponseWarningCode)
 			return
 		}
-		pmc.SuccessWithMessage(c, "以下项已存在，请核查", existingItems, 1)
+		pmc.SuccessWithMessage(c, "以下项已存在，请核查", existingItems, consts.ResponseWarningCode)
 		return
 	}
 

@@ -86,11 +86,7 @@ func DemoAccountMiddleware() gin.HandlerFunc {
 				zap.String("method", c.Request.Method),
 				zap.String("path", c.Request.URL.Path))
 
-			c.JSON(http.StatusForbidden, gin.H{
-				"code":    http.StatusForbidden,
-				"message": "演示账号仅允许查看操作，禁止修改数据",
-			})
-			c.Abort()
+			app.Response.Fail(c, "演示账号仅允许查看操作，禁止修改数据", http.StatusForbidden)
 			return
 		}
 

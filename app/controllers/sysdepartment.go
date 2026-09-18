@@ -100,7 +100,7 @@ func (sc *SysDepartmentController) Add(c *gin.Context) {
 			sc.FailAndAbort(c, "检查父级部门失败", err)
 		}
 		if parentDept.IsEmpty() {
-			sc.FailAndAbort(c, "父级部门不存在", nil)
+			sc.FailAndAbort(c, "父级部门不存在", nil, 404)
 		}
 	}
 
@@ -174,7 +174,7 @@ func (sc *SysDepartmentController) Delete(c *gin.Context) {
 		sc.FailAndAbort(c, "查询部门失败", err)
 	}
 	if dept.IsEmpty() {
-		sc.FailAndAbort(c, "部门不存在", nil)
+		sc.FailAndAbort(c, "部门不存在", nil, 404)
 	}
 
 	// 检查是否有子部门
@@ -234,7 +234,7 @@ func (sc *SysDepartmentController) GetByID(c *gin.Context) {
 		sc.FailAndAbort(c, "获取部门信息失败", err)
 	}
 	if dept.IsEmpty() {
-		sc.FailAndAbort(c, "部门不存在", nil)
+		sc.FailAndAbort(c, "部门不存在", nil, 404)
 	}
 
 	sc.Success(c, dept)

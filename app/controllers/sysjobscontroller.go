@@ -77,7 +77,7 @@ func (c *SysJobsController) GetByID(ctx *gin.Context) {
 
 	sysJobs, err := c.SysJobsService.GetByID(ctx, req.Id)
 	if err != nil {
-		c.FailAndAbort(ctx, "sys_jobs不存在", err)
+		c.FailAndAbort(ctx, "sys_jobs不存在", err, 404)
 	}
 
 	c.Success(ctx, sysJobs)

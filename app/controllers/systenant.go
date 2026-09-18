@@ -89,7 +89,7 @@ func (tc *TenantController) GetByID(c *gin.Context) {
 		tc.FailAndAbort(c, "查询租户失败", err)
 	}
 	if tenant.IsEmpty() {
-		tc.FailAndAbort(c, "租户不存在", nil)
+		tc.FailAndAbort(c, "租户不存在", nil, 404)
 	}
 
 	tc.Success(c, tenant)
@@ -197,7 +197,7 @@ func (tc *TenantController) Update(c *gin.Context) {
 		tc.FailAndAbort(c, "查询租户失败", err)
 	}
 	if tenant.IsEmpty() {
-		tc.FailAndAbort(c, "租户不存在", nil)
+		tc.FailAndAbort(c, "租户不存在", nil, 404)
 	}
 
 	// 检查租户编码(二级域名)是否与其他租户冲突（排除当前租户）
@@ -284,7 +284,7 @@ func (tc *TenantController) Delete(c *gin.Context) {
 		tc.FailAndAbort(c, "查询租户失败", err)
 	}
 	if tenant.IsEmpty() {
-		tc.FailAndAbort(c, "租户不存在", nil)
+		tc.FailAndAbort(c, "租户不存在", nil, 404)
 	}
 
 	// 使用事务删除租户

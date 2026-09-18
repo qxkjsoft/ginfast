@@ -51,11 +51,7 @@ func PasswordValidatorMiddleware() gin.HandlerFunc {
 
 		// 验证密码长度
 		if len(password) < minPasswordLength {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"code":    400,
-				"message": "密码长度不能少于" + strconv.Itoa(minPasswordLength) + "位",
-			})
-			c.Abort()
+			app.Response.Fail(c, "密码长度不能少于"+strconv.Itoa(minPasswordLength)+"位", http.StatusBadRequest)
 			return
 		}
 
@@ -64,11 +60,7 @@ func PasswordValidatorMiddleware() gin.HandlerFunc {
 			// 定义特殊字符正则表达式
 			specialCharRegex := regexp.MustCompile(`[!@#$%]`)
 			if !specialCharRegex.MatchString(password) {
-				c.JSON(http.StatusBadRequest, gin.H{
-					"code":    400,
-					"message": "密码必须包含特殊字符 !@#$%",
-				})
-				c.Abort()
+				app.Response.Fail(c, "密码必须包含特殊字符 !@#$%", http.StatusBadRequest)
 				return
 			}
 		}

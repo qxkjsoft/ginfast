@@ -194,7 +194,7 @@ func (ac *AreaController) Add(c *gin.Context) {
 			ac.FailAndAbort(c, "查询父级地区失败", err)
 		}
 		if parent.IsEmpty() {
-			ac.FailAndAbort(c, "父级地区不存在", nil)
+			ac.FailAndAbort(c, "父级地区不存在", nil, 404)
 		}
 		if parent.Level != nil {
 			level = *parent.Level + 1
@@ -232,7 +232,7 @@ func (ac *AreaController) Update(c *gin.Context) {
 	area := models.NewAreaModel()
 	if err := area.FindByID(c, req.ID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			ac.FailAndAbort(c, "地区不存在", nil)
+			ac.FailAndAbort(c, "地区不存在", nil, 404)
 		}
 		ac.FailAndAbort(c, "查询地区失败", err)
 	}
@@ -292,7 +292,7 @@ func (ac *AreaController) Delete(c *gin.Context) {
 	area := models.NewAreaModel()
 	if err := area.FindByValue(c, req.Value); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			ac.FailAndAbort(c, "地区不存在", nil)
+			ac.FailAndAbort(c, "地区不存在", nil, 404)
 		}
 		ac.FailAndAbort(c, "查询地区失败", err)
 	}

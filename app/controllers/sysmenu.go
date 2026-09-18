@@ -345,7 +345,7 @@ func (sm *SysMenuController) Add(c *gin.Context) {
 			sm.FailAndAbort(c, "检查父级菜单失败", err)
 		}
 		if parentMenu.IsEmpty() {
-			sm.FailAndAbort(c, "父级菜单不存在", nil)
+			sm.FailAndAbort(c, "父级菜单不存在", nil, 404)
 		}
 
 		// 根据父级类型和当前类型进行权限检查
@@ -449,7 +449,7 @@ func (sm *SysMenuController) Delete(c *gin.Context) {
 		sm.FailAndAbort(c, "查询菜单失败", err)
 	}
 	if menu.IsEmpty() {
-		sm.FailAndAbort(c, "菜单不存在", nil)
+		sm.FailAndAbort(c, "菜单不存在", nil, 404)
 	}
 
 	// 检查是否有子菜单
@@ -555,7 +555,7 @@ func (sm *SysMenuController) GetByID(c *gin.Context) {
 		sm.FailAndAbort(c, "查询菜单失败", err)
 	}
 	if menu.IsEmpty() {
-		sm.FailAndAbort(c, "菜单不存在", nil)
+		sm.FailAndAbort(c, "菜单不存在", nil, 404)
 	}
 
 	sm.Success(c, menu)
@@ -590,7 +590,7 @@ func (sm *SysMenuController) GetMenuApiIds(c *gin.Context) {
 		sm.FailAndAbort(c, "查询菜单失败", err)
 	}
 	if menu.IsEmpty() {
-		sm.FailAndAbort(c, "菜单不存在", nil)
+		sm.FailAndAbort(c, "菜单不存在", nil, 404)
 	}
 
 	// 查询菜单关联的API ID集合
@@ -630,7 +630,7 @@ func (sm *SysMenuController) SetMenuApis(c *gin.Context) {
 		sm.FailAndAbort(c, "查询菜单失败", err)
 	}
 	if menu.IsEmpty() {
-		sm.FailAndAbort(c, "菜单不存在", nil)
+		sm.FailAndAbort(c, "菜单不存在", nil, 404)
 	}
 
 	// 当ApiIDs不为空时，检查API ID是否存在

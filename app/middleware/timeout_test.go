@@ -1,7 +1,9 @@
 package middleware
 
 import (
+	"gin-fast/app/global/app"
 	"gin-fast/app/global/consts"
+	"gin-fast/app/utils/response"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -28,6 +30,8 @@ func TestTimeoutMiddleware_FastHandler(t *testing.T) {
 
 func TestTimeoutMiddleware_SlowHandlerReturns504(t *testing.T) {
 	gin.SetMode(gin.TestMode)
+	// 超时分支经 app.Response 全局单例写响应，测试内内存构造赋值（生产由 bootstrap 初始化）
+	app.Response = response.NewResponseHandler()
 	done := make(chan struct{})
 	router := gin.New()
 	router.Use(TimeoutMiddleware(50 * time.Millisecond))
@@ -43,6 +47,8 @@ func TestTimeoutMiddleware_SlowHandlerReturns504(t *testing.T) {
 	elapsed := time.Since(start)
 
 	assert.Equal(t, http.StatusGatewayTimeout, w.Code)
+	// 超时响应与业务层统一结构 {code,message,data}，业务码为失败码 1
+	assert.Contains(t, w.Body.String(), "\"code\":1")
 	assert.Contains(t, w.Body.String(), "请求处理超时")
 	assert.Less(t, elapsed, 250*time.Millisecond, "超时后不应同步等待 handler 跑完")
 	<-done // 等 handler goroutine 结束，避免测试内 goroutine 泄漏

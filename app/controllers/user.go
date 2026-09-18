@@ -368,7 +368,7 @@ func (uc *UserController) Update(c *gin.Context) {
 		uc.FailAndAbort(c, err.Error(), err)
 	}
 	if user.IsEmpty() {
-		uc.FailAndAbort(c, "用户不存在", nil)
+		uc.FailAndAbort(c, "用户不存在", nil, 404)
 	}
 
 	// 检查用户名是否与其他用户冲突（排除当前用户）
@@ -492,7 +492,7 @@ func (uc *UserController) Delete(c *gin.Context) {
 		uc.FailAndAbort(c, err.Error(), err)
 	}
 	if user.IsEmpty() {
-		uc.FailAndAbort(c, "用户不存在", nil)
+		uc.FailAndAbort(c, "用户不存在", nil, 404)
 	}
 
 	// 使用事务删除用户、角色关联与casbin策略（任一步失败整体回滚）
@@ -546,7 +546,7 @@ func (uc *UserController) UpdateAccount(c *gin.Context) {
 		uc.FailAndAbort(c, err.Error(), err)
 	}
 	if user.IsEmpty() {
-		uc.FailAndAbort(c, "用户不存在", nil)
+		uc.FailAndAbort(c, "用户不存在", nil, 404)
 	}
 
 	// 检查手机号是否已被其他用户使用
@@ -689,7 +689,7 @@ func (uc *UserController) UploadAvatar(c *gin.Context) {
 		uc.FailAndAbort(c, "获取用户信息失败", err)
 	}
 	if user.IsEmpty() {
-		uc.FailAndAbort(c, "用户不存在", nil)
+		uc.FailAndAbort(c, "用户不存在", nil, 404)
 	}
 
 	// 更新用户头像字段
@@ -732,7 +732,7 @@ func (uc *UserController) UpdateBasicInfo(c *gin.Context) {
 		uc.FailAndAbort(c, err.Error(), err)
 	}
 	if user.IsEmpty() {
-		uc.FailAndAbort(c, "用户不存在", nil)
+		uc.FailAndAbort(c, "用户不存在", nil, 404)
 	}
 
 	// 更新用户基本信息
@@ -788,7 +788,7 @@ func (uc *UserController) SwitchTenant(c *gin.Context) {
 		return
 	}
 	if user.IsEmpty() {
-		uc.FailAndAbort(c, "用户不存在", nil)
+		uc.FailAndAbort(c, "用户不存在", nil, 404)
 		return
 	}
 
@@ -808,7 +808,7 @@ func (uc *UserController) SwitchTenant(c *gin.Context) {
 			return
 		}
 		if tenant.IsEmpty() {
-			uc.FailAndAbort(c, "租户不存在", nil)
+			uc.FailAndAbort(c, "租户不存在", nil, 404)
 			return
 		}
 		if tenant.Status != 1 {
