@@ -300,3 +300,13 @@ func TestPluginFolderNameRegex(t *testing.T) {
 		assert.False(t, pluginFolderNameRegex.MatchString(name), "目录名 %q 应被拒绝", name)
 	}
 }
+
+func TestExportPluginToWriter_RejectsIllegalFolderName(t *testing.T) {
+	pms := NewPluginsManagerService()
+	// 非法目录名在触碰文件系统前即被拒绝，防导出路径穿越与响应头注入
+	for _, name := range []string{"../evil", "a/b", "a b", "evil\r\nx", `evil"x`} {
+		_, err := pms.ExportPluginToWriter(name, &bytes.Buffer{}, false)
+		assert.Error(t, err, "目录名 %q 应被拒绝", name)
+		assert.Contains(t, err.Error(), "非法的插件目录名")
+	}
+}

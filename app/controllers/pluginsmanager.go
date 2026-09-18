@@ -3,6 +3,7 @@ package controllers
 import (
 	"bytes"
 	"errors"
+	"regexp"
 
 	"gin-fast/app/global/consts"
 	"gin-fast/app/models"
@@ -93,12 +94,21 @@ func (pmc *PluginsManagerController) ExportPlugin(c *gin.Context) {
 
 	// 设置响应头 - 使用正确的 Content-Disposition 格式
 	c.Header("Content-Type", "application/zip")
-	// 测试使用RFC 5987的filename*参数，并同时保留filename以兼容旧浏览器
-	c.Header("Content-Disposition", "attachment; filename=\""+filename+".zip\"")
+	// filename 白名单消毒（folderName 已在服务层按目录名校验，此处兜底插件自带配置中的 version 串），
+	// 防止引号/CRLF 等字符注入响应头
+	c.Header("Content-Disposition", "attachment; filename=\""+sanitizeDownloadFilename(filename)+".zip\"")
 	c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
 
 	// 将缩缩包内容写入响应体
 	c.DataFromReader(200, int64(buf.Len()), "application/zip", buf, nil)
+}
+
+// downloadFilenameSanitizer 下载文件名白名单：仅保留字母数字点下划线连字符，其余一律替换为下划线
+var downloadFilenameSanitizer = regexp.MustCompile(`[^A-Za-z0-9._-]`)
+
+// sanitizeDownloadFilename 消毒 Content-Disposition 中的文件名，防止引号/CRLF 头注入
+func sanitizeDownloadFilename(name string) string {
+	return downloadFilenameSanitizer.ReplaceAllString(name, "_")
 }
 
 // ImportPlugin 导入插件

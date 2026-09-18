@@ -84,6 +84,12 @@ func (pms *PluginsManagerService) ExportPluginToWriter(pluginName string, writer
 		return "", errors.New("插件名称不能为空")
 	}
 
+	// 目录名白名单校验，防止 folderName 携带 ../ 等穿越到 plugins 目录之外，
+	// 同时保证其可安全拼入 Content-Disposition 响应头（与 UninstallPlugin 同一校验）
+	if !pluginFolderNameRegex.MatchString(pluginName) {
+		return "", fmt.Errorf("非法的插件目录名: %s", pluginName)
+	}
+
 	// 获取plugin_export.json文件路径
 	pluginExportPath := filepath.Join("./plugins", pluginName, "plugin_export.json")
 
