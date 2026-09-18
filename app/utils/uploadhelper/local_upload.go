@@ -84,7 +84,7 @@ func (s *LocalUploadService) UploadFileWithCustomPath(file *multipart.FileHeader
 	return s.GetFileUrl(fmt.Sprintf("%s/%s", customPath, fileName)), nil
 }
 
-// DeleteFile 删除文件
+// DeleteFile 删除文件（仅允许删除上传根目录 upload.local_path 内的文件）
 func (s *LocalUploadService) DeleteFile(fileUrl string) error {
 	var filePath string
 
@@ -100,12 +100,36 @@ func (s *LocalUploadService) DeleteFile(fileUrl string) error {
 		}
 	}
 
+	// 路径护栏：目标必须仍位于上传根目录内，防止任意文件系统路径（含 ../ 穿越）被删除
+	if !s.isWithinUploadRoot(filePath) {
+		return fmt.Errorf("拒绝删除上传目录之外的文件: %s", fileUrl)
+	}
+
 	// 删除文件
 	if err := os.Remove(filePath); err != nil {
 		return fmt.Errorf("删除文件失败: %v", err)
 	}
 
 	return nil
+}
+
+// isWithinUploadRoot 判断路径归一化后是否位于上传根目录内（不含根目录本身）；
+// 归一化失败按不通过处理（fail-safe）
+func (s *LocalUploadService) isWithinUploadRoot(p string) bool {
+	abs, err := filepath.Abs(p)
+	if err != nil {
+		return false
+	}
+	root, err := filepath.Abs(s.config.LocalPath)
+	if err != nil {
+		return false
+	}
+	rel, err := filepath.Rel(root, abs)
+	if err != nil {
+		return false
+	}
+	// rel=="." 表示目标是根目录本身；以 ".." 开头表示逃逸出根目录
+	return rel != "." && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }
 
 // GetFileUrl 获取文件访问URL
