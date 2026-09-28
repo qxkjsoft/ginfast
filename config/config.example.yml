@@ -265,7 +265,7 @@ upload:
 #代码生成
 gen:
   # 前端代码生成路径
-  dir: "../ginfast-tenant-ui"
+  dir: "../ginfast-ui"
 
 # 任务调度器配置
 scheduler:
