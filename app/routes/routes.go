@@ -47,6 +47,20 @@ func InitRoutes(engine *gin.Engine) {
 	// 静态文件（安全加固：nosniff、uploads 下 svg 禁脚本 CSP、html 类强制下载、关闭目录列表）
 	ginhelper.SecureStatic(engine, app.ConfigYml.GetString("httpserver.serverrootpath"), app.ConfigYml.GetString("httpserver.serverroot"))
 
+	// 额外静态目录映射（httpserver.extra_static 列表，每项 prefix(URL前缀)+dir(磁盘目录)），
+	// 用于旧系统迁移的静态资源路径（如旧CMS图片 /d/...），同样复用 SecureStatic 安全加固
+	if extras, ok := app.ConfigYml.Get("httpserver.extra_static").([]interface{}); ok {
+		for _, item := range extras {
+			m, _ := item.(map[string]interface{})
+			prefix, _ := m["prefix"].(string)
+			dir, _ := m["dir"].(string)
+			if prefix == "" || dir == "" {
+				continue
+			}
+			ginhelper.SecureStatic(engine, prefix, dir)
+		}
+	}
+
 	//	调试模式下注册Swagger路由、查看内存缓存项
 	if app.ConfigYml.GetBool("server.appdebug") {
 		// 注册Swagger路由

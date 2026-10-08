@@ -74,6 +74,12 @@ httpserver:
     - "http://127.0.0.1:8090"
   serverrootpath: "/public" # 静态资源路由路径
   serverroot: "./resource/public" # 静态资源根目录
+  # 额外静态目录映射列表（可配置多个，每项 prefix=URL访问前缀 + dir=磁盘目录），同样经安全加固静态服务输出
+  # 示例：把旧系统迁移的图片目录映射到 /d 访问路径（/d/file/2026/07/a.png → ./resource/d/file/2026/07/a.png）：
+  # extra_static:
+  #   - prefix: "/d"            # URL 前缀（勿以 / 结尾，勿与 /api、/swagger、/public 等已有路由冲突）
+  #     dir: "./resource/d"     # 磁盘目录（相对或绝对路径，目录不存在时请求返回 404）
+  extra_static: []
   read_timeout: 30    # TCP读取超时(秒)
   write_timeout: 30   # TCP写入超时(秒)
   idle_timeout: 60    # TCP空闲连接超时(秒)
