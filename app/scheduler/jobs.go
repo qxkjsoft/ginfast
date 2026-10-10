@@ -87,6 +87,34 @@ func LoadJobsFromDB() {
 	StartResultHandler()
 }
 
+// RegisterAndPersistJob 注册任务到内存调度器并持久化到 sys_jobs（两步合并的便捷方法）。
+//
+// 内部依次执行：
+//  1. AddOrUpdateJob：任务按 CRON 立即开始调度（进程重启后随 LoadJobsFromDB 自动恢复）；
+//  2. PersistJobToDB：写入 sys_jobs 镜像记录（OnConflict DoNothing 仅首次启动插入，
+//     不覆盖用户在后台对任务的修改）。
+//
+// 任一步骤失败仅记录日志并返回错误，不 panic：任务调度不依赖 sys_jobs 记录，
+// 持久化失败仅影响 sys_job_results 历史落库；调用方可按需忽略返回值。
+func RegisterAndPersistJob(job *schedulerhelper.Job) error {
+	if _, err := app.JobScheduler.AddOrUpdateJob(job); err != nil {
+		app.ZapLog.Error("注册任务到调度器失败",
+			zap.String("jobID", job.ID),
+			zap.String("name", job.Name),
+			zap.Error(err))
+		return err
+	}
+
+	if err := PersistJobToDB(job); err != nil {
+		app.ZapLog.Error("持久化任务到 sys_jobs 失败",
+			zap.String("jobID", job.ID),
+			zap.String("name", job.Name),
+			zap.Error(err))
+		return err
+	}
+	return nil
+}
+
 // PersistJobToDB 将任务定义持久化到 sys_jobs 表（主键冲突时忽略）。
 // 供插件注册任务时调用，确保 sys_job_results 的外键约束 (job_id -> sys_jobs.id) 得到满足。
 //
