@@ -72,37 +72,47 @@ ginfast-tenant/
 ├── app/                    # 应用核心代码
 │   ├── controllers/        # 控制器层
 │   │   ├── auth.go         # 认证控制器
+│   │   ├── area.go         # 地区管理控制器
 │   │   ├── codegen.go      # 代码生成控制器
 │   │   ├── common.go       # 通用控制器基类
+│   │   ├── config.go       # 系统配置控制器
 │   │   ├── user.go         # 用户控制器
+│   │   ├── sysaffix.go     # 文件管理控制器
 │   │   ├── sysapi.go       # 系统API管理控制器
 │   │   ├── sysdepartment.go # 部门管理控制器
 │   │   ├── sysdict.go      # 字典管理控制器
 │   │   ├── sysdictitem.go  # 字典项管理控制器
 │   │   ├── sysgen.go       # 代码生成配置控制器
 │   │   ├── sysmenu.go      # 菜单管理控制器
+│   │   ├── sysoperationlog.go # 操作日志控制器
+│   │   ├── sysparam.go     # 参数管理控制器
 │   │   ├── sysrole.go      # 角色管理控制器
 │   │   ├── systenant.go    # 租户管理控制器
+│   │   ├── tenant.go       # 租户控制器（含切换租户）
 │   │   ├── sysusertenant.go # 用户租户关联控制器
-│   │   ├── sysjobs.go      # 任务调度管理控制器
-│   │   ├── sysjobresults.go # 任务执行结果控制器
+│   │   ├── sysjobscontroller.go # 定时任务控制器
+│   │   ├── sysjobresultscontroller.go # 定时任务执行结果控制器
 │   │   └── pluginsmanager.go # 插件管理控制器
 │   ├── global/             # 全局变量和接口
-│   │   ├── app/            # 全局应用接口
+│   │   ├── app/            # 全局应用接口（缓存/Casbin/配置/调度器/Token/上传等）
 │   │   ├── consts/         # 常量定义
 │   │   └── myerrors/       # 错误定义
 │   ├── middleware/         # 中间件
 │   │   ├── captcha.go      # 验证码中间件
 │   │   ├── casbin.go       # 权限控制中间件
 │   │   ├── cors.go         # 跨域中间件
+│   │   ├── demoaccount.go  # 演示账号限制中间件
 │   │   ├── jwt.go          # JWT 认证中间件
-│   │   └── requestaborted.go # 请求中断处理中间件
+│   │   ├── operationlog.go # 操作日志中间件
+│   │   ├── password.go     # 密码中间件
+│   │   ├── superadmin.go   # 超管豁免中间件
+│   │   └── timeout.go      # 请求超时中间件
 │   ├── models/             # 数据模型
 │   │   ├── base.go         # 基础模型
+│   │   ├── area.go         # 地区模型
 │   │   ├── codegen.go      # 代码生成模型
 │   │   ├── user.go         # 用户模型
 │   │   ├── sysapi.go       # 系统API模型
-│   │   ├── sysapiparam.go  # 系统API参数模型
 │   │   ├── sysdepartment.go # 部门模型
 │   │   ├── sysdict.go      # 字典模型
 │   │   ├── sysdictitem.go  # 字典项模型
@@ -110,43 +120,68 @@ ginfast-tenant/
 │   │   ├── sysgenfield.go  # 代码生成字段模型
 │   │   ├── sysmenu.go      # 菜单模型
 │   │   ├── sysmenuapi.go   # 菜单API关联模型
+│   │   ├── sysoperationlog.go # 操作日志模型
+│   │   ├── sysparam.go     # 系统参数模型
 │   │   ├── sysrole.go      # 角色模型
+│   │   ├── sysrolemenu.go  # 角色菜单关联模型
+│   │   ├── sysuserrole.go  # 用户角色关联模型
 │   │   ├── systenants.go   # 租户模型
 │   │   ├── sysusertenant.go # 用户租户关联模型
+│   │   ├── sysjobs.go      # 定时任务模型
+│   │   ├── sysjobresults.go # 任务执行结果模型
+│   │   ├── sysaffix.go     # 系统附件模型
 │   │   ├── pluginexport.go # 插件导出配置模型
 │   │   └── *param.go       # 各种参数模型
 │   ├── routes/             # 路由配置
-│   │   └── routes.go       # 路由定义
+│   │   ├── routes.go       # 业务路由注册
+│   │   └── globalmiddleware.go # 全局中间件、静态目录与调试路由注册
 │   ├── scheduler/          # 任务调度模块
-│   │   ├── register.go     # 执行器注册和任务加载
+│   │   ├── register.go     # 执行器与预置任务注册
+│   │   ├── jobs.go         # 任务加载（LoadJobsFromDB）与持久化（PersistJobToDB）
 │   │   ├── result_handler.go # 任务结果处理器
 │   │   └── executors/      # 任务执行器
 │   ├── service/            # 服务层
 │   │   ├── casbinservice.go # 权限服务
 │   │   ├── codegenservice.go # 代码生成服务
 │   │   ├── sysgenservice.go # 代码生成配置服务
-│   │   ├── sysmenu.go      # 菜单服务
+│   │   ├── sysmenuservice.go # 菜单服务
+│   │   ├── sysroleservice.go # 角色服务
+│   │   ├── sysapiservice.go # 系统API服务
+│   │   ├── sysdepartmentservice.go # 部门服务
+│   │   ├── sysparamservice.go # 参数服务
+│   │   ├── sysaffixservice.go # 文件管理服务
+│   │   ├── sysjobsservice.go # 定时任务服务
+│   │   ├── sysjobresultsservice.go # 任务结果服务
 │   │   ├── userservice.go  # 用户服务
 │   │   ├── pluginsmanagerservice.go # 插件管理服务
 │   │   └── zaphooks.go     # 日志钩子
 │   └── utils/              # 工具类
 │       ├── cachehelper/    # 缓存助手
+│       ├── captchahelper/  # 验证码助手
 │       ├── casbinhelper/   # 权限助手
 │       ├── common/         # 通用工具
+│       ├── datascope/      # 数据权限
+│       ├── filehelper/     # 文件工具
 │       ├── ginhelper/      # Gin助手
-│       ├── gormhelper/     # GORM助手
+│       ├── gormhelper/     # GORM助手（多库连接/租户钩子/查无数据屏蔽）
+│       ├── goroutinehelper/ # 协程助手
+│       ├── imagehelper/    # 图片处理助手
 │       ├── passwordhelper/ # 密码助手
 │       ├── response/       # 响应助手
+│       ├── schedulerhelper/ # 任务调度器核心
 │       ├── tenanthelper/   # 租户助手
 │       ├── tokenhelper/    # Token助手
+│       ├── uploadhelper/   # 上传助手
 │       └── ymlconfig/      # 配置助手
 ├── bootstrap/              # 应用初始化
-│   └── init.go             # 初始化配置
+│   ├── init.go             # 启动初始化（配置→日志→DB→超管→Casbin→缓存→Token→上传→调度器）
+│   └── initadmin.go        # 超管账号自动初始化
 ├── config/                 # 配置文件
-│   └── config.yml          # 主配置文件
+│   ├── config.example.yml  # 配置示例文件（复制为 config.yml 使用）
+│   └── config.yml          # 主配置文件（已 gitignore，不入库）
 ├── docs/                   # 文档
-│   ├── swagger/            # Swagger API 文档
-│   └── catalog.md          # 项目目录说明
+│   ├── README.md           # 文档总入口
+│   └── swagger/            # Swagger API 文档
 ├── gen/                    # 代码生成模板
 │   └── templates/          # 代码生成器使用的模板文件
 ├── plugins/                # 插件目录
@@ -245,33 +280,64 @@ swag init -g main.go -o docs/swagger
 
 ## 配置说明
 
-主要配置项位于 `config/config.yml` 文件中：
+主要配置项位于 `config/config.yml` 文件中（首次部署复制 `config/config.example.yml` 为 `config.yml`，各配置项的完整说明见示例文件内注释）：
 
-### 服务器配置
+### 基础配置（server / httpserver）
 ```yaml
-Server:
-  AppDebug: true          # 调试模式
-  CacheType: "redis"      # 缓存类型：memory 或 redis
-HttpServer:
-  Port: ":8080"          # 服务端口
-  AllowCrossDomain: true # 是否允许跨域
-  ServerRootPath: "/public" # 静态资源路由路径
-  ServerRoot: "./resource/public" # 静态资源根目录
+server:
+  appdebug: true        # debug=true 调试模式，日志优先输出控制台；false 写入日志文件
+  cachetype: "redis"    # 缓存模式：memory 或 redis
+  multitenant: true     # 多租户开关，false 时停用全部租户功能，退化为单体应用
+  initadmin:            # 全新部署随启动自动创建超管账号（初始化成功后建议将 enabled 改为 false）
+    enabled: true
+    username: "admin"
+    password: "123456"
+httpserver:
+  port: ":8080"           # 服务端口
+  allowcrossdomain: true  # 是否启用 CORS 跨域中间件（配合 corsorigins 白名单生效）
+  corsorigins:            # 跨域来源白名单（与浏览器 Origin 精确匹配）
+    - "http://localhost:5173"
+  serverrootpath: "/public"          # 静态资源路由路径
+  serverroot: "./resource/public"    # 静态资源根目录
+  extra_static: []        # 额外静态目录映射列表（prefix=URL前缀 + dir=磁盘目录），详见 config.example.yml 注释
+  handler_timeout: 30     # 请求处理超时(秒)
 ```
 
-### 数据库配置示例
+### 数据库配置（gormv2）
+
+支持 mysql / sqlserver / postgresql 三种数据库，`usedbtype` 指定当前使用的类型。启动时会强校验：`usedbtype` 对应的 `isinitglobalgormXxx` 必须为 1（连接已初始化），否则启动直接失败：
+
 ```yaml
-Database:
-  Type: "mysql"          # 数据库类型
-  Host: "127.0.0.1"      # 数据库主机
-  Port: 3306             # 数据库端口
-  Username: "root"       # 数据库用户名
-  Password: "password"   # 数据库密码
-  Database: "gin_fast"   # 数据库名
-  Charset: "utf8mb4"     # 字符集
-  ParseTime: true        # 解析时间
-  Loc: "Local"           # 时区
+gormv2:
+  usedbtype: "mysql"      # 当前使用的数据库类型（mysql、sqlserver、postgresql）
+  mysql:
+    isinitglobalgormmysql: 1  # 随启动初始化全局 gorm.Db（1=开启、0=关闭）
+    slowthreshold: 30         # 慢 SQL 阈值(秒)
+    timezone: "Local"
+    write:                    # 写库连接
+      host: "127.0.0.1"
+      database: "gin-fast"
+      port: 3306
+      user: "root"
+      pass: "root"
+      charset: "utf8mb4"
+    isopenreaddb: 0           # 读写分离开关（1=开启，read 配置生效）
+    read: {}                  # 读库连接，结构同 write
+  # sqlserver / postgresql 配置结构同 mysql，详见 config.example.yml
 ```
+
+### 其他常用配置
+
+| 配置段 | 说明 |
+|--------|------|
+| token | JWT 签名密钥与过期时间（必须为纯数字秒数，勿写 1h/30m 等时长格式） |
+| redis | Redis 连接配置（cachetype=redis 时使用） |
+| logs | Zap 运行日志：格式、级别、按大小切割与保留策略 |
+| casbin | 权限模型 modelconfig、策略自动扫描频率、表名等 |
+| upload | 文件上传方式（local/qiniu）、大小与类型限制、分片上传 |
+| gen | 前端代码生成路径 `dir`（代码生成功能输出的前端项目目录） |
+| scheduler | 任务调度器日志目录与结果通道缓冲大小，详见下方"任务调度系统"章节 |
+| safe / captcha / demoaccount | 登录安全策略（锁定阈值/密码强度）、验证码、演示账号 |
 
 ## 多租户架构说明
 
@@ -1006,6 +1072,21 @@ scheduler:
 | /api/sysjobresults/list | GET | 获取任务执行结果列表（分页） |
 | /api/sysjobresults/getByID | GET | 根据ID获取执行结果 |
 
+### 内置预置任务
+
+系统在启动时（[`RegisterExecutors`](app/scheduler/register.go)）自动注册以下预置任务到内存调度器，并持久化到 `sys_jobs` 表。持久化采用 OnConflict DoNothing（MySQL 下为 INSERT IGNORE），已存在的记录不会被代码覆盖，可在后台"定时任务"模块编辑：
+
+| 任务ID | 名称 | 执行器 | Cron表达式 | 默认状态 | 参数 |
+|--------|------|--------|-----------|---------|------|
+| operation-log-cleanup | 操作日志清理 | operation-log-cleanup | `0 0 3 * * *`（每天凌晨3点） | 停用 | retain_days=90（日志保留天数） |
+
+注意事项：
+
+- 操作日志清理任务**默认停用**，不会自动清理。需要启用时，在后台"定时任务"模块启用该任务即可（启用即生效，无需重启），并可按需调整保留天数（参数 `retain_days`）与执行时间
+- 该任务执行**硬删除**：物理删除 `retain_days` 天之前的 `sys_operation_logs` 记录（非软删标记，删除后不可恢复），启用前请确认已了解删除范围
+- 存量环境升级提示：若升级前已在 `sys_jobs` 建过同 ID 任务，代码不会覆盖已持久化的状态/描述，如需同步可在后台编辑或手动 UPDATE
+- 插件或自定义任务同样可使用 `scheduler.RegisterAndPersistJob(job)` 预置任务，内部失败仅记日志，不阻断启动
+
 ### 执行器开发
 
 执行器是任务的具体执行逻辑实现，需要实现 [`Executor`](app/utils/schedulerhelper/executor.go) 接口：
@@ -1050,24 +1131,35 @@ func (e *MyExecutor) Name() string {
 
 #### 注册执行器
 
-在 [`app/scheduler/register.go`](app/scheduler/register.go:18) 中注册执行器：
+在 [`app/scheduler/register.go`](app/scheduler/register.go) 的 `RegisterExecutors()` 中注册执行器；如需随启动自动创建任务，使用 [`RegisterAndPersistJob`](app/scheduler/jobs.go) 一步完成"注册到内存调度器 + 持久化到 sys_jobs"：
 
 ```go
 func RegisterExecutors() {
-    // 注册演示执行器
+    // 注册演示执行器（仅演示写法，无预置任务，可在后台"定时任务"模块建任务体验）
     app.JobScheduler.RegisterExecutor(&executors.DemoExecutor{})
-    
-    // 注册自定义执行器
-    app.JobScheduler.RegisterExecutor(&executors.MyExecutor{})
+
+    // 注册操作日志清理执行器，并预置定时任务（随启动自动注册+持久化，默认停用）
+    app.JobScheduler.RegisterExecutor(&executors.OperationLogCleanupExecutor{})
+    _ = RegisterAndPersistJob(&schedulerhelper.Job{
+        ID:           "operation-log-cleanup",
+        Group:        "system",
+        Name:         "操作日志清理",
+        ExecutorName: (&executors.OperationLogCleanupExecutor{}).Name(),
+        // ...其余字段（Cron、状态、参数等）见 register.go
+    })
+
+    // 在这里添加更多执行器/任务
+    // app.JobScheduler.RegisterExecutor(&executors.MyExecutor{})
+    // scheduler.RegisterAndPersistJob(&schedulerhelper.Job{...})
 }
 ```
 
 ### 任务调度流程
 
 1. **应用启动**
-   - 在 [`bootstrap/init.go`](bootstrap/init.go:62) 中初始化任务调度器
-   - 调用 [`RegisterExecutors()`](app/scheduler/register.go:18) 注册所有执行器
-   - 调用 [`LoadJobsFromDB()`](app/scheduler/register.go:26) 从数据库加载启用的任务
+   - 在 [`bootstrap/init.go`](bootstrap/init.go:65) 中初始化任务调度器
+   - 调用 [`RegisterExecutors()`](app/scheduler/register.go) 注册所有执行器，预置任务同时经 `RegisterAndPersistJob` 自动注册并持久化到 `sys_jobs`
+   - 调用 [`LoadJobsFromDB()`](app/scheduler/jobs.go) 从数据库加载启用的任务
 
 2. **任务调度**
    - 调度器根据Cron表达式触发任务执行

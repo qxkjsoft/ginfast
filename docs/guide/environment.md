@@ -9,7 +9,7 @@
 
 ### 环境要求
 
-- **Go**: 版本 >= 1.18 (推荐 1.20+)
+- **Go**: 版本 >= 1.25（go.mod 强制要求）
 - **Node.js**: 版本 >= 18.12.0 (推荐 20.12.0+)
 - **pnpm**: 版本 >= 8.7.0
 - **MySQL**: 版本 >= 5.7
@@ -84,13 +84,13 @@ go version
 1. 下载 Go 安装包：
 
 ```bash
-wget https://golang.org/dl/go1.20.5.linux-amd64.tar.gz
+wget https://golang.org/dl/go1.25.0.linux-amd64.tar.gz
 ```
 
 2. 解压到 /usr/local：
 
 ```bash
-tar -C /usr/local -xzf go1.20.5.linux-amd64.tar.gz
+tar -C /usr/local -xzf go1.25.0.linux-amd64.tar.gz
 ```
 
 3. 配置环境变量：
@@ -499,7 +499,7 @@ git config --global user.email "your.email@example.com"
 go version
 ```
 
-确保 Go 版本 >= 1.18
+确保 Go 版本 >= 1.25（go.mod 强制要求）
 
 #### 2. 验证 Node.js 环境
 
@@ -546,7 +546,7 @@ git --version
 
 ```bash
 git clone <repository-url>
-cd gin-fast
+cd ginfast
 ```
 
 2. 安装后端依赖：
@@ -555,28 +555,29 @@ cd gin-fast
 go mod tidy
 ```
 
-3. 安装前端依赖：
+3. 克隆前端并安装依赖：
 
 ```bash
-cd gin-fast-front/SnowAdmin
+git clone https://github.com/qxkjsoft/ginfast-front.git
+cd ginfast-front
 pnpm install
 ```
 
 4. 启动后端服务：
 
 ```bash
-cd ../../
+# 回到后端目录执行
 go run main.go
 ```
 
 5. 启动前端服务：
 
 ```bash
-cd gin-fast-front/SnowAdmin
+# 在前端目录执行
 pnpm run dev
 ```
 
-6. 访问 http://localhost:8001，确认项目正常运行
+6. 访问 http://localhost:5173（前端 dev 服务端口，被占用时以启动日志为准），确认项目正常运行
 
 ### 常见问题
 
@@ -590,8 +591,8 @@ bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/bins
 source ~/.gvm/scripts/gvm
 
 # 安装指定版本的 Go
-gvm install go1.20.5
-gvm use go1.20.5 --default
+gvm install go1.25.0
+gvm use go1.25.0 --default
 ```
 
 #### 2. Node.js 版本问题

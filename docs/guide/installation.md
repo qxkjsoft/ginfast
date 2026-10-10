@@ -19,8 +19,8 @@ Gin-Fast 是一个基于 Gin 框架的后台管理系统，前端采用 Vue3 + V
 #### 1. 克隆项目
 
 ```bash
-git clone https://github.com/qxkjsoft/ginfast-back.git
-cd ginfast-back
+git clone https://github.com/qxkjsoft/ginfast.git
+cd ginfast
 ```
 
 #### 2. 安装依赖
@@ -33,7 +33,7 @@ go mod tidy
 
 ```bash
 # 复制配置文件
-cp config/config.copy.yml config/config.yml
+cp config/config.example.yml config/config.yml
 
 # 编辑配置文件
 vim config/config.yml
@@ -47,20 +47,20 @@ captcha:
   length: 4
   open: false
 
-# Casbin 权限配置
+# Casbin 权限配置（多租户模型：dom 为租户域，各段含义详见 config.example.yml 内注释）
 casbin:
   autoloadpolicyseconds: 120
   modelconfig: |
     [request_definition]
-    r = sub, obj, act
+    r = sub, obj, act, dom
     [policy_definition]
-    p = sub, obj, act
+    p = sub, obj, act, dom
     [role_definition]
-    g = _, _
+    g = _, _, _
     [policy_effect]
     e = some(where (p.eft == allow))
     [matchers]
-    m = g(r.sub, p.sub) && keyMatch2(r.obj, p.obj) && r.act == p.act
+    m =  g(r.sub, p.sub, r.dom) && keyMatch2(r.obj, p.obj) && regexMatch(r.act, p.act) && (r.dom == p.dom || p.dom == "*")
   tablename: casbin_rule
   tableprefix: sys_
 
@@ -278,20 +278,20 @@ captcha:
   length: 4
   open: false
 
-# Casbin 权限配置
+# Casbin 权限配置（多租户模型：dom 为租户域，各段含义详见 config.example.yml 内注释）
 casbin:
   autoloadpolicyseconds: 120
   modelconfig: |
     [request_definition]
-    r = sub, obj, act
+    r = sub, obj, act, dom
     [policy_definition]
-    p = sub, obj, act
+    p = sub, obj, act, dom
     [role_definition]
-    g = _, _
+    g = _, _, _
     [policy_effect]
     e = some(where (p.eft == allow))
     [matchers]
-    m = g(r.sub, p.sub) && keyMatch2(r.obj, p.obj) && r.act == p.act
+    m =  g(r.sub, p.sub, r.dom) && keyMatch2(r.obj, p.obj) && regexMatch(r.act, p.act) && (r.dom == p.dom || p.dom == "*")
   tablename: casbin_rule
   tableprefix: sys_
 
@@ -445,21 +445,21 @@ pnpm run dev
 
 #### 3. 访问系统
 
-打开浏览器，访问 http://localhost:8001，即可看到系统登录页面。
+打开浏览器，访问 http://localhost:5173（前端 dev 服务端口，被占用时以启动日志为准），即可看到系统登录页面。
 
 ### 验证安装
 
 #### 1. 验证后端服务
 
 ```bash
-curl http://localhost:8080/ping
+curl http://localhost:8080/api/config/get
 ```
 
-如果返回 `{"code":0,"msg":"success","data":"pong"}`，说明后端服务启动成功。
+如果返回 `code` 为 0 的 JSON 配置信息，说明后端服务启动成功。
 
 #### 2. 验证前端服务
 
-打开浏览器，访问 http://localhost:8001，如果看到系统登录页面，说明前端服务启动成功。
+打开浏览器，访问 http://localhost:5173，如果看到系统登录页面，说明前端服务启动成功。
 
 #### 3. 验证数据库连接
 

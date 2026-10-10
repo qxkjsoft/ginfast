@@ -30,8 +30,8 @@ bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/bins
 source ~/.gvm/scripts/gvm
 
 # 安装指定版本的 Go
-gvm install go1.20.5
-gvm use go1.20.5 --default
+gvm install go1.25.0
+gvm use go1.25.0 --default
 ```
 
 #### 2. Node.js 版本不兼容

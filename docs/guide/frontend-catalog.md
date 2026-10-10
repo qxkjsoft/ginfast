@@ -10,7 +10,7 @@
 ### 项目结构
 
 ```
-/gin-fast-front/
+/ginfast-front/
 ├── public/                  # 静态资源（不参与打包）
 │   ├── favicon.ico          # 网站图标
 │   └── logo.png             # Logo

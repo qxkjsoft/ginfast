@@ -158,6 +158,8 @@ func PersistJobToDB(job *schedulerhelper.Job) error {
 	}
 
 	return app.DB().WithContext(ctx).
+		// 主键/唯一索引冲突时忽略本次插入（MySQL 翻译为 INSERT IGNORE）：
+		// 重启时任务记录已存在则跳过，不覆盖用户在后台对该任务的修改（幂等写入）
 		Clauses(clause.OnConflict{DoNothing: true}).
 		Create(sysJob).Error
 }
