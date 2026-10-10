@@ -37,7 +37,7 @@ func (Example) TableName() string {
 
 // GetByID 根据ID获取示例
 func (m *Example) GetByID(c context.Context, id uint) error {
-	return app.DB().WithContext(c).First(m, id).Error
+	return app.DB().WithContext(c).Where("id = ?", id).First(m).Error
 }
 
 // Create 创建示例记录

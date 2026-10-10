@@ -51,9 +51,10 @@ func (SysJobs) TableName() string {
 	return "sys_jobs"
 }
 
-// GetByID 根据ID获取sys_jobs
+// GetByID 根据ID获取sys_jobs；任务ID可能为非数字字符串（插件预置任务），必须显式参数化条件，
+// 不能写 First(m, id)——非数字字符串会被 GORM 当裸 SQL 拼进 WHERE 导致语法错误
 func (m *SysJobs) GetByID(c context.Context, id string) error {
-	return app.DB().WithContext(c).First(m, id).Error
+	return app.DB().WithContext(c).Where("id = ?", id).First(m).Error
 }
 
 // Create 创建sys_jobs记录

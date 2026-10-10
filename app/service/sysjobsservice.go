@@ -21,6 +21,10 @@ func NewSysJobsService() *SysJobsService {
 	return &SysJobsService{}
 }
 
+// ErrSysJobsNotFound 任务不存在的哨兵错误。
+// gormhelper.MaskNotDataError 全局屏蔽了 ErrRecordNotFound：查无数据时 err 为 nil、记录为零值，须按 IsEmpty 判定。
+var ErrSysJobsNotFound = errors.New("任务不存在")
+
 // Create 创建sys_jobs
 func (s *SysJobsService) Create(c *gin.Context, req models.SysJobsCreateRequest) (*models.SysJobs, error) {
 	// 验证Cron表达式
@@ -102,6 +106,10 @@ func (s *SysJobsService) Update(c *gin.Context, req models.SysJobsUpdateRequest)
 	if err := sysJobs.GetByID(c, req.Id); err != nil {
 		return err
 	}
+	// 查无数据时 Save 会以空主键转 INSERT 产生脏数据，须先判 IsEmpty
+	if sysJobs.IsEmpty() {
+		return ErrSysJobsNotFound
+	}
 	// 更新sys_jobs信息
 	sysJobs.Group = req.Group
 	sysJobs.Name = req.Name
@@ -150,6 +158,9 @@ func (s *SysJobsService) Delete(c *gin.Context, id string) error {
 	if err := sysJobs.GetByID(c, id); err != nil {
 		return err
 	}
+	if sysJobs.IsEmpty() {
+		return ErrSysJobsNotFound
+	}
 
 	// 先删数据库记录（DB 为事实源；若先删调度器、库删除失败，任务会在重启后被 LoadJobsFromDB 复活）
 	if err := sysJobs.Delete(c); err != nil {
@@ -172,6 +183,9 @@ func (s *SysJobsService) GetByID(c *gin.Context, id string) (*models.SysJobs, er
 	sysJobs := models.NewSysJobs()
 	if err := sysJobs.GetByID(c, id); err != nil {
 		return nil, err
+	}
+	if sysJobs.IsEmpty() {
+		return nil, ErrSysJobsNotFound
 	}
 
 	return sysJobs, nil
@@ -202,6 +216,9 @@ func (s *SysJobsService) SetStatus(c *gin.Context, id string, status int) error 
 	sysJobs := models.NewSysJobs()
 	if err := sysJobs.GetByID(c, id); err != nil {
 		return err
+	}
+	if sysJobs.IsEmpty() {
+		return ErrSysJobsNotFound
 	}
 
 	// 检查任务是否存在于调度器中
@@ -265,6 +282,9 @@ func (s *SysJobsService) ExecuteNow(c *gin.Context, id string) error {
 	sysJobs := models.NewSysJobs()
 	if err := sysJobs.GetByID(c, id); err != nil {
 		return err
+	}
+	if sysJobs.IsEmpty() {
+		return ErrSysJobsNotFound
 	}
 
 	// 检查任务是否存在于调度器中

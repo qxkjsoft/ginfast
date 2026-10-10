@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"errors"
+
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
 	"gin-fast/app/service"
@@ -47,6 +49,9 @@ func (c *SysJobsController) Update(ctx *gin.Context) {
 
 	err := c.SysJobsService.Update(ctx, req)
 	if err != nil {
+		if errors.Is(err, service.ErrSysJobsNotFound) {
+			c.FailAndAbort(ctx, "sys_jobs不存在", nil, 404)
+		}
 		c.FailAndAbort(ctx, "更新sys_jobs失败", err)
 	}
 
@@ -62,6 +67,9 @@ func (c *SysJobsController) Delete(ctx *gin.Context) {
 
 	err := c.SysJobsService.Delete(ctx, req.Id)
 	if err != nil {
+		if errors.Is(err, service.ErrSysJobsNotFound) {
+			c.FailAndAbort(ctx, "sys_jobs不存在", nil, 404)
+		}
 		c.FailAndAbort(ctx, "删除sys_jobs失败", err)
 	}
 
@@ -77,7 +85,10 @@ func (c *SysJobsController) GetByID(ctx *gin.Context) {
 
 	sysJobs, err := c.SysJobsService.GetByID(ctx, req.Id)
 	if err != nil {
-		c.FailAndAbort(ctx, "sys_jobs不存在", err, 404)
+		if errors.Is(err, service.ErrSysJobsNotFound) {
+			c.FailAndAbort(ctx, "sys_jobs不存在", nil, 404)
+		}
+		c.FailAndAbort(ctx, "查询sys_jobs失败", err)
 	}
 
 	c.Success(ctx, sysJobs)
@@ -125,6 +136,9 @@ func (c *SysJobsController) SetStatus(ctx *gin.Context) {
 
 	err := c.SysJobsService.SetStatus(ctx, req.Id, req.Status)
 	if err != nil {
+		if errors.Is(err, service.ErrSysJobsNotFound) {
+			c.FailAndAbort(ctx, "sys_jobs不存在", nil, 404)
+		}
 		c.FailAndAbort(ctx, "设置任务状态失败", err)
 	}
 
@@ -140,6 +154,9 @@ func (c *SysJobsController) ExecuteNow(ctx *gin.Context) {
 
 	err := c.SysJobsService.ExecuteNow(ctx, req.Id)
 	if err != nil {
+		if errors.Is(err, service.ErrSysJobsNotFound) {
+			c.FailAndAbort(ctx, "sys_jobs不存在", nil, 404)
+		}
 		c.FailAndAbort(ctx, "立即执行任务失败", err)
 	}
 
