@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"context"
-	"gin-fast/app/global/consts"
+	"gin-fast/app/global/app"
 	"net/http"
 	"time"
 
@@ -45,11 +45,8 @@ func TimeoutMiddleware(timeout time.Duration) gin.HandlerFunc {
 		case <-finished:
 			// handler 正常完成，响应已写入
 		case <-ctx.Done():
-			c.AbortWithStatusJSON(http.StatusGatewayTimeout, gin.H{
-				"code":    consts.ServerOccurredErrorCode,
-				"message": "请求处理超时",
-				"data":    nil,
-			})
+			// 超时是请求处理失败，业务码统一用失败码 1（HTTP 504 保留超时语义）
+			app.Response.Fail(c, "请求处理超时", http.StatusGatewayTimeout)
 		}
 	}
 }

@@ -115,7 +115,6 @@ func DeleteBeforeHook(gormDB *gorm.DB) {
 
 // structHasSpecialField  检查结构体是否有特定字段
 func structHasSpecialField(fieldName string, anyStructPtr interface{}) (bool, string) {
-	var tmp reflect.Type
 	if reflect.TypeOf(anyStructPtr).Kind() == reflect.Ptr && reflect.ValueOf(anyStructPtr).Elem().Kind() == reflect.Map {
 		destValueOf := reflect.ValueOf(anyStructPtr).Elem()
 		for _, item := range destValueOf.MapKeys() {
@@ -124,40 +123,11 @@ func structHasSpecialField(fieldName string, anyStructPtr interface{}) (bool, st
 			}
 		}
 	} else if reflect.TypeOf(anyStructPtr).Kind() == reflect.Ptr && reflect.ValueOf(anyStructPtr).Elem().Kind() == reflect.Struct {
-		destValueOf := reflect.ValueOf(anyStructPtr).Elem()
-		tf := destValueOf.Type()
-		for i := 0; i < tf.NumField(); i++ {
-			if !tf.Field(i).Anonymous && tf.Field(i).Type.Kind() != reflect.Struct {
-				if tf.Field(i).Name == fieldName {
-					return true, getColumnNameFromGormTag(fieldName, tf.Field(i).Tag.Get("gorm"))
-				}
-			} else if tf.Field(i).Type.Kind() == reflect.Struct {
-				tmp = tf.Field(i).Type
-				for j := 0; j < tmp.NumField(); j++ {
-					if tmp.Field(j).Name == fieldName {
-						return true, getColumnNameFromGormTag(fieldName, tmp.Field(j).Tag.Get("gorm"))
-					}
-				}
-			}
-		}
+		return findFieldInStruct(reflect.ValueOf(anyStructPtr).Elem().Type(), fieldName, 0)
 	} else if reflect.Indirect(anyStructPtr.(reflect.Value)).Type().Kind() == reflect.Struct {
 		// 处理结构体
 		destValueOf := anyStructPtr.(reflect.Value)
-		tf := destValueOf.Type()
-		for i := 0; i < tf.NumField(); i++ {
-			if !tf.Field(i).Anonymous && tf.Field(i).Type.Kind() != reflect.Struct {
-				if tf.Field(i).Name == fieldName {
-					return true, getColumnNameFromGormTag(fieldName, tf.Field(i).Tag.Get("gorm"))
-				}
-			} else if tf.Field(i).Type.Kind() == reflect.Struct {
-				tmp = tf.Field(i).Type
-				for j := 0; j < tmp.NumField(); j++ {
-					if tmp.Field(j).Name == fieldName {
-						return true, getColumnNameFromGormTag(fieldName, tmp.Field(j).Tag.Get("gorm"))
-					}
-				}
-			}
-		}
+		return findFieldInStruct(destValueOf.Type(), fieldName, 0)
 	} else if reflect.Indirect(anyStructPtr.(reflect.Value)).Type().Kind() == reflect.Map {
 		destValueOf := anyStructPtr.(reflect.Value)
 		for _, item := range destValueOf.MapKeys() {
@@ -168,6 +138,41 @@ func structHasSpecialField(fieldName string, anyStructPtr interface{}) (bool, st
 	}
 	return false, ""
 }
+
+// findFieldInStruct 在结构体类型中查找指定字段（TenantID/CreatedBy 自动注入用）。
+// 探测范围与 GORM 的字段提升语义一致：
+//   - 顶层普通字段按名命中；
+//   - **匿名内嵌字段沿嵌套链递归深入**（任意深度，Go 的字段提升本就跨层级生效，
+//     修复前只探一层、深层嵌套模型会静默漏注入租户）；
+//   - 非匿名的 Struct 字段是关联（不属于本表列），不深入，避免关联体里的同名字段被误命中；
+//   - depth 上限防御匿名指针内嵌自引用（如 type A struct{ *A }）导致的无限递归。
+func findFieldInStruct(t reflect.Type, fieldName string, depth int) (bool, string) {
+	if t.Kind() != reflect.Struct || depth > maxEmbeddedFieldDepth {
+		return false, ""
+	}
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		ft := f.Type
+		isEmbeddedPtr := ft.Kind() == reflect.Ptr && ft.Elem().Kind() == reflect.Struct
+		if f.Anonymous && (ft.Kind() == reflect.Struct || isEmbeddedPtr) {
+			// 匿名内嵌：沿提升链递归（指针内嵌深入其 Elem 类型）
+			target := ft
+			if isEmbeddedPtr {
+				target = ft.Elem()
+			}
+			if b, column := findFieldInStruct(target, fieldName, depth+1); b {
+				return b, column
+			}
+		} else if f.Name == fieldName {
+			return true, getColumnNameFromGormTag(fieldName, f.Tag.Get("gorm"))
+		}
+		// 其余情况（非匿名 Struct 关联、名字不匹配的普通字段）跳过
+	}
+	return false, ""
+}
+
+// maxEmbeddedFieldDepth 匿名内嵌字段递归探测的最大深度
+const maxEmbeddedFieldDepth = 8
 
 // getColumnNameFromGormTag 从 gorm 标签中获取字段名
 // @defaultColumn 如果没有 gorm：column 标签为字段重命名，则使用默认字段名

@@ -55,6 +55,16 @@ func (api *SysApi) FindByPathAndMethod(tx *gorm.DB, path string, method string) 
 	return
 }
 
+// GetGroupList 获取API分组列表（去重，按组内最新创建时间降序）
+func (api *SysApi) GetGroupList(ctx context.Context) (groups []string, err error) {
+	err = app.DB().WithContext(ctx).Model(&SysApi{}).
+		Where("api_group <> ''").
+		Group("api_group").
+		Order("MAX(created_at) DESC").
+		Pluck("api_group", &groups).Error
+	return
+}
+
 // SysApiList API列表
 type SysApiList []*SysApi
 

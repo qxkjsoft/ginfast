@@ -129,6 +129,7 @@ CREATE TABLE `sys_affix_chunk` (
   `created_by` int(11) DEFAULT NULL COMMENT '创建者ID',
   `tenant_id` int(11) unsigned DEFAULT '0' COMMENT '租户ID',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_upload_chunk` (`upload_id`, `chunk_index`),
   KEY `idx_upload_id` (`upload_id`),
   KEY `idx_file_md5` (`file_md5`)
 ) ENGINE=InnoDB AUTO_INCREMENT=165 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
@@ -462,7 +463,8 @@ CREATE TABLE `sys_tenants` (
   `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '状态 0停用 1启用',
   `domain` varchar(255) DEFAULT NULL COMMENT '租户域名',
   `platform_domain` varchar(255) DEFAULT NULL COMMENT '主域名',
-  `menu_permission` varchar(1000) DEFAULT NULL COMMENT '菜单权限',
+  `menu_permission` text COMMENT '菜单权限',
+  `menu_filter_enabled` tinyint(1) NOT NULL DEFAULT '0' COMMENT '菜单权限过滤开关 0关闭 1开启',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `code` (`code`) USING BTREE,
   UNIQUE KEY `domain` (`domain`) USING BTREE,

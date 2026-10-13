@@ -66,20 +66,28 @@ httpserver:
   # 3. 未命中的来源不回显 Access-Control-Allow-Origin，浏览器将拦截跨域请求（前端接口全部失败，浏览器控制台报 CORS 错误）
   # 4. 配置 "*" 可放行任意来源（不带凭证），等于放弃来源白名单，生产环境不建议使用
   # 5. 前后端同源部署时可留空：corsorigins: []
-  # 以下示例为前端 vite dev 默认端口：
+  # 以下示例为前端 vite dev 默认端口与商城小程序 H5 演示端口（manifest.json h5.devServer.port）：
   corsorigins:
     - "http://localhost:5173"
     - "http://127.0.0.1:5173"
+    - "http://localhost:8090"
+    - "http://127.0.0.1:8090"
   serverrootpath: "/public" # 静态资源路由路径
   serverroot: "./resource/public" # 静态资源根目录
+  # 额外静态目录映射列表（可配置多个，每项 prefix=URL访问前缀 + dir=磁盘目录），同样经安全加固静态服务输出
+  # 示例：把旧系统迁移的图片目录映射到 /d 访问路径（/d/file/2026/07/a.png → ./resource/d/file/2026/07/a.png）：
+  # extra_static:
+  #   - prefix: "/d"            # URL 前缀（勿以 / 结尾，勿与 /api、/swagger、/public 等已有路由冲突）
+  #     dir: "./resource/d"     # 磁盘目录（相对或绝对路径，目录不存在时请求返回 404）
+  extra_static: []
   read_timeout: 30    # TCP读取超时(秒)
   write_timeout: 30   # TCP写入超时(秒)
   idle_timeout: 60    # TCP空闲连接超时(秒)
   handler_timeout: 30 #  请求处理超时(秒)，超过该时间，将返回超时错误
 token:
   jwttokensignkey:  "df2a2166baa06cf67abcf687dd043bf7c4fe3a270447cc8326e8cc9f3e76944c"   #设置token生成时加密的签名（部署时务必更换为随机强密钥，勿使用示例值）
-  jwttokenexpire:  43200    #设置token过期时间，单位秒 示例:43200=12小时
-  jwttokenrefreshexpire:  2592000  #设置刷新token过期时间，单位秒 示例:2592000=30天
+  jwttokenexpire:  43200    #设置token过期时间，纯数字秒数（勿写 1h/30m 等时长格式，启动会校验失败） 示例:43200=12小时
+  jwttokenrefreshexpire:  2592000  #设置刷新token过期时间，纯数字秒数（勿写 1h/30m 等时长格式，启动会校验失败） 示例:2592000=30天
   cachekeyprefix: "gin-fast:"  # 缓存前缀
   isCache: false  # 是否开启token缓存 (注意开启后会降低token验证的性能,但是注销token后token立即失效)
 redis:
@@ -106,7 +114,34 @@ casbin:
   autoloadpolicyseconds: 120 # 扫描数据库策略的频率(单位：秒)
   tableprefix: "sys_"
   tablename: "casbin_rule" 
-  modelconfig: | # 竖线 | 表示以下整段文本保持换行格式
+  # modelconfig：Casbin 访问控制模型（竖线 | 表示以下整段文本保持换行格式）
+  # ============ 请求定义 ============
+  # [request_definition] 定义一次鉴权请求携带的参数及顺序，与代码中 Enforce(sub, obj, act, dom) 传参一一对应
+  #   sub：请求主体，带前缀的用户ID（如 user_1），见 casbinhelper.PrefixUser
+  #   obj：请求对象，即接口路径（如 /api/users）
+  #   act：操作，即 HTTP 方法（如 GET、POST）
+  #   dom：域，即租户，格式 domain_租户ID（如 domain_1）；无租户的请求传 *，代表全局权限
+  # ============ 策略定义 ============
+  # [policy_definition] 定义 sys_casbin_rule 表中 ptype='p' 的策略行格式，表中 v0~v3 列按此顺序对应
+  #   sub：策略主体，带前缀的角色ID（如 role_1），权限挂在角色上而非直接挂用户
+  #   obj：被授权的接口路径，支持 KeyMatch2 通配写法
+  #   act：被授权的 HTTP 方法，匹配时按正则处理
+  #   dom：授权域（租户）：写精确 domain_x 仅对该租户生效；写 * 对所有租户生效（见匹配器末段）
+  # ============ 角色定义 ============
+  # [role_definition] 定义 sys_casbin_rule 表中 ptype='g' 的规则格式（用户-角色分配、角色-角色继承）
+  #   三个下划线表示每条 g 规则带域参数：v0=成员(用户或子角色)、v1=角色(或父角色)、v2=域(租户)
+  #   g 规则的域支持模式匹配（如 * 表示所有租户生效），因为代码给 g 段注册了 KeyMatch2 域匹配函数
+  # ============ 策略效果 ============
+  # [policy_effect] 多条策略的裁决方式：只要存在任意一条 p 策略匹配成功（p.eft == allow），请求即放行
+  # ============ 匹配器 ============
+  # [matchers] 请求与策略的匹配规则，四段条件 && 连接、全部满足才有权限：
+  #   ① g(r.sub, p.sub, r.dom)：在请求租户 r.dom 下，用户 r.sub 经 g 规则链（含角色继承）关联到策略主体 p.sub
+  #   ② keyMatch2(r.obj, p.obj)：请求路径与授权路径按 KeyMatch2 匹配（支持 /api/**、:id 等 RESTful 通配）
+  #   ③ regexMatch(r.act, p.act)：HTTP 方法按正则匹配（策略中可写 GET|POST 这类表达式）
+  #   ④ (r.dom == p.dom || p.dom == "*")：请求租户与策略租户精确相等，或策略域为 * 通配所有租户
+  #      注意 p.dom 不走 KeyMatch2，只能写精确 domain_x 或 *，写 domain_* 之类的模式无效
+  # 注意：若在下方模型文本内加注释，只能整行以 # 开头（casbin 解析器会跳过），不可追加在 [xxx] 行尾（会破坏段识别）
+  modelconfig: |
     [request_definition]
     r = sub, obj, act, dom
     [policy_definition]
@@ -135,7 +170,7 @@ gormv2: # 只针对 gorm  操作数据库有效
       setmaxopenconns: 128   # 最大打开连接数
       setconnmaxlifetime: 60    # 连接最大生存时间(秒)
       setconnmaxidletime: 30    # 空闲连接最大存活时间(秒)
-    isopenreaddb: 0                     # 是否开启读写分离配置（1=开启、0=关闭），IsOpenReadDb=1,Read 部分参数有效，否则Read部分参数直接忽略
+    isopenreaddb: 0                     # 是否开启读写分离配置（1=开启、0=关闭），IsOpenReadDb=1,Read 部分参数有效，否则Read部分参数直接忽略。开启后"写后立读"等需读到最新数据的查询请用 gormhelper.ForceWrite(db) 强制走主库
     read:
       host: "127.0.0.1"
       database: "gin-fast"
@@ -163,7 +198,7 @@ gormv2: # 只针对 gorm  操作数据库有效
       setmaxopenconns: 128
       setconnmaxlifetime: 60
       setconnmaxidletime: 30    # 空闲连接最大存活时间(秒)
-    isopenreaddb: 0            # 是否开启读写分离配置（1=开启、0=关闭
+    isopenreaddb: 0            # 是否开启读写分离配置（1=开启、0=关闭。开启后"写后立读"场景请用 gormhelper.ForceWrite(db) 强制走主库）
     read:
       host: "127.0.0.1"
       database: "gin-fast"
@@ -190,7 +225,7 @@ gormv2: # 只针对 gorm  操作数据库有效
       setmaxopenconns: 128
       setconnmaxlifetime: 60
       setconnmaxidletime: 30    # 空闲连接最大存活时间(秒)
-    isopenreaddb: 0            # 是否开启读写分离配置（1=开启、0=关闭），IsOpenReadDb=1,Read  部分参数有效，否则Read部分参数直接忽略
+    isopenreaddb: 0            # 是否开启读写分离配置（1=开启、0=关闭），IsOpenReadDb=1,Read  部分参数有效，否则Read部分参数直接忽略。开启后"写后立读"等需读到最新数据的查询请用 gormhelper.ForceWrite(db) 强制走主库
     read:
       host: "127.0.0.1"
       database: "gin-fast"
@@ -211,8 +246,8 @@ upload:
   # 最大文件大小(单位: MB)
   max_size: 10
   
-  # 允许的文件类型
-  allowed_types: [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".txt", ".zip", ".rar", ".svg", ".ico", ".mp4", ".avi", ".webp"]
+  # 允许的文件类型（svg 可内嵌脚本且被静态直出，禁止上传）
+  allowed_types: [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".txt", ".zip", ".rar", ".ico", ".mp4", ".avi", ".webp"]
   
   # 本地上传路径
   local_path: "./resource/public/uploads"
@@ -231,12 +266,12 @@ upload:
   # 单个分片最大大小(单位: MB)
   max_chunk_size: 5
   # 分片上传允许的文件类型(为空则允许所有类型)
-  chunk_allowed_types: [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".txt", ".zip", ".rar", ".mp4", ".avi", ".webp", ".svg", ".ico"]
+  chunk_allowed_types: [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".txt", ".zip", ".rar", ".mp4", ".avi", ".webp", ".ico"]
 
 #代码生成
 gen:
   # 前端代码生成路径
-  dir: "../ginfast-tenant-ui"
+  dir: "../ginfast-ui"
 
 # 任务调度器配置
 scheduler:

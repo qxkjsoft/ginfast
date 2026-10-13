@@ -17,8 +17,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		if err != nil {
 			app.ZapLog.Error("Get access token failed", zap.Error(err))
 			// 401 未认证
-			c.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
-			c.Abort()
+			app.Response.Fail(c, err.Error(), http.StatusUnauthorized)
 			return
 		}
 
@@ -27,8 +26,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		if err != nil {
 			app.ZapLog.Error("Invalid token", zap.Error(err))
 			// 401 未认证
-			c.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
-			c.Abort()
+			app.Response.Fail(c, err.Error(), http.StatusUnauthorized)
 			return
 		}
 		// 将用户信息存储到上下文中

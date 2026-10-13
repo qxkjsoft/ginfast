@@ -244,15 +244,21 @@ func newCache() app.CacheInterf {
 }
 
 func newTokenService(cache app.CacheInterf) app.TokenServiceInterface {
-	tokenExpire := app.ConfigYml.GetDuration("token.jwttokenexpire")
-	refreshExpire := app.ConfigYml.GetDuration("token.jwttokenrefreshexpire")
+	// token 过期时间配置约定为纯数字秒数（GetInt 解析）；勿改回 GetDuration——
+	// 那会把纯数按纳秒解析、再经 tokenhelper 换算放大，"1h" 等时长写法会被放大数亿倍导致 token 永不过期
+	tokenExpireSec := app.ConfigYml.GetInt("token.jwttokenexpire")
+	refreshExpireSec := app.ConfigYml.GetInt("token.jwttokenrefreshexpire")
+	if tokenExpireSec <= 0 || refreshExpireSec <= 0 {
+		log.Fatalf("token 配置错误：jwttokenexpire=%d、jwttokenrefreshexpire=%d，必须为正整数秒数（勿写 1h/30m 等时长格式），请检查 config.yml",
+			tokenExpireSec, refreshExpireSec)
+	}
 
 	return &tokenhelper.TokenService{
 		RedisHelper:    cache,
 		JWTSecret:      app.ConfigYml.GetString("token.jwttokensignkey"),
 		Ctx:            context.Background(),
-		TokenExpire:    tokenExpire,
-		RefreshExpire:  refreshExpire,
+		TokenExpire:    time.Duration(tokenExpireSec) * time.Second,
+		RefreshExpire:  time.Duration(refreshExpireSec) * time.Second,
 		CacheKeyPrefix: app.ConfigYml.GetString("token.cachekeyprefix"),
 		IsCache:        app.ConfigYml.GetBool("token.iscache"),
 	}

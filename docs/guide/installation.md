@@ -19,8 +19,8 @@ Gin-Fast 是一个基于 Gin 框架的后台管理系统，前端采用 Vue3 + V
 #### 1. 克隆项目
 
 ```bash
-git clone https://github.com/qxkjsoft/ginfast-back.git
-cd ginfast-back
+git clone https://github.com/qxkjsoft/ginfast.git
+cd ginfast
 ```
 
 #### 2. 安装依赖
@@ -33,7 +33,7 @@ go mod tidy
 
 ```bash
 # 复制配置文件
-cp config/config.copy.yml config/config.yml
+cp config/config.example.yml config/config.yml
 
 # 编辑配置文件
 vim config/config.yml
@@ -47,20 +47,20 @@ captcha:
   length: 4
   open: false
 
-# Casbin 权限配置
+# Casbin 权限配置（多租户模型：dom 为租户域，各段含义详见 config.example.yml 内注释）
 casbin:
   autoloadpolicyseconds: 120
   modelconfig: |
     [request_definition]
-    r = sub, obj, act
+    r = sub, obj, act, dom
     [policy_definition]
-    p = sub, obj, act
+    p = sub, obj, act, dom
     [role_definition]
-    g = _, _
+    g = _, _, _
     [policy_effect]
     e = some(where (p.eft == allow))
     [matchers]
-    m = g(r.sub, p.sub) && keyMatch2(r.obj, p.obj) && r.act == p.act
+    m =  g(r.sub, p.sub, r.dom) && keyMatch2(r.obj, p.obj) && regexMatch(r.act, p.act) && (r.dom == p.dom || p.dom == "*")
   tablename: casbin_rule
   tableprefix: sys_
 
@@ -278,20 +278,20 @@ captcha:
   length: 4
   open: false
 
-# Casbin 权限配置
+# Casbin 权限配置（多租户模型：dom 为租户域，各段含义详见 config.example.yml 内注释）
 casbin:
   autoloadpolicyseconds: 120
   modelconfig: |
     [request_definition]
-    r = sub, obj, act
+    r = sub, obj, act, dom
     [policy_definition]
-    p = sub, obj, act
+    p = sub, obj, act, dom
     [role_definition]
-    g = _, _
+    g = _, _, _
     [policy_effect]
     e = some(where (p.eft == allow))
     [matchers]
-    m = g(r.sub, p.sub) && keyMatch2(r.obj, p.obj) && r.act == p.act
+    m =  g(r.sub, p.sub, r.dom) && keyMatch2(r.obj, p.obj) && regexMatch(r.act, p.act) && (r.dom == p.dom || p.dom == "*")
   tablename: casbin_rule
   tableprefix: sys_
 
@@ -445,21 +445,21 @@ pnpm run dev
 
 #### 3. 访问系统
 
-打开浏览器，访问 http://localhost:8001，即可看到系统登录页面。
+打开浏览器，访问 http://localhost:5173（前端 dev 服务端口，被占用时以启动日志为准），即可看到系统登录页面。
 
 ### 验证安装
 
 #### 1. 验证后端服务
 
 ```bash
-curl http://localhost:8080/ping
+curl http://localhost:8080/api/config/get
 ```
 
-如果返回 `{"code":0,"msg":"success","data":"pong"}`，说明后端服务启动成功。
+如果返回 `code` 为 0 的 JSON 配置信息，说明后端服务启动成功。
 
 #### 2. 验证前端服务
 
-打开浏览器，访问 http://localhost:8001，如果看到系统登录页面，说明前端服务启动成功。
+打开浏览器，访问 http://localhost:5173，如果看到系统登录页面，说明前端服务启动成功。
 
 #### 3. 验证数据库连接
 
@@ -584,3 +584,31 @@ VITE_APP_BASE_URL = http://localhost:8080
 ### 总结
 
 通过以上步骤，您应该已经成功安装了 Gin-Fast 系统。如果遇到问题，请参考常见问题部分或提交 Issue。
+
+## 存量库升级
+
+### 租户菜单权限过滤开关（menu_filter_enabled）
+
+租户新增「菜单权限过滤」按租户开关（`sys_tenants.menu_filter_enabled`）。开启后该租户的左侧导航（`getRouters`）与菜单管理/角色授权页面（`getMenuList`）均按租户「菜单权限」勾选的菜单集合过滤；关闭则不限制。存量库需手工执行以下语句加列（已配置过菜单权限的租户默认开启，未配置的默认关闭）：
+
+```sql
+-- MySQL
+ALTER TABLE `sys_tenants`
+  ADD COLUMN `menu_filter_enabled` tinyint(1) NOT NULL DEFAULT 0 COMMENT '菜单权限过滤开关 0关闭 1开启' AFTER `menu_permission`;
+UPDATE `sys_tenants` SET `menu_filter_enabled` = IF(`menu_permission` IS NULL OR `menu_permission` = '', 0, 1);
+
+-- PostgreSQL
+ALTER TABLE sys_tenants ADD COLUMN menu_filter_enabled SMALLINT NOT NULL DEFAULT 0;
+COMMENT ON COLUMN sys_tenants.menu_filter_enabled IS '菜单权限过滤开关 0关闭 1开启';
+UPDATE sys_tenants SET menu_filter_enabled = CASE WHEN menu_permission IS NULL OR menu_permission = '' THEN 0 ELSE 1 END;
+
+-- SQL Server
+ALTER TABLE sys_tenants ADD menu_filter_enabled BIT NOT NULL DEFAULT 0;
+UPDATE sys_tenants SET menu_filter_enabled = CASE WHEN menu_permission IS NULL OR menu_permission = '' THEN 0 ELSE 1 END;
+```
+
+升级后行为变化提示：
+
+- 开关关闭的租户：菜单管理/角色授权页面从「被过滤」变为「可见全部菜单」（旧版本为强制过滤）。
+- 开关开启的租户：左侧导航从「纯角色过滤」收窄为「角色 ∩ 租户菜单权限」（旧版本 `getRouters` 不受租户菜单权限约束）。
+- 前端菜单权限树父子节点独立勾选：只勾子不勾父时父目录不会下发，为既有语义。

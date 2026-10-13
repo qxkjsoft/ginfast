@@ -9,6 +9,8 @@ const (
 	//服务器代码发生错误
 	ServerOccurredErrorCode int    = -500100
 	ServerOccurredErrorMsg  string = "服务器内部发生代码执行错误,请联系开发者排查错误日志"
+	//业务警告码：请求处理成功(HTTP 200)但结果需用户确认或核查(如插件导入警告)，与失败码 1 区分
+	ResponseWarningCode int = 2
 	// 数据库类型
 	DbTypeMySql      = "mysql"
 	DbTypeSqlServer  = "sqlserver"

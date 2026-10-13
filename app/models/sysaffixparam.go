@@ -75,11 +75,11 @@ func (r *UpdateNameRequest) Validate(c *gin.Context) error {
 // ChunkInitRequest 分片上传初始化请求
 type ChunkInitRequest struct {
 	Validator
-	FileMd5     string `json:"fileMd5" validate:"required" message:"文件MD5不能为空"`
+	FileMd5     string `json:"fileMd5" validate:"required|regex:^[a-fA-F0-9]{32}$" message:"required:文件MD5不能为空|regex:文件MD5格式不正确(32位十六进制)"`
 	FileName    string `json:"fileName" validate:"required" message:"文件名不能为空"`
 	FileSize    int64  `json:"fileSize" validate:"required" message:"文件大小不能为空"`
 	ChunkSize   int    `json:"chunkSize" validate:"required" message:"分片大小不能为空"`
-	TotalChunks int    `json:"totalChunks" validate:"required" message:"分片总数不能为空"`
+	TotalChunks int    `json:"totalChunks" validate:"required|min:1" message:"required:分片总数不能为空|min:分片总数必须大于0"`
 }
 
 // Validate 验证请求参数
@@ -92,10 +92,10 @@ type ChunkUploadRequest struct {
 	Validator
 	File        *multipart.FileHeader `form:"file" validate:"required" message:"分片文件不能为空"`
 	UploadId    string                `form:"uploadId" validate:"required|regex:^[A-Za-z0-9_-]{1,64}$" message:"required:上传ID不能为空|regex:上传ID格式不正确"`
-	ChunkIndex  int                   `form:"chunkIndex" validate:"required" message:"分片序号不能为空"`
-	ChunkMd5    string                `form:"chunkMd5" message:"分片MD5"`
-	FileMd5     string                `form:"fileMd5" message:"文件MD5"`
-	TotalChunks int                   `form:"totalChunks" validate:"required" message:"分片总数不能为空"`
+	ChunkIndex  int                   `form:"chunkIndex" validate:"required|min:1" message:"required:分片序号不能为空|min:分片序号必须大于0"`
+	ChunkMd5    string                `form:"chunkMd5" validate:"regex:^[a-fA-F0-9]{32}$" message:"分片MD5格式不正确(32位十六进制)"`
+	FileMd5     string                `form:"fileMd5" validate:"regex:^[a-fA-F0-9]{32}$" message:"文件MD5格式不正确(32位十六进制)"`
+	TotalChunks int                   `form:"totalChunks" validate:"required|min:1" message:"required:分片总数不能为空|min:分片总数必须大于0"`
 }
 
 // Validate 验证请求参数
@@ -107,10 +107,10 @@ func (r *ChunkUploadRequest) Validate(c *gin.Context) error {
 type ChunkMergeRequest struct {
 	Validator
 	UploadId    string `json:"uploadId" validate:"required|regex:^[A-Za-z0-9_-]{1,64}$" message:"required:上传ID不能为空|regex:上传ID格式不正确"`
-	FileMd5     string `json:"fileMd5" validate:"required" message:"文件MD5不能为空"`
+	FileMd5     string `json:"fileMd5" validate:"required|regex:^[a-fA-F0-9]{32}$" message:"required:文件MD5不能为空|regex:文件MD5格式不正确(32位十六进制)"`
 	FileName    string `json:"fileName" validate:"required" message:"文件名不能为空"`
 	FileSize    int64  `json:"fileSize" validate:"required" message:"文件大小不能为空"`
-	TotalChunks int    `json:"totalChunks" validate:"required" message:"分片总数不能为空"`
+	TotalChunks int    `json:"totalChunks" validate:"required|min:1" message:"required:分片总数不能为空|min:分片总数必须大于0"`
 }
 
 // Validate 验证请求参数

@@ -8,13 +8,13 @@ import (
 // SysAffixChunk 分片上传临时记录
 type SysAffixChunk struct {
 	BaseModel
-	UploadId    string `gorm:"type:varchar(64);index;comment:上传会话ID" json:"uploadId"`
+	UploadId    string `gorm:"type:varchar(64);index;uniqueIndex:idx_upload_chunk,priority:1;comment:上传会话ID" json:"uploadId"`
 	FileMd5     string `gorm:"type:varchar(32);index;comment:文件MD5" json:"fileMd5"`
 	FileName    string `gorm:"type:varchar(255);comment:原始文件名" json:"fileName"`
 	FileSize    int64  `gorm:"type:bigint;comment:文件总大小" json:"fileSize"`
 	ChunkSize   int    `gorm:"type:int;comment:分片大小" json:"chunkSize"`
 	TotalChunks int    `gorm:"type:int;comment:总分片数" json:"totalChunks"`
-	ChunkIndex  int    `gorm:"type:int;comment:当前分片序号" json:"chunkIndex"`
+	ChunkIndex  int    `gorm:"type:int;uniqueIndex:idx_upload_chunk,priority:2;comment:当前分片序号" json:"chunkIndex"`
 	ChunkPath   string `gorm:"type:varchar(255);comment:分片文件路径" json:"chunkPath"`
 	Status      int    `gorm:"type:tinyint;default:0;comment:0-上传中 1-已合并 2-已取消" json:"status"`
 	CreatedBy   uint   `gorm:"type:int(11);comment:创建者ID" json:"createdBy"`

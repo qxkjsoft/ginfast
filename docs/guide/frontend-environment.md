@@ -138,12 +138,12 @@ ssh-keygen -t rsa -C "your.email@example.com"
 示例 `.env.development`:
 
 ```env
-# 开发环境配置
-VITE_APP_TITLE = SnowAdmin
-VITE_APP_BASE_API = /api
-VITE_APP_BASE_URL = http://localhost:8080
-VITE_APP_MOCK_ENABLE = true
-VITE_APP_MOCK_URL = http://localhost:8080/mock
+# 开发环境配置（完整变量见前端项目 .env / .env.development）
+VITE_GLOB_APP_TITLE = GINFAST
+# 请求路径：开发环境置空，走相对路径 /api，由 vite dev 代理转发到后端
+VITE_APP_BASE_URL =
+# 开发代理目标（后端地址），仅 vite dev server 使用
+VITE_PROXY_TARGET = 'http://127.0.0.1:8080'
 ```
 
 ### 验证环境
@@ -177,7 +177,7 @@ git --version
 
 ```bash
 git clone <repository-url>
-cd gin-fast-front/SnowAdmin
+cd ginfast-front
 ```
 
 2. 安装依赖：
@@ -192,7 +192,7 @@ pnpm install
 pnpm run dev
 ```
 
-4. 访问 http://localhost:8001，确认项目正常运行
+4. 访问 http://localhost:5173（dev 服务端口，被占用时自动顺延，以启动日志为准），确认项目正常运行
 
 ### 常见问题
 

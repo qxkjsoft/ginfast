@@ -134,29 +134,13 @@ func (list SysMenuList) TreeSort() SysMenuList {
 		return list
 	}
 
-	// 对当前层级进行排序
+	// 对当前层级进行排序：sort 升序（0 是合法排序值，排在最前），相同值按 ID 升序保证顺序稳定
 	sort.Slice(list, func(i, j int) bool {
 		a, b := list[i], list[j]
-
-		// 处理Sort字段为0或未设置的情况
-		// 在Go中，int的零值是0，所以我们需要区分0和未设置
-		// 这里假设Sort为0表示未设置排序值，应该排在最后
-		aSort, bSort := a.Sort, b.Sort
-
-		// a和b都是0（未设置）则按ID排序保证稳定性
-		if aSort == 0 && bSort == 0 {
-			return a.ID < b.ID
+		if a.Sort != b.Sort {
+			return a.Sort < b.Sort
 		}
-		// a是0（未设置）则a被排在b之后
-		if aSort == 0 {
-			return false
-		}
-		// b是0（未设置）则b被排在a之后
-		if bSort == 0 {
-			return true
-		}
-
-		return aSort < bSort
+		return a.ID < b.ID
 	})
 
 	// 深层递归排序子节点

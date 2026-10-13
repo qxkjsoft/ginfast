@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
@@ -11,7 +12,6 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -66,6 +66,10 @@ func (sm *SysMenuController) GetRouters(c *gin.Context) {
 	// 不检查权限的用户（notcheckuser 或 initadmin 超管初始化用户）直接返回所有菜单
 	needCheckPermission := !common.IsSkipAuthUser(claims.UserID)
 
+	// 用户归属租户ID（sys_users.tenant_id）：0 为全局用户，其菜单权限在所有租户上下文均有效，
+	// 不受租户菜单权限过滤限制
+	var userTenantID uint
+
 	var menuList models.SysMenuList
 	var err error
 
@@ -89,6 +93,7 @@ func (sm *SysMenuController) GetRouters(c *gin.Context) {
 			sm.FailAndAbort(c, "获取用户失败", err)
 			return
 		}
+		userTenantID = user.TenantID
 		// 需要检查权限，按原有逻辑处理
 		sysUserRoleList := models.NewSysUserRoleList()
 		err = sysUserRoleList.Find(c, func(d *gorm.DB) *gorm.DB {
@@ -143,6 +148,32 @@ func (sm *SysMenuController) GetRouters(c *gin.Context) {
 		menuList = filtered
 	}
 
+	// 租户绑定用户（sys_users.tenant_id>0）且其当前操作租户开启了菜单权限过滤时，左侧导航
+	// 同样按当前操作租户（claims.TenantID）的套餐收窄（与 GetMenuList 过滤口径一致）；
+	// 免检用户与全局用户（tenant_id=0，其菜单权限在所有租户上下文有效）不受租户过滤限制
+	if needCheckPermission && userTenantID > 0 && claims.TenantID > 0 && tenanthelper.MultiTenantEnabled() {
+		tenant := models.NewTenant()
+		if err := tenant.Find(c, func(db *gorm.DB) *gorm.DB {
+			return db.Where("id = ?", claims.TenantID)
+		}); err != nil {
+			sm.FailAndAbort(c, "获取租户信息失败", err)
+			return
+		}
+		if tenant.MenuFilterEnabled {
+			menuIDSet := make(map[uint]struct{})
+			for _, id := range tenant.MenuPermissionIDs() {
+				menuIDSet[id] = struct{}{}
+			}
+			filtered := make(models.SysMenuList, 0, len(menuList))
+			for _, menu := range menuList {
+				if _, ok := menuIDSet[menu.ID]; ok {
+					filtered = append(filtered, menu)
+				}
+			}
+			menuList = filtered
+		}
+	}
+
 	if !menuList.IsEmpty() {
 		menuList = menuList.BuildTree().TreeSort()
 	}
@@ -173,9 +204,32 @@ func (sm *SysMenuController) GetMenuList(c *gin.Context) {
 		tenantID = 0
 	}
 
-	// 如果有租户ID，则根据租户的菜单权限过滤
+	// 免检用户（notcheckuser/initadmin）与全局用户（sys_users.tenant_id=0，其菜单权限
+	// 在所有租户上下文均有效）不受租户菜单权限过滤限制
 	if tenantID > 0 {
-		// 查询租户信息，获取菜单权限
+		claims := common.GetClaims(c)
+		if claims == nil || common.IsSkipAuthUser(claims.UserID) {
+			tenantID = 0
+		} else {
+			user := models.NewUser()
+			err = user.Find(c, func(db *gorm.DB) *gorm.DB {
+				return db.Select("id,tenant_id").Where("id = ?", claims.UserID)
+			})
+			if err != nil {
+				sm.FailAndAbort(c, "获取用户信息失败", err)
+				return
+			}
+			if user.TenantID == 0 {
+				tenantID = 0
+			}
+		}
+	}
+
+	// 如果有租户ID，读取租户的菜单权限过滤开关；开启时按菜单权限过滤，关闭则不限制
+	tenantFilter := false
+	var menuIDs []uint
+	if tenantID > 0 {
+		// 查询租户信息，获取菜单权限配置
 		tenant := models.NewTenant()
 		err = tenant.Find(c, func(db *gorm.DB) *gorm.DB {
 			return db.Where("id = ?", tenantID)
@@ -184,33 +238,24 @@ func (sm *SysMenuController) GetMenuList(c *gin.Context) {
 			sm.FailAndAbort(c, "获取租户信息失败", err)
 			return
 		}
-
-		// 解析菜单权限（逗号分隔的菜单ID）
-		var menuIDs []uint
-		if tenant.MenuPermission != "" {
-			// 分割字符串并转换为uint类型
-			parts := strings.Split(tenant.MenuPermission, ",")
-			for _, part := range parts {
-				part = strings.TrimSpace(part)
-				if part != "" {
-					if id, err := strconv.ParseUint(part, 10, 32); err == nil {
-						menuIDs = append(menuIDs, uint(id))
-					}
-				}
-			}
+		if tenant.MenuFilterEnabled {
+			tenantFilter = true
+			menuIDs = tenant.MenuPermissionIDs()
 		}
+	}
 
+	if tenantFilter {
 		// 如果有菜单权限，则只返回匹配的菜单
 		if len(menuIDs) > 0 {
 			err = menuList.Find(c, func(db *gorm.DB) *gorm.DB {
 				return db.Preload("Apis").Where("id in (?)", menuIDs)
 			})
 		} else {
-			// 如果没有菜单权限，返回空列表
+			// 开启过滤但未配置菜单权限，返回空列表
 			err = nil
 		}
 	} else {
-		// 如果没有租户ID，返回所有菜单
+		// 没有租户ID或租户关闭了菜单权限过滤，返回所有菜单
 		err = menuList.Find(c, func(db *gorm.DB) *gorm.DB {
 			return db.Preload("Apis")
 		})
@@ -300,7 +345,7 @@ func (sm *SysMenuController) Add(c *gin.Context) {
 			sm.FailAndAbort(c, "检查父级菜单失败", err)
 		}
 		if parentMenu.IsEmpty() {
-			sm.FailAndAbort(c, "父级菜单不存在", nil)
+			sm.FailAndAbort(c, "父级菜单不存在", nil, 404)
 		}
 
 		// 根据父级类型和当前类型进行权限检查
@@ -404,7 +449,7 @@ func (sm *SysMenuController) Delete(c *gin.Context) {
 		sm.FailAndAbort(c, "查询菜单失败", err)
 	}
 	if menu.IsEmpty() {
-		sm.FailAndAbort(c, "菜单不存在", nil)
+		sm.FailAndAbort(c, "菜单不存在", nil, 404)
 	}
 
 	// 检查是否有子菜单
@@ -510,7 +555,7 @@ func (sm *SysMenuController) GetByID(c *gin.Context) {
 		sm.FailAndAbort(c, "查询菜单失败", err)
 	}
 	if menu.IsEmpty() {
-		sm.FailAndAbort(c, "菜单不存在", nil)
+		sm.FailAndAbort(c, "菜单不存在", nil, 404)
 	}
 
 	sm.Success(c, menu)
@@ -545,7 +590,7 @@ func (sm *SysMenuController) GetMenuApiIds(c *gin.Context) {
 		sm.FailAndAbort(c, "查询菜单失败", err)
 	}
 	if menu.IsEmpty() {
-		sm.FailAndAbort(c, "菜单不存在", nil)
+		sm.FailAndAbort(c, "菜单不存在", nil, 404)
 	}
 
 	// 查询菜单关联的API ID集合
@@ -585,7 +630,7 @@ func (sm *SysMenuController) SetMenuApis(c *gin.Context) {
 		sm.FailAndAbort(c, "查询菜单失败", err)
 	}
 	if menu.IsEmpty() {
-		sm.FailAndAbort(c, "菜单不存在", nil)
+		sm.FailAndAbort(c, "菜单不存在", nil, 404)
 	}
 
 	// 当ApiIDs不为空时，检查API ID是否存在
@@ -760,16 +805,24 @@ func (sm *SysMenuController) Import(c *gin.Context) {
 
 // Backup 备份菜单数据
 // @Summary 备份菜单数据
-// @Description 将当前全部菜单（含关联API）以JSON格式备份到服务器 resource/database/menu_backup 目录，文件名按时间生成
+// @Description 将当前菜单（含关联API）以JSON格式备份到服务器 resource/database/menu_backup 目录，文件名按时间生成；请求体传 menuIds 时仅备份勾选菜单及其子级与父级链，为空时备份全部
 // @Tags 菜单管理
 // @Accept json
 // @Produce json
+// @Param menuIds body models.SysMenuBackupRequest false "菜单ID列表，为空时备份全部"
 // @Success 200 {object} map[string]interface{} "备份成功，返回文件名和菜单数量"
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"
 // @Router /sysMenu/backup [post]
 // @Security ApiKeyAuth
 func (sm *SysMenuController) Backup(c *gin.Context) {
-	result, err := sm.menuService.Backup(c)
+	// 请求体可选：无 body 或 menuIds 为空时备份全部菜单
+	var req models.SysMenuBackupRequest
+	if err := req.Validate(c); err != nil && !errors.Is(err, io.EOF) {
+		sm.FailAndAbort(c, err.Error(), err)
+		return
+	}
+
+	result, err := sm.menuService.Backup(c, req.MenuIDs)
 	if err != nil {
 		sm.FailAndAbort(c, err.Error(), err)
 		return

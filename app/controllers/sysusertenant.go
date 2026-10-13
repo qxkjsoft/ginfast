@@ -4,6 +4,8 @@ import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
 	"gin-fast/app/service"
+	"gin-fast/app/utils/common"
+	"gin-fast/app/utils/tenanthelper"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -95,7 +97,7 @@ func (sut *SysUserTenantController) GetByID(c *gin.Context) {
 		sut.FailAndAbort(c, "查询用户租户关联失败", err)
 	}
 	if sysUserTenant.IsEmpty() {
-		sut.FailAndAbort(c, "用户租户关联不存在", nil)
+		sut.FailAndAbort(c, "用户租户关联不存在", nil, 404)
 	}
 
 	sut.Success(c, sysUserTenant)
@@ -119,6 +121,11 @@ func (sut *SysUserTenantController) BatchAdd(c *gin.Context) {
 		sut.FailAndAbort(c, err.Error(), err)
 	}
 
+	// 跨租户归属校验：防止租户管理员操作其他租户的用户关联
+	if !sut.CanManageTenant(c, req.TenantID) {
+		sut.FailAndAbort(c, "无权操作目标租户", nil)
+	}
+
 	// 创建用户租户关联列表
 	var sysUserTenants []*models.SysUserTenant
 	for _, userID := range req.UserIDs {
@@ -131,7 +138,7 @@ func (sut *SysUserTenantController) BatchAdd(c *gin.Context) {
 			sut.FailAndAbort(c, "获取用户失败", err)
 		}
 		if user.IsEmpty() {
-			sut.FailAndAbort(c, "用户不存在", nil)
+			sut.FailAndAbort(c, "用户不存在", nil, 404)
 		}
 		// 如果用户是全局租户，不允许关联其他租户
 		if user.TenantID == 0 {
@@ -184,6 +191,11 @@ func (sut *SysUserTenantController) BatchDelete(c *gin.Context) {
 		sut.FailAndAbort(c, err.Error(), err)
 	}
 
+	// 跨租户归属校验：防止租户管理员操作其他租户的用户关联
+	if !sut.CanManageTenant(c, req.TenantID) {
+		sut.FailAndAbort(c, "无权操作目标租户", nil)
+	}
+
 	// 检查是否有默认租户关联，如果有则不允许删除
 	defaultSysUserTenant := &models.SysUserTenant{}
 	err := defaultSysUserTenant.Find(c, func(d *gorm.DB) *gorm.DB {
@@ -196,18 +208,24 @@ func (sut *SysUserTenantController) BatchDelete(c *gin.Context) {
 		sut.FailAndAbort(c, "不能删除默认租户关联", nil)
 	}
 
-	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) (e error) {
+	// 使用事务删除关联数据与casbin策略（任一步失败整体回滚）
+	err = sut.CasbinService.RunWithCasbin(c, func(tx *gorm.DB, ops app.CasbinInterf) error {
 		//批量删除用户租户关联
-		e = tx.Where("user_id IN ? AND tenant_id = ?", req.UserIDs, req.TenantID).Delete(&models.SysUserTenant{}).Error
-		if e != nil {
-			return e
+		if err := tx.Where("user_id IN ? AND tenant_id = ?", req.UserIDs, req.TenantID).Delete(&models.SysUserTenant{}).Error; err != nil {
+			return err
 		}
 		// 移除该租户下的角色关联
 		// 使用子查询：先查询指定租户下的所有角色ID，再删除用户在这些角色中的关联
 		subQuery := tx.Session(&gorm.Session{NewDB: true}).Table("sys_role").Where("tenant_id = ?", req.TenantID).Select("id")
-		e = tx.Where("user_id IN ? AND role_id IN (?)", req.UserIDs, subQuery).Delete(&models.SysUserRole{}).Error
-		if e != nil {
-			return e
+		if err := tx.Where("user_id IN ? AND role_id IN (?)", req.UserIDs, subQuery).Delete(&models.SysUserRole{}).Error; err != nil {
+			return err
+		}
+
+		// 移除casbin权限（与业务表写同一事务，首个失败即整体回滚）
+		for _, uid := range req.UserIDs {
+			if err := sut.CasbinService.Use(ops).DeleteUserRoles(c, uid, nil, req.TenantID); err != nil {
+				return err
+			}
 		}
 		return nil
 	})
@@ -216,16 +234,6 @@ func (sut *SysUserTenantController) BatchDelete(c *gin.Context) {
 		sut.FailAndAbort(c, "批量删除用户租户关联失败", err)
 	}
 
-	// 移除casbin权限
-	var e error
-	for _, uid := range req.UserIDs {
-		if err = sut.CasbinService.DeleteUserRoles(c, uid, nil, req.TenantID); err != nil {
-			e = err
-		}
-	}
-	if e != nil {
-		sut.FailAndAbort(c, "移除casbin权限失败", e)
-	}
 	sut.SuccessWithMessage(c, "用户租户关联批量删除成功", nil)
 }
 
@@ -250,13 +258,28 @@ func (sut *SysUserTenantController) UserListAll(c *gin.Context) {
 		sut.FailAndAbort(c, err.Error(), err)
 	}
 
+	// 跨租户数据收敛：超管/全局租户用户（平台级账号）保持全库查询；
+	// 普通租户用户强制追加本租户过滤，防止借该接口枚举全库用户的手机号/邮箱
+	currentTenantID := sut.GetCurrentTenantID(c)
+	tenantFiltered := tenanthelper.MultiTenantEnabled() && currentTenantID > 0 &&
+		!common.IsSkipAuthUser(sut.GetCurrentUserID(c))
+
 	userList := models.NewUserList()
-	total, err := userList.GetTotal(c, req.Handle())
+	total, err := userList.GetTotal(c, req.Handle(), func(d *gorm.DB) *gorm.DB {
+		if tenantFiltered {
+			return d.Where("tenant_id = ?", currentTenantID)
+		}
+		return d
+	})
 	if err != nil {
 		sut.FailAndAbort(c, err.Error(), err)
 	}
 	err = userList.Find(c, req.Paginate(), req.Handle(), func(d *gorm.DB) *gorm.DB {
-		return d.Omit("password").Preload("Roles").Preload("Department").Preload("Tenant")
+		base := d.Omit("password").Preload("Roles").Preload("Department").Preload("Tenant")
+		if tenantFiltered {
+			return base.Where("tenant_id = ?", currentTenantID)
+		}
+		return base
 	})
 	if err != nil {
 		sut.FailAndAbort(c, err.Error(), err)
@@ -354,6 +377,11 @@ func (sut *SysUserTenantController) SetUserRoles(c *gin.Context) {
 		sut.FailAndAbort(c, err.Error(), err)
 	}
 
+	// 跨租户归属校验：防止租户管理员操作其他租户的用户角色
+	if !sut.CanManageTenant(c, req.TenantID) {
+		sut.FailAndAbort(c, "无权操作目标租户", nil)
+	}
+
 	// 验证角色是否属于指定的租户
 	if len(req.Roles) > 0 {
 		roleList := models.NewSysRoleList()
@@ -368,8 +396,8 @@ func (sut *SysUserTenantController) SetUserRoles(c *gin.Context) {
 		}
 	}
 
-	// 使用事务处理用户角色设置
-	err := app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
+	// 使用事务处理用户角色设置与casbin策略同步（任一步失败整体回滚）
+	err := sut.CasbinService.RunWithCasbin(c, func(tx *gorm.DB, ops app.CasbinInterf) error {
 		// 先删除该用户在指定租户下的所有角色关联
 		// 需要先查询出该租户下的所有角色ID
 		var tenantRoleIDs []uint
@@ -399,16 +427,12 @@ func (sut *SysUserTenantController) SetUserRoles(c *gin.Context) {
 			}
 		}
 
-		return nil
+		// 同步更新casbin权限（与业务表写同一事务）
+		return sut.CasbinService.Use(ops).EditUserRoles(c, req.UserID, req.Roles, req.TenantID)
 	})
 
 	if err != nil {
 		sut.FailAndAbort(c, "设置用户角色失败", err)
-	}
-
-	// 同步更新Casbin权限
-	if err = sut.CasbinService.EditUserRoles(c, req.UserID, req.Roles, req.TenantID); err != nil {
-		sut.FailAndAbort(c, "同步用户权限失败", err)
 	}
 
 	sut.SuccessWithMessage(c, "设置用户角色成功", nil)

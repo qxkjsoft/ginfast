@@ -30,7 +30,8 @@ func createCustomGormLog(sqlType string, options ...Options) gormLog.Interface {
 	- Info : 打印所有日志，包括SQL语句
 		**/
 	logConf := gormLog.Config{
-		SlowThreshold: time.Second * app.ConfigYml.GetDuration("gormv2."+sqlType+".slowthreshold"),
+		// 慢SQL阈值配置约定为纯数字秒数；GetInt 解析避免 GetDuration 的纳秒/秒双重换算陷阱
+		SlowThreshold: time.Duration(app.ConfigYml.GetInt("gormv2."+sqlType+".slowthreshold")) * time.Second,
 		LogLevel:      gormLog.Info,
 		Colorful:      false,
 	}

@@ -1,25 +1,28 @@
 # Gin-Fast 文档
 
+本文档为文档总入口。各主题文档统一存放于 [`docs/guide/`](guide/) 目录，`docs/swagger/` 为 Swagger 生成产物，`docs/mdFile/` 存放文档图片。
+
 ## 文档目录
 
-- [系统介绍](introduction.md)
-- [环境搭建](environment.md)
-- [系统安装](installation.md)
-- [目录结构](catalog.md)
-- [开发规范](exploit.md)
-- [前端开发文档](frontend-introduction.md)
-  - [前端介绍](frontend-introduction.md)
-  - [前端环境](frontend-environment.md)
-  - [前端目录](frontend-catalog.md)
-  - [前端指南](frontend-guide.md)
-- [部署指南](deployment.md)
-- [常见问题](faq.md)
+- [系统介绍](guide/introduction.md)
+- [环境搭建](guide/environment.md)
+- [系统安装](guide/installation.md)
+- [目录结构](guide/catalog.md)
+- [开发规范](guide/exploit.md)
+- [演示账号](guide/demo_account.md)
+- [前端开发文档](guide/frontend-introduction.md)
+  - [前端介绍](guide/frontend-introduction.md)
+  - [前端环境](guide/frontend-environment.md)
+  - [前端目录](guide/frontend-catalog.md)
+  - [前端指南](guide/frontend-guide.md)
+- [部署指南](guide/deployment.md)
+- [常见问题](guide/faq.md)
 
 ## 快速开始
 
 ### 1. 环境要求
 
-- **Go**: 版本 >= 1.18 (推荐 1.20+)
+- **Go**: 版本 >= 1.25（go.mod 强制要求）
 - **Node.js**: 版本 >= 18.12.0 (推荐 20.12.0+)
 - **pnpm**: 版本 >= 8.7.0
 - **MySQL**: 版本 >= 5.7
@@ -31,8 +34,8 @@
 1. 克隆项目
 
 ```bash
-git clone https://github.com/qxkjsoft/ginfast-back.git
-cd ginfast-back
+git clone https://github.com/qxkjsoft/ginfast.git
+cd ginfast
 ```
 
 2. 安装后端依赖
@@ -61,8 +64,8 @@ mysql -u root -p gin_fast < resource/database/gin-fast-tenant.sql  # 仅表结�
 5. 修改配置
 
 ```bash
-# 复制配置文件
-cp config/config.copy.yml config/config.yml
+# 在后端目录执行：复制配置文件
+cp config/config.example.yml config/config.yml
 
 # 编辑配置文件
 vim config/config.yml
@@ -71,7 +74,7 @@ vim config/config.yml
 6. 启动后端服务
 
 ```bash
-cd ../../
+# 在后端目录执行
 go run main.go
 ```
 
@@ -84,7 +87,7 @@ pnpm run dev
 
 8. 访问系统
 
-打开浏览器，访问 http://localhost:8001，使用默认账号登录：
+打开浏览器，访问前端地址 http://localhost:5173（前端 dev 服务端口，被占用时以启动日志为准），使用默认账号登录：
 - 用户名：admin
 - 密码：123456
 
@@ -96,37 +99,41 @@ pnpm run dev
 
 ### 系统介绍
 
-[系统介绍](introduction.md) 文档包含项目概述、核心特性、技术栈、系统架构、功能模块、适用场景等内容，帮助您快速了解 Gin-Fast 系统。
+[系统介绍](guide/introduction.md) 文档包含项目概述、核心特性、技术栈、系统架构、功能模块、适用场景等内容，帮助您快速了解 Gin-Fast 系统。
 
 ### 环境搭建
 
-[环境搭建](environment.md) 文档包含环境要求、开发工具、环境配置、验证环境等内容，帮助您搭建开发环境。
+[环境搭建](guide/environment.md) 文档包含环境要求、开发工具、环境配置、验证环境等内容，帮助您搭建开发环境。
 
 ### 系统安装
 
-[系统安装](installation.md) 文档包含安装概述、后端安装、前端安装、数据库初始化、系统配置、启动系统、验证安装等内容，帮助您安装 Gin-Fast 系统。
+[系统安装](guide/installation.md) 文档包含安装概述、后端安装、前端安装、数据库初始化、系统配置、启动系统、验证安装等内容，帮助您安装 Gin-Fast 系统。
 
 ### 目录结构
 
-[目录结构](catalog.md) 文档包含项目结构、目录说明、文件说明、模块说明等内容，帮助您了解项目结构。
+[目录结构](guide/catalog.md) 文档包含项目结构、目录说明、文件说明、模块说明等内容，帮助您了解项目结构。
 
 ### 开发规范
 
-[开发规范](exploit.md) 文档包含代码规范、Git规范、API规范、数据库规范、前端规范、文档规范等内容，帮助您遵循开发规范。
+[开发规范](guide/exploit.md) 文档包含代码规范、Git规范、API规范、数据库规范、前端规范、文档规范等内容，帮助您遵循开发规范。
+
+### 演示账号
+
+[演示账号](guide/demo_account.md) 文档介绍演示账号功能（只读账号与路径白名单），适用于系统演示场景。
 
 <!-- 删除API接口文档部分 -->
 
 ### 前端开发文档
 
-[前端开发文档](frontend-introduction.md) 包含前端介绍、前端环境、前端目录、前端指南等内容，帮助您了解前端开发。
+[前端开发文档](guide/frontend-introduction.md) 包含前端介绍、前端环境、前端目录、前端指南等内容，帮助您了解前端开发。
 
 ### 部署指南
 
-[部署指南](deployment.md) 文档包含部署概述、环境准备、后端部署、前端部署、Nginx配置、Docker部署、常见问题等内容，帮助您部署 Gin-Fast 系统。
+[部署指南](guide/deployment.md) 文档包含部署概述、环境准备、后端部署、前端部署、Nginx配置、Docker部署、常见问题等内容，帮助您部署 Gin-Fast 系统。
 
 ### 常见问题
 
-[常见问题](faq.md) 文档包含开发环境问题、后端问题、前端问题、部署问题、数据库问题、权限问题、性能问题、其他问题等内容，帮助您解决常见问题。
+[常见问题](guide/faq.md) 文档包含开发环境问题、后端问题、前端问题、部署问题、数据库问题、权限问题、性能问题、其他问题等内容，帮助您解决常见问题。
 
 ## 贡献指南
 

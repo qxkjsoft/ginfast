@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"gin-fast/app/global/app"
 	"time"
 
@@ -17,8 +18,8 @@ type SysJobs struct {
 	Name            string         `gorm:"column:name;not null" json:"name"`                                  // 任务名称
 	Description     string         `gorm:"column:description" json:"description"`                             // 任务描述
 	ExecutorName    string         `gorm:"column:executor_name;not null;index" json:"executorName"`           // 执行器名称
-	ExecutionPolicy int            `gorm:"column:execution_policy;not null;default:0" json:"executionPolicy"` // 执行策略
-	Status          int            `gorm:"column:status;not null;default:0;index" json:"status"`              // 任务状态
+	ExecutionPolicy int            `gorm:"column:execution_policy;not null" json:"executionPolicy"`           // 执行策略
+	Status          int            `gorm:"column:status;not null;index" json:"status"`                        // 任务状态
 	CronExpression  string         `gorm:"column:cron_expression;not null" json:"cronExpression"`             // Cron表达式
 	Parameters      string         `gorm:"column:parameters" json:"parameters"`                               // 任务参数
 	BlockingPolicy  int            `gorm:"column:blocking_policy;not null;default:0" json:"blockingPolicy"`   // 阻塞策略
@@ -50,9 +51,10 @@ func (SysJobs) TableName() string {
 	return "sys_jobs"
 }
 
-// GetByID 根据ID获取sys_jobs
+// GetByID 根据ID获取sys_jobs；任务ID可能为非数字字符串（插件预置任务），必须显式参数化条件，
+// 不能写 First(m, id)——非数字字符串会被 GORM 当裸 SQL 拼进 WHERE 导致语法错误
 func (m *SysJobs) GetByID(c context.Context, id string) error {
-	return app.DB().WithContext(c).First(m, id).Error
+	return app.DB().WithContext(c).Where("id = ?", id).First(m).Error
 }
 
 // Create 创建sys_jobs记录
@@ -87,13 +89,29 @@ func (l *SysJobsList) GetTotal(c context.Context, query ...func(*gorm.DB) *gorm.
 	return count, err
 }
 
-// GetParameters 解析任务参数JSON字符串为map
-func (m *SysJobs) GetParameters() (map[string]interface{}, error) {
+// ParseJobParameters 校验并解析任务参数JSON字符串
+// 空白串返回nil；调度器Job.Parameters为map类型，参数必须是JSON对象，否则返回友好错误
+func ParseJobParameters(s string) (map[string]interface{}, error) {
 	var parameters map[string]interface{}
-	if m.Parameters != "" {
-		if err := json.Unmarshal([]byte(m.Parameters), &parameters); err != nil {
-			return nil, errors.New("任务参数JSON格式错误: " + err.Error())
-		}
+	if strings.TrimSpace(s) == "" {
+		return nil, nil
+	}
+	if err := json.Unmarshal([]byte(s), &parameters); err != nil {
+		return nil, errors.New(`任务参数必须是JSON对象格式，例如 {"param1": "value1"}`)
 	}
 	return parameters, nil
+}
+
+// NormalizeJobParameters 规范化任务参数的入库值：空白串存储"{}"
+// sys_jobs.parameters为JSON类型列（MySQL/PG），不接受空字符串文档
+func NormalizeJobParameters(s string) string {
+	if strings.TrimSpace(s) == "" {
+		return "{}"
+	}
+	return s
+}
+
+// GetParameters 解析任务参数JSON字符串为map
+func (m *SysJobs) GetParameters() (map[string]interface{}, error) {
+	return ParseJobParameters(m.Parameters)
 }

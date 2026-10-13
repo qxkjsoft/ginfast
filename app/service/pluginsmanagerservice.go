@@ -19,6 +19,7 @@ import (
 	"gin-fast/app/utils/gormhelper"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -81,6 +82,12 @@ func (pms *PluginsManagerService) GetPluginsExportList() ([]models.PluginExport,
 func (pms *PluginsManagerService) ExportPluginToWriter(pluginName string, writer io.Writer, includeData bool) (string, error) {
 	if pluginName == "" {
 		return "", errors.New("插件名称不能为空")
+	}
+
+	// 目录名白名单校验，防止 folderName 携带 ../ 等穿越到 plugins 目录之外，
+	// 同时保证其可安全拼入 Content-Disposition 响应头（与 UninstallPlugin 同一校验）
+	if !pluginFolderNameRegex.MatchString(pluginName) {
+		return "", fmt.Errorf("非法的插件目录名: %s", pluginName)
 	}
 
 	// 获取plugin_export.json文件路径
@@ -790,6 +797,23 @@ func (pms *PluginsManagerService) processPluginImport(c *gin.Context, zipReader 
 
 	// 导入数据库
 	if params.OverwriteDB {
+		// 先做危险语句检测：未携带确认标记时中止导入（此时尚未执行任何写操作，无副作用）
+		statements, err := readDatabaseSQLStatements(zipReader)
+		if err != nil {
+			return nil, err
+		}
+		dangers := scanDangerousSQL(statements)
+		if len(dangers) > 0 && !params.ConfirmDangerousSQL {
+			return &models.PluginImportResponse{
+				DangerousSQLs: dangers,
+				IsWarning:     true,
+			}, nil
+		}
+		if len(dangers) > 0 {
+			app.ZapLog.Warn("插件导入将执行含危险关键字的SQL(用户已确认)",
+				zap.Uint("userId", params.UserID),
+				zap.Int("dangerousCount", len(dangers)))
+		}
 		if err := pms.importDatabase(zipReader); err != nil {
 			return nil, fmt.Errorf("导入数据库失败: %v", err)
 		}
@@ -1079,33 +1103,18 @@ func (pms *PluginsManagerService) extractFile(file *zip.File, destPath string) e
 
 // importDatabase 导入数据库
 func (pms *PluginsManagerService) importDatabase(zipReader *zip.Reader) error {
-	// 查找database.sql文件
-	var sqlContent string
-	for _, file := range zipReader.File {
-		if file.Name == "database.sql" {
-			rc, err := file.Open()
-			if err != nil {
-				return fmt.Errorf("读取database.sql失败: %v", err)
-			}
-			defer rc.Close()
-
-			data, err := io.ReadAll(rc)
-			if err != nil {
-				return fmt.Errorf("读取database.sql内容失败: %v", err)
-			}
-			sqlContent = string(data)
-			break
-		}
+	// 读取并分句database.sql（zip中无该文件时跳过）
+	statements, err := readDatabaseSQLStatements(zipReader)
+	if err != nil {
+		return err
 	}
-
-	if sqlContent == "" {
-		return nil // 没有database.sql文件，跳过
+	if len(statements) == 0 {
+		return nil
 	}
 
 	// 执行SQL
 	dbType := app.ConfigYml.GetString("gormv2.usedbtype")
 	var db *gorm.DB
-	var err error
 
 	switch dbType {
 	case "mysql":
@@ -1123,8 +1132,6 @@ func (pms *PluginsManagerService) importDatabase(zipReader *zip.Reader) error {
 	}
 
 	// 执行SQL语句
-	// 使用更智能的SQL语句分割，避免字符串内容中的分号造成的问题
-	statements := splitSQLStatements(sqlContent)
 	for _, stmt := range statements {
 		if stmt == "" {
 			continue
@@ -1250,6 +1257,11 @@ func splitSQLStatements(sqlContent string) []string {
 func (pms *PluginsManagerService) UninstallPlugin(c *gin.Context, folderName string) error {
 	if folderName == "" {
 		return errors.New("插件名称不能为空")
+	}
+
+	// 目录名白名单校验，防止通过folderName定位到plugins目录之外的plugin_export.json
+	if !pluginFolderNameRegex.MatchString(folderName) {
+		return fmt.Errorf("非法的插件目录名: %s", folderName)
 	}
 
 	// 获取plugin_export.json文件路径
@@ -1445,19 +1457,23 @@ func (pms *PluginsManagerService) deleteOrphanedAPIsInTx(tx *gorm.DB, apiIds []u
 
 // deleteFiles 删除后端文件和文件夹
 func (pms *PluginsManagerService) deleteFiles(exportDirs []string) error {
-	for _, exportPath := range exportDirs {
-		// 规范化路径，移除前导斜杠
-		exportPath = strings.TrimPrefix(exportPath, "/")
-		exportPath = strings.TrimPrefix(exportPath, "\\")
+	// 路径收敛到后端项目根目录内，拒绝绝对路径与".."逃逸
+	targets, err := resolveDeleteTargets(".", exportDirs)
+	if err != nil {
+		return err
+	}
+
+	for i, exportPath := range exportDirs {
+		target := targets[i]
 
 		// 检查文件或文件夹是否存在
-		if _, err := os.Stat(exportPath); errors.Is(err, os.ErrNotExist) {
+		if _, err := os.Stat(target); errors.Is(err, os.ErrNotExist) {
 			// 文件不存在，跳过
 			continue
 		}
 
 		// 删除文件或文件夹
-		if err := os.RemoveAll(exportPath); err != nil {
+		if err := os.RemoveAll(target); err != nil {
 			return fmt.Errorf("删除文件/文件夹失败 %s: %v", exportPath, err)
 		}
 	}
@@ -1482,13 +1498,14 @@ func (pms *PluginsManagerService) deleteFrontendFiles(exportDirsFrontend []strin
 		return errors.New("前端项目根目录不存在: " + frontendRootDir)
 	}
 
-	for _, exportPath := range exportDirsFrontend {
-		// 规范化路径，移除前导斜杠
-		exportPath = strings.TrimPrefix(exportPath, "/")
-		exportPath = strings.TrimPrefix(exportPath, "\\")
+	// 路径收敛到前端项目根目录内，拒绝绝对路径与".."逃逸
+	targets, err := resolveDeleteTargets(frontendRootDir, exportDirsFrontend)
+	if err != nil {
+		return err
+	}
 
-		// 构建完整路径
-		fullPath := filepath.Join(frontendRootDir, exportPath)
+	for i, exportPath := range exportDirsFrontend {
+		fullPath := targets[i]
 
 		// 检查文件或文件夹是否存在
 		if _, err := os.Stat(fullPath); errors.Is(err, os.ErrNotExist) {
@@ -1509,6 +1526,11 @@ func (pms *PluginsManagerService) deleteFrontendFiles(exportDirsFrontend []strin
 func (pms *PluginsManagerService) dropDatabaseTables(tableNames []string) error {
 	if len(tableNames) == 0 {
 		return nil
+	}
+
+	// 表名来自插件清单（外部输入），先做白名单校验再拼接，防标识符注入
+	if err := validateTableNames(tableNames); err != nil {
+		return err
 	}
 
 	// 获取数据库连接

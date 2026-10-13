@@ -67,7 +67,7 @@ func DemoAccountMiddleware() gin.HandlerFunc {
 			if len(allowPathPrefixes) > 0 {
 				currentPath := c.Request.URL.Path
 				for _, prefix := range allowPathPrefixes {
-					if strings.HasPrefix(currentPath, prefix) {
+					if matchPathPrefix(currentPath, prefix) {
 						// 路径在白名单中，允许通过
 						app.ZapLog.Info("演示账号访问白名单路径",
 							zap.Uint("userID", claims.UserID),
@@ -86,15 +86,22 @@ func DemoAccountMiddleware() gin.HandlerFunc {
 				zap.String("method", c.Request.Method),
 				zap.String("path", c.Request.URL.Path))
 
-			c.JSON(http.StatusForbidden, gin.H{
-				"code":    http.StatusForbidden,
-				"message": "演示账号仅允许查看操作，禁止修改数据",
-			})
-			c.Abort()
+			app.Response.Fail(c, "演示账号仅允许查看操作，禁止修改数据", http.StatusForbidden)
 			return
 		}
 
 		// GET请求，允许通过
 		c.Next()
 	}
+}
+
+// matchPathPrefix 按路由段匹配路径前缀：prefix 自身及其子路径（prefix/...）命中，
+// 但不包含同字符串前缀的更长段（如 /api/users 不匹配 /api/usersX）；
+// 空前缀或仅斜杠不匹配任何路径，避免误放行
+func matchPathPrefix(path, prefix string) bool {
+	prefix = strings.TrimSuffix(prefix, "/")
+	if prefix == "" {
+		return false
+	}
+	return path == prefix || strings.HasPrefix(path, prefix+"/")
 }

@@ -3,7 +3,9 @@ package controllers
 import (
 	"bytes"
 	"errors"
+	"regexp"
 
+	"gin-fast/app/global/consts"
 	"gin-fast/app/models"
 	"gin-fast/app/service"
 	"gin-fast/app/utils/common"
@@ -92,12 +94,21 @@ func (pmc *PluginsManagerController) ExportPlugin(c *gin.Context) {
 
 	// 设置响应头 - 使用正确的 Content-Disposition 格式
 	c.Header("Content-Type", "application/zip")
-	// 测试使用RFC 5987的filename*参数，并同时保留filename以兼容旧浏览器
-	c.Header("Content-Disposition", "attachment; filename=\""+filename+".zip\"")
+	// filename 白名单消毒（folderName 已在服务层按目录名校验，此处兜底插件自带配置中的 version 串），
+	// 防止引号/CRLF 等字符注入响应头
+	c.Header("Content-Disposition", "attachment; filename=\""+sanitizeDownloadFilename(filename)+".zip\"")
 	c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
 
 	// 将缩缩包内容写入响应体
 	c.DataFromReader(200, int64(buf.Len()), "application/zip", buf, nil)
+}
+
+// downloadFilenameSanitizer 下载文件名白名单：仅保留字母数字点下划线连字符，其余一律替换为下划线
+var downloadFilenameSanitizer = regexp.MustCompile(`[^A-Za-z0-9._-]`)
+
+// sanitizeDownloadFilename 消毒 Content-Disposition 中的文件名，防止引号/CRLF 头注入
+func sanitizeDownloadFilename(name string) string {
+	return downloadFilenameSanitizer.ReplaceAllString(name, "_")
 }
 
 // ImportPlugin 导入插件
@@ -110,6 +121,7 @@ func (pmc *PluginsManagerController) ExportPlugin(c *gin.Context) {
 // @Param overwriteDB formData int false "是否覆盖数据库 (0:否, 1:是)" default(0)
 // @Param importMenu formData int false "是否导入菜单 (0:否, 1:是)" default(0)
 // @Param overwriteFiles formData int false "是否覆盖文件 (0:否, 1:是)" default(0)
+// @Param confirmDangerousSQL formData int false "已确认database.sql中的危险语句，允许继续执行 (0:否, 1:是)" default(0)
 // @Success 200 {object} map[string]interface{} "导入成功"
 // @Failure 400 {object} map[string]interface{} "请求参数错误"
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"
@@ -146,12 +158,16 @@ func (pmc *PluginsManagerController) ImportPlugin(c *gin.Context) {
 		pmc.FailAndAbort(c, err.Error(), err, 500)
 	}
 
-	// 如果CheckExist=true，仅检查了，返回存在的项目列表
-	if req.CheckExist {
-		if !existingItems.IsEmpty() {
-			pmc.SuccessWithMessage(c, "以下项已存在，请核查", existingItems, 1)
+	// 存在警告项（database.sql含危险语句，或已存在文件/表）时返回警告，
+	// 由前端弹窗确认后携带确认参数重新提交，未确认前不执行任何导入；
+	// 业务码用专门的警告码（2），不与失败码 1 混淆（前端 code===0 为成功，非 0 进警告分支）
+	if !existingItems.IsEmpty() {
+		if len(existingItems.DangerousSQLs) > 0 {
+			pmc.SuccessWithMessage(c, "导入的database.sql包含危险语句，请确认是否继续导入", existingItems, consts.ResponseWarningCode)
 			return
 		}
+		pmc.SuccessWithMessage(c, "以下项已存在，请核查", existingItems, consts.ResponseWarningCode)
+		return
 	}
 
 	// 返回成功响应

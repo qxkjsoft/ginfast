@@ -26,7 +26,7 @@ func (s *SysParamService) Add(c context.Context, req *models.SysParamAddRequest)
 	param.Name = &req.Name
 	param.Code = &req.Code
 	param.Value = &req.Value
-	param.Status = &req.Status
+	param.Status = req.Status
 	param.Description = &req.Description
 
 	if err := param.Create(c); err != nil {
@@ -50,7 +50,7 @@ func (s *SysParamService) Update(c context.Context, req *models.SysParamUpdateRe
 	param.Name = &req.Name
 	param.Code = &req.Code
 	param.Value = &req.Value
-	param.Status = &req.Status
+	param.Status = req.Status
 	param.Description = &req.Description
 
 	if err := param.Update(c); err != nil {

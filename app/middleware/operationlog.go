@@ -6,6 +6,7 @@ import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
 	"gin-fast/app/utils/common"
+	"gin-fast/app/utils/goroutinehelper"
 	"io"
 	"strings"
 	"time"
@@ -37,8 +38,11 @@ func OperationLogMiddleware() gin.HandlerFunc {
 		c.Writer = writer
 
 		defer func() {
-			// 记录操作日志
-			go recordOperationLog(c, startTime, requestBody, writer.body.Bytes())
+			// 在请求结束、gin.Context 被复用前同步采集日志数据，再异步落库，避免数据竞态
+			data := collectOperationLogData(c, writer, startTime, requestBody)
+			goroutinehelper.GoSafe("operationlog", func() {
+				saveOperationLog(data)
+			})
 		}()
 
 		c.Next()
@@ -88,64 +92,93 @@ func shouldSkipLog(c *gin.Context) bool {
 	return false
 }
 
-// recordOperationLog 记录操作日志
-func recordOperationLog(c *gin.Context, startTime time.Time, requestBody, responseBody []byte) {
-	duration := time.Since(startTime).Milliseconds()
+// operationLogData 操作日志数据快照。
+// 在请求结束、gin.Context 被复用之前同步采集，异步落库阶段仅读取本结构体，
+// 避免跨 goroutine 访问 *gin.Context 造成数据竞态。
+type operationLogData struct {
+	StartTime     time.Time
+	Method        string
+	Path          string
+	ClientIP      string
+	UserAgent     string
+	StatusCode    int
+	ErrorMessage  string
+	UserID        uint
+	Username      string
+	TenantID      uint
+	OperationType string
+	Module        string
+	RequestBody   []byte
+	ResponseBody  []byte
+}
 
-	// 获取用户信息
-	var userID uint
-	var username string
-	var tenantID uint
-	operationType := getOperationType(c)
+// collectOperationLogData 同步采集记录操作日志所需的全部数据。
+// 必须在启动异步落库 goroutine 之前调用。
+func collectOperationLogData(c *gin.Context, writer *responseWriter, startTime time.Time, requestBody []byte) operationLogData {
+	data := operationLogData{
+		StartTime:     startTime,
+		Method:        c.Request.Method,
+		Path:          c.Request.URL.Path,
+		ClientIP:      c.ClientIP(),
+		UserAgent:     c.Request.UserAgent(),
+		StatusCode:    writer.Status(),
+		OperationType: getOperationType(c),
+		Module:        getOperationModule(c),
+		RequestBody:   requestBody,
+		ResponseBody:  writer.body.Bytes(),
+	}
 
 	// 尝试从JWT token获取用户信息
 	claims := common.GetClaims(c)
 	if claims != nil {
-		userID = claims.UserID
-		username = claims.Username
-		tenantID = claims.TenantID
+		data.UserID = claims.UserID
+		data.Username = claims.Username
+		data.TenantID = claims.TenantID
 	} else {
 		// 如果是登录操作，尝试从请求体中获取用户名
-		if c.Request.URL.Path == "/api/login" && c.Request.Method == "POST" {
+		if data.Path == "/api/login" && data.Method == "POST" && len(data.RequestBody) > 0 {
 			// 解析登录请求体获取用户名
 			var loginReq struct {
 				Username string `json:"username"`
 			}
-			if len(requestBody) > 0 {
-				if err := json.Unmarshal(requestBody, &loginReq); err == nil && loginReq.Username != "" {
-					username = loginReq.Username
-					// 标记为登录操作
-					operationType = models.OperationLogin
-				}
+			if err := json.Unmarshal(data.RequestBody, &loginReq); err == nil && loginReq.Username != "" {
+				data.Username = loginReq.Username
+				// 标记为登录操作
+				data.OperationType = models.OperationLogin
 			}
 		}
 	}
 
-	// 构建操作日志
+	// 错误信息
+	ctxErr, _ := c.Get("error")
+	data.ErrorMessage = getErrorMessage(data.StatusCode, ctxErr, data.ResponseBody)
+
+	return data
+}
+
+// saveOperationLog 构建并保存操作日志（仅在异步 goroutine 中执行，不读取 gin.Context）
+func saveOperationLog(data operationLogData) {
 	log := &models.SysOperationLog{
-		UserID:      userID,
-		Username:    username,
-		Module:      getOperationModule(c),
-		Operation:   operationType,
-		Method:      c.Request.Method,
-		Path:        c.Request.URL.Path,
-		IP:          c.ClientIP(),
-		UserAgent:   c.Request.UserAgent(),
-		RequestData: sanitizeRequestData(requestBody),
-		//ResponseData: sanitizeResponseData(responseBody),
-		StatusCode: c.Writer.Status(),
-		Duration:   duration,
-		ErrorMsg:   getErrorMessage(c, responseBody),
-		Location:   getLocationByIP(c.ClientIP()),
-		TenantID:   tenantID,
+		UserID:      data.UserID,
+		Username:    data.Username,
+		Module:      data.Module,
+		Operation:   data.OperationType,
+		Method:      data.Method,
+		Path:        data.Path,
+		IP:          data.ClientIP,
+		UserAgent:   data.UserAgent,
+		RequestData: sanitizeRequestData(data.RequestBody),
+		//ResponseData: sanitizeResponseData(data.ResponseBody),
+		StatusCode: data.StatusCode,
+		Duration:   time.Since(data.StartTime).Milliseconds(),
+		ErrorMsg:   data.ErrorMessage,
+		Location:   getLocationByIP(data.ClientIP),
+		TenantID:   data.TenantID,
 	}
 
-	// 异步保存日志
-	go func() {
-		if err := app.DB().Create(log).Error; err != nil {
-			app.ZapLog.Error("记录操作日志失败", zap.Error(err))
-		}
-	}()
+	if err := app.DB().Create(log).Error; err != nil {
+		app.ZapLog.Error("记录操作日志失败", zap.Error(err))
+	}
 }
 
 // getOperationModule 获取操作模块
@@ -190,12 +223,12 @@ func getOperationType(c *gin.Context) string {
 	}
 }
 
-// getErrorMessage 获取错误信息
-func getErrorMessage(c *gin.Context, responseBody []byte) string {
-	if c.Writer.Status() >= 400 {
-		// 首先尝试从上下文中获取错误信息
-		if err, exists := c.Get("error"); exists {
-			return err.(error).Error()
+// getErrorMessage 获取错误信息（基于已采集的值，不读取 gin.Context）
+func getErrorMessage(statusCode int, ctxErr interface{}, responseBody []byte) string {
+	if statusCode >= 400 {
+		// 首先使用上下文中携带的错误信息
+		if err, ok := ctxErr.(error); ok {
+			return err.Error()
 		}
 		// 如果上下文中没有错误信息，尝试解析响应体
 		if len(responseBody) > 0 {

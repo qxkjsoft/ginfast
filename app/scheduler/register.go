@@ -1,138 +1,51 @@
+// register.go 系统定时任务注册入口
+//
+// 本文件专门用于注册系统自带的定时任务（当前：演示任务、操作日志清理）。
+// 任务加载（LoadJobsFromDB）、插件任务的注册与持久化（RegisterAndPersistJob /
+// PersistJobToDB）见 jobs.go。
 package scheduler
 
 import (
-	"context"
-	"encoding/json"
 	"time"
 
 	"gin-fast/app/global/app"
-	"gin-fast/app/models"
 	"gin-fast/app/scheduler/executors"
 	"gin-fast/app/utils/schedulerhelper"
-
-	"go.uber.org/zap"
-	"gorm.io/gorm/clause"
 )
 
-// RegisterExecutors 注册所有执行器
-// 在这里添加新的执行器注册
+// RegisterExecutors 注册所有系统任务的执行器与任务定义
+// 在这里添加新的执行器/任务注册
 func RegisterExecutors() {
-	// 注册演示执行器
+	// 注册演示执行器（仅演示执行器写法，无预置任务，可在后台"定时任务"模块建任务体验）
 	app.JobScheduler.RegisterExecutor(&executors.DemoExecutor{})
 
-	// 在这里添加更多执行器...
+	// 注册操作日志清理执行器，并预置定时任务（随启动自动注册+持久化，但**默认停用**，
+	// 不会自动清理）。需要启用日志清理时，在后台"定时任务"模块将该任务**启用**并按需调整
+	// 保留天数（参数 retain_days，默认 90 天）与执行时间即可，启用即生效无需重启。
+	// 行为：硬删 retain_days 之前的 sys_operation_logs（非软删标记，删除后不可恢复），
+	// 启用前请确认已了解删除范围。
+	app.JobScheduler.RegisterExecutor(&executors.OperationLogCleanupExecutor{})
+
+	logCleanupJob := &schedulerhelper.Job{
+		ID:     "operation-log-cleanup",
+		Group:  "system",
+		Name:   "操作日志清理",
+		// 描述须与下方 CronExpression 及 executor 实际行为保持一致（SB-13 教训）。
+		// 注意：PersistJobToDB 为 OnConflict DoNothing，存量环境 sys_jobs 已持久化的状态/描述
+		// 不会被本次代码覆盖，可在后台"定时任务"模块编辑或手动 UPDATE 同步。
+		Description:     "每天凌晨 3 点清理 retain_days 天之前的操作日志（默认保留 90 天，任务参数可配）",
+		ExecutorName:    (&executors.OperationLogCleanupExecutor{}).Name(),
+		ExecutionPolicy: schedulerhelper.PolicyRepeat,
+		Status:          schedulerhelper.StatusDisabled, // 默认停用：日志清理有不可恢复的删除动作，由管理员在后台按需启用
+		CronExpression:  "0 0 3 * * *", // 6 段(含秒字段)，每天凌晨 3 点触发
+		BlockingPolicy:  schedulerhelper.BlockDiscard,
+		Timeout:         10 * time.Minute,
+		Parameters:      map[string]interface{}{"retain_days": 90},
+	}
+	// 注册 + 持久化一步完成（内部失败仅记日志不阻断启动，可忽略返回值）
+	_ = RegisterAndPersistJob(logCleanupJob)
+
+	// 在这里添加更多执行器/任务...
 	// app.JobScheduler.RegisterExecutor(&executors.YourExecutor{})
-}
-
-// LoadJobsFromDB 从数据库加载启用的任务并注册到调度器
-func LoadJobsFromDB() {
-	ctx := context.Background()
-
-	// 查询所有启用的任务 (status=1)
-	var jobsList models.SysJobsList
-	err := app.DB().WithContext(ctx).Model(&models.SysJobs{}).Where("status = ?", 1).Find(&jobsList).Error
-	if err != nil {
-		app.ZapLog.Error("从数据库加载任务失败", zap.Error(err))
-		return
-	}
-
-	app.ZapLog.Info("从数据库加载启用的任务", zap.Int("count", len(jobsList)))
-
-	// 遍历任务列表，添加到调度器
-	for _, job := range jobsList {
-		// 解析任务参数JSON字符串
-		var parameters map[string]interface{}
-		if job.Parameters != "" {
-			if err := json.Unmarshal([]byte(job.Parameters), &parameters); err != nil {
-				app.ZapLog.Error("解析任务参数失败",
-					zap.String("jobID", job.Id),
-					zap.String("name", job.Name),
-					zap.Error(err))
-				continue
-			}
-		}
-
-		// 构建调度器Job对象
-		schedulerJob := &schedulerhelper.Job{
-			ID:              job.Id,
-			Group:           job.Group,
-			Name:            job.Name,
-			Description:     job.Description,
-			ExecutorName:    job.ExecutorName,
-			ExecutionPolicy: schedulerhelper.ExecutionPolicy(job.ExecutionPolicy),
-			Status:          schedulerhelper.JobStatus(job.Status),
-			CronExpression:  job.CronExpression,
-			Parameters:      parameters,
-			BlockingPolicy:  schedulerhelper.BlockingPolicy(job.BlockingPolicy),
-			Timeout:         time.Duration(job.Timeout),
-			MaxRetry:        job.MaxRetry,
-			RetryInterval:   time.Duration(job.RetryInterval),
-			ParallelNum:     job.ParallelNum,
-		}
-
-		// 添加到调度器
-		_, err := app.JobScheduler.AddOrUpdateJob(schedulerJob)
-		if err != nil {
-			app.ZapLog.Error("添加任务到调度器失败",
-				zap.String("jobID", job.Id),
-				zap.String("name", job.Name),
-				zap.Error(err))
-			continue
-		}
-
-		app.ZapLog.Info("成功加载任务到调度器",
-			zap.String("jobID", job.Id),
-			zap.String("name", job.Name),
-			zap.String("cron", job.CronExpression))
-	}
-
-	// 启动任务结果处理器，将任务执行结果保存到数据库
-	StartResultHandler()
-}
-
-// PersistJobToDB 将任务定义持久化到 sys_jobs 表（主键冲突时忽略）。
-// 供插件注册任务时调用，确保 sys_job_results 的外键约束 (job_id -> sys_jobs.id) 得到满足。
-//
-// 行为：使用 OnConflict{DoNothing}（MySQL 为 INSERT IGNORE）：
-//   - 首次启动：插入新记录
-//   - 重启(记录已存在)：跳过，不覆盖用户在后台对任务的修改
-//
-// 参数 job 应为已通过 AddOrUpdateJob 注册到调度器的任务（validateJob 会就地设置
-// ParallelNum/Timeout/RetryInterval 等默认值，故此时读取字段即为最终配置）。
-//
-// 返回持久化错误；调用方可选择仅记录日志、不阻断启动（任务已在内存 cron 中运行，
-// 仅 sys_job_results 历史无法落库）。
-func PersistJobToDB(job *schedulerhelper.Job) error {
-	ctx := context.Background()
-
-	parametersJSON := "{}"
-	if len(job.Parameters) > 0 {
-		if b, err := json.Marshal(job.Parameters); err == nil {
-			parametersJSON = string(b)
-		}
-	}
-
-	now := time.Now()
-	sysJob := &models.SysJobs{
-		Id:              job.ID,
-		Group:           job.Group,
-		Name:            job.Name,
-		Description:     job.Description,
-		ExecutorName:    job.ExecutorName,
-		ExecutionPolicy: int(job.ExecutionPolicy),
-		Status:          int(job.Status),
-		CronExpression:  job.CronExpression,
-		Parameters:      parametersJSON,
-		BlockingPolicy:  int(job.BlockingPolicy),
-		Timeout:         job.Timeout.Nanoseconds(),
-		MaxRetry:        job.MaxRetry,
-		RetryInterval:   job.RetryInterval.Nanoseconds(),
-		ParallelNum:     job.ParallelNum,
-		CreatedAt:       &now,
-		UpdatedAt:       &now,
-	}
-
-	return app.DB().WithContext(ctx).
-		Clauses(clause.OnConflict{DoNothing: true}).
-		Create(sysJob).Error
+	// scheduler.RegisterAndPersistJob(&schedulerhelper.Job{...})
 }

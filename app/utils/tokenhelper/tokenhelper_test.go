@@ -6,9 +6,23 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+// newTestTokenService 构造带内存缓存的测试用TokenService
+// TokenExpire/RefreshExpire 为真实时长（bootstrap 侧已按秒换算，tokenhelper 不再二次乘 time.Second）
+func newTestTokenService() *TokenService {
+	return &TokenService{
+		Ctx:            context.Background(),
+		RedisHelper:    NewMockCacheInterf(),
+		JWTSecret:      "test_secret",
+		TokenExpire:    3600 * time.Second,
+		RefreshExpire:  86400 * time.Second,
+		CacheKeyPrefix: "test:",
+	}
+}
 
 // MockCacheInterf 模拟缓存接口
 type MockCacheInterf struct {
@@ -75,6 +89,10 @@ func (m *MockCacheInterf) Incr(ctx context.Context, key string) (int64, error) {
 	return 0, nil
 }
 
+func (m *MockCacheInterf) IncrWithExpire(ctx context.Context, key string, expiration time.Duration) (int64, error) {
+	return 0, nil
+}
+
 func (m *MockCacheInterf) Decr(ctx context.Context, key string) (int64, error) {
 	return 0, nil
 }
@@ -86,8 +104,8 @@ func TestRotateRefreshToken(t *testing.T) {
 		Ctx:            context.Background(),
 		RedisHelper:    mockCache,
 		JWTSecret:      "test_secret",
-		TokenExpire:    3600,
-		RefreshExpire:  86400,
+		TokenExpire:    3600 * time.Second,
+		RefreshExpire:  86400 * time.Second,
 		CacheKeyPrefix: "test:",
 	}
 
@@ -134,8 +152,8 @@ func TestRotateRefreshToken_ExpiredToken(t *testing.T) {
 		Ctx:            context.Background(),
 		RedisHelper:    mockCache,
 		JWTSecret:      "test_secret",
-		TokenExpire:    3600,
-		RefreshExpire:  1, // 1秒过期，用于测试
+		TokenExpire:    3600 * time.Second,
+		RefreshExpire:  1 * time.Second, // 1秒过期，用于测试
 		CacheKeyPrefix: "test:",
 	}
 
@@ -160,8 +178,8 @@ func TestRotateRefreshToken_InvalidToken(t *testing.T) {
 		Ctx:            context.Background(),
 		RedisHelper:    mockCache,
 		JWTSecret:      "test_secret",
-		TokenExpire:    3600,
-		RefreshExpire:  86400,
+		TokenExpire:    3600 * time.Second,
+		RefreshExpire:  86400 * time.Second,
 		CacheKeyPrefix: "test:",
 	}
 
@@ -169,4 +187,73 @@ func TestRotateRefreshToken_InvalidToken(t *testing.T) {
 	_, err := tokenService.RotateRefreshToken("invalid_token")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid")
+}
+
+func TestTokenTypeSeparation(t *testing.T) {
+	tokenService := newTestTokenService()
+
+	access, err := tokenService.GenerateToken(&app.ClaimsUser{UserID: 1, Username: "admin"})
+	assert.NoError(t, err)
+
+	refresh, err := tokenService.GenerateRefreshToken(1, 1, "tenant")
+	assert.NoError(t, err)
+
+	t.Run("正常流access token可解析且类型正确", func(t *testing.T) {
+		claims, err := tokenService.ParseToken(access)
+		assert.NoError(t, err)
+		assert.Equal(t, app.TokenTypeAccess, claims.TokenType)
+	})
+
+	t.Run("正常流refresh token可解析且类型正确", func(t *testing.T) {
+		claims, err := tokenService.ParseRefreshToken(refresh)
+		assert.NoError(t, err)
+		assert.Equal(t, app.TokenTypeRefresh, claims.TokenType)
+	})
+
+	t.Run("refresh token不能当access token使用", func(t *testing.T) {
+		_, err := tokenService.ParseToken(refresh)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid token type")
+	})
+
+	t.Run("access token不能当refresh token使用", func(t *testing.T) {
+		_, err := tokenService.ParseRefreshToken(access)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid refresh token type")
+	})
+
+	t.Run("ValidateTokenWithCache同样拒绝refresh token", func(t *testing.T) {
+		_, err := tokenService.ValidateTokenWithCache(refresh)
+		assert.Error(t, err)
+	})
+}
+
+func TestLegacyTokenWithoutTypeRejected(t *testing.T) {
+	tokenService := newTestTokenService()
+	now := time.Now()
+
+	// 模拟升级前签发的旧token（无tokenType字段），升级部署后应被拒绝，强制重新登录
+	legacyAccess, err := jwt.NewWithClaims(jwt.SigningMethodHS256, &app.Claims{
+		ClaimsUser: app.ClaimsUser{UserID: 1},
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(now),
+		},
+	}).SignedString([]byte(tokenService.JWTSecret))
+	assert.NoError(t, err)
+
+	legacyRefresh, err := jwt.NewWithClaims(jwt.SigningMethodHS256, &app.RefreshTokenClaims{
+		UserID: 1,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(now),
+		},
+	}).SignedString([]byte(tokenService.JWTSecret))
+	assert.NoError(t, err)
+
+	_, err = tokenService.ParseToken(legacyAccess)
+	assert.Error(t, err)
+
+	_, err = tokenService.ParseRefreshToken(legacyRefresh)
+	assert.Error(t, err)
 }

@@ -1,17 +1,10 @@
 package routes
 
 import (
-	"context"
-	"time"
-
 	"github.com/gin-gonic/gin"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"gin-fast/app/controllers"
-	"gin-fast/app/global/app"
 	"gin-fast/app/middleware"
-	"gin-fast/app/utils/cachehelper"
 	"gin-fast/app/utils/tenanthelper"
 )
 
@@ -38,39 +31,8 @@ var areaControllers = controllers.NewAreaController()                       // �
 
 // InitRoutes 初始化路由
 func InitRoutes(engine *gin.Engine) {
-	// 全局跨域中间件
-	if app.ConfigYml.GetBool("httpserver.allowcrossdomain") {
-		engine.Use(middleware.CorsNext())
-	}
-
-	// 静态文件
-	engine.Static(app.ConfigYml.GetString("httpserver.serverrootpath"), app.ConfigYml.GetString("httpserver.serverroot"))
-
-	//	调试模式下注册Swagger路由、查看内存缓存项
-	if app.ConfigYml.GetBool("server.appdebug") {
-		// 注册Swagger路由
-		engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-		// 查看内存缓存项（需登录鉴权，且 token 类缓存值脱敏，防止泄露在线用户凭证）
-		engine.GET("/viewCache", middleware.JWTAuthMiddleware(), func(ctx *gin.Context) {
-			items, err := app.Cache.GetAll(context.Background())
-			if err != nil {
-				ctx.JSON(500, gin.H{"error": "获取缓存项失败", "details": err.Error()})
-				return
-			}
-			ctx.JSON(200, cachehelper.MaskTokenValues(items))
-		})
-	}
-
-	// 全局操作日志中间件
-	if app.ConfigYml.GetBool("server.syslog") {
-		engine.Use(middleware.OperationLogMiddleware())
-	}
-
-	// 全局超时中间件
-	handlerTimeout := app.ConfigYml.GetInt("httpserver.handler_timeout")
-	if handlerTimeout > 0 {
-		engine.Use(middleware.TimeoutMiddleware(time.Duration(handlerTimeout) * time.Second))
-	}
+	// 注册全局中间件、静态资源与调试路由（详见 globalmiddleware.go）
+	setupGlobalMiddleware(engine)
 
 	api := engine.Group("/api")
 	{
@@ -116,7 +78,7 @@ func InitRoutes(engine *gin.Engine) {
 				users.PUT("/updateBasicInfo", userControllers.UpdateBasicInfo)
 				// 切换租户（多租户开启时才注册）
 				if tenanthelper.MultiTenantEnabled() {
-					users.GET("/switchTenant/:tenantId", userControllers.SwitchTenant)
+					users.POST("/switchTenant/:tenantId", userControllers.SwitchTenant)
 				}
 			}
 
@@ -254,6 +216,8 @@ func InitRoutes(engine *gin.Engine) {
 			{
 				// API列表
 				sysApi.GET("/list", sysApiControllers.List)
+				// API分组列表
+				sysApi.GET("/groupList", sysApiControllers.GroupList)
 				// 根据ID获取API信息
 				sysApi.GET("/:id", sysApiControllers.GetByID)
 				// 新增API

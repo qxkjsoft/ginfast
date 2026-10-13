@@ -36,10 +36,10 @@ Gin-Fast 是一个基于 Gin 框架的后台管理系统，前端采用 Vue3 + V
 
 ```bash
 # 下载 Go 安装包
-wget https://golang.org/dl/go1.20.5.linux-amd64.tar.gz
+wget https://golang.org/dl/go1.25.0.linux-amd64.tar.gz
 
 # 解压到 /usr/local
-tar -C /usr/local -xzf go1.20.5.linux-amd64.tar.gz
+tar -C /usr/local -xzf go1.25.0.linux-amd64.tar.gz
 
 # 配置环境变量
 echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile
@@ -146,15 +146,15 @@ systemctl enable nginx
 
 ```bash
 cd /opt
-git clone https://github.com/qxkjsoft/ginfast-back.git
-cd ginfast-back
+git clone https://github.com/qxkjsoft/ginfast.git
+cd ginfast
 ```
 
 #### 2. 修改配置
 
 ```bash
 # 复制配置文件
-cp config/config.copy.yml config/config.yml
+cp config/config.example.yml config/config.yml
 
 # 编辑配置文件
 vim config/config.yml
@@ -168,17 +168,18 @@ captcha:
     open: false
 casbin:
     autoloadpolicyseconds: 120
+    # 多租户模型：dom 为租户域，各段含义详见 config.example.yml 内注释
     modelconfig: |
         [request_definition]
-        r = sub, obj, act
+        r = sub, obj, act, dom
         [policy_definition]
-        p = sub, obj, act
+        p = sub, obj, act, dom
         [role_definition]
-        g = _, _
+        g = _, _, _
         [policy_effect]
         e = some(where (p.eft == allow))
         [matchers]
-        m = g(r.sub, p.sub) && keyMatch2(r.obj, p.obj) && r.act == p.act
+        m =  g(r.sub, p.sub, r.dom) && keyMatch2(r.obj, p.obj) && regexMatch(r.act, p.act) && (r.dom == p.dom || p.dom == "*")
     tablename: casbin_rule
     tableprefix: sys_
 gormv2:
@@ -395,7 +396,7 @@ systemctl status gin-fast
 ```bash
 cd /opt
 git clone https://github.com/qxkjsoft/ginfast-front.git
-cd gin-fast-front/GinFast
+cd ginfast-front
 ```
 
 #### 2. 安装依赖
@@ -707,7 +708,7 @@ services:
 
   frontend:
     build:
-      context: ./gin-fast-front/SnowAdmin
+      context: ./ginfast-front
       dockerfile: Dockerfile
     container_name: gin-fast-frontend
     restart: always

@@ -10,6 +10,7 @@ import (
 	"gin-fast/app/models"
 	"gin-fast/app/service"
 	"gin-fast/app/utils/common"
+	"gin-fast/app/utils/gormhelper"
 	"gin-fast/app/utils/passwordhelper"
 	"gin-fast/app/utils/tenanthelper"
 
@@ -267,8 +268,8 @@ func (uc *UserController) Add(c *gin.Context) {
 		uc.FailAndAbort(c, "Failed to hash password", err)
 	}
 
-	// 使用事务创建用户和角色关联
-	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
+	// 使用事务创建用户、角色关联与casbin策略（任一步失败整体回滚）
+	err = uc.CasbinService.RunWithCasbin(c, func(tx *gorm.DB, ops app.CasbinInterf) error {
 		// 创建用户
 		user.Username = req.UserName
 		user.NickName = req.NickName
@@ -311,14 +312,15 @@ func (uc *UserController) Add(c *gin.Context) {
 			}
 		}
 
-		return nil
+		// 写入casbin用户角色关系（与业务表写同一事务）
+		return uc.CasbinService.Use(ops).AddRoleForUser(c, user.ID, req.Roles)
 	})
 
 	if err != nil {
-		uc.FailAndAbort(c, "Failed to create user", err)
-	}
-
-	if err = uc.CasbinService.AddRoleForUser(c, user.ID, req.Roles); err != nil {
+		// 前置查重后仍可能因并发提交触发唯一索引冲突（用户名全局唯一），转友好提示避免 500
+		if gormhelper.IsDuplicateKeyError(err) {
+			uc.FailAndAbort(c, "保存失败：用户名、手机号或邮箱已被使用", err)
+		}
 		uc.FailAndAbort(c, "Failed to create user", err)
 	}
 
@@ -366,7 +368,7 @@ func (uc *UserController) Update(c *gin.Context) {
 		uc.FailAndAbort(c, err.Error(), err)
 	}
 	if user.IsEmpty() {
-		uc.FailAndAbort(c, "用户不存在", nil)
+		uc.FailAndAbort(c, "用户不存在", nil, 404)
 	}
 
 	// 检查用户名是否与其他用户冲突（排除当前用户）
@@ -403,8 +405,8 @@ func (uc *UserController) Update(c *gin.Context) {
 		}
 	}
 
-	// 使用事务更新用户和角色关联
-	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
+	// 使用事务更新用户、角色关联与casbin策略（任一步失败整体回滚）
+	err = uc.CasbinService.RunWithCasbin(c, func(tx *gorm.DB, ops app.CasbinInterf) error {
 		// 更新用户信息
 		user.Username = req.UserName
 		user.NickName = req.NickName
@@ -448,14 +450,15 @@ func (uc *UserController) Update(c *gin.Context) {
 			}
 		}
 
-		return nil
+		// 同步casbin用户角色关系（与业务表写同一事务）
+		return uc.CasbinService.Use(ops).EditUserRoles(c, user.ID, req.Roles)
 	})
 
 	if err != nil {
-		uc.FailAndAbort(c, "更新用户失败", err)
-	}
-
-	if err = uc.CasbinService.EditUserRoles(c, user.ID, req.Roles); err != nil {
+		// 并发提交触发唯一索引冲突（用户名全局唯一）时转友好提示
+		if gormhelper.IsDuplicateKeyError(err) {
+			uc.FailAndAbort(c, "保存失败：用户名、手机号或邮箱已被使用", err)
+		}
 		uc.FailAndAbort(c, "更新用户失败", err)
 	}
 
@@ -489,11 +492,11 @@ func (uc *UserController) Delete(c *gin.Context) {
 		uc.FailAndAbort(c, err.Error(), err)
 	}
 	if user.IsEmpty() {
-		uc.FailAndAbort(c, "用户不存在", nil)
+		uc.FailAndAbort(c, "用户不存在", nil, 404)
 	}
 
-	// 使用事务删除用户和角色关联
-	err = app.DB().WithContext(c).Transaction(func(tx *gorm.DB) error {
+	// 使用事务删除用户、角色关联与casbin策略（任一步失败整体回滚）
+	err = uc.CasbinService.RunWithCasbin(c, func(tx *gorm.DB, ops app.CasbinInterf) error {
 		// 删除用户角色关联
 		if err := tx.Where("user_id = ?", user.ID).Delete(&models.SysUserRole{}).Error; err != nil {
 			return err
@@ -507,14 +510,11 @@ func (uc *UserController) Delete(c *gin.Context) {
 			return err
 		}
 
-		return nil
+		// 移除casbin用户角色关系（与业务表写同一事务）
+		return uc.CasbinService.Use(ops).DeleteUserRoles(c, user.ID, nil)
 	})
 
 	if err != nil {
-		uc.FailAndAbort(c, "删除用户失败", err)
-	}
-
-	if err = uc.CasbinService.DeleteUserRoles(c, user.ID, nil); err != nil {
 		uc.FailAndAbort(c, "删除用户失败", err)
 	}
 	uc.SuccessWithMessage(c, "删除成功", nil)
@@ -546,7 +546,7 @@ func (uc *UserController) UpdateAccount(c *gin.Context) {
 		uc.FailAndAbort(c, err.Error(), err)
 	}
 	if user.IsEmpty() {
-		uc.FailAndAbort(c, "用户不存在", nil)
+		uc.FailAndAbort(c, "用户不存在", nil, 404)
 	}
 
 	// 检查手机号是否已被其他用户使用
@@ -601,6 +601,10 @@ func (uc *UserController) UpdateAccount(c *gin.Context) {
 	}
 
 	if err := app.DB().WithContext(c).Save(user).Error; err != nil {
+		// 该接口仅修改手机号/邮箱，冲突提示文案相应收窄
+		if gormhelper.IsDuplicateKeyError(err) {
+			uc.FailAndAbort(c, "保存失败：手机号或邮箱已被使用", err)
+		}
 		uc.FailAndAbort(c, "更新用户信息失败", err)
 	}
 
@@ -685,7 +689,7 @@ func (uc *UserController) UploadAvatar(c *gin.Context) {
 		uc.FailAndAbort(c, "获取用户信息失败", err)
 	}
 	if user.IsEmpty() {
-		uc.FailAndAbort(c, "用户不存在", nil)
+		uc.FailAndAbort(c, "用户不存在", nil, 404)
 	}
 
 	// 更新用户头像字段
@@ -728,7 +732,7 @@ func (uc *UserController) UpdateBasicInfo(c *gin.Context) {
 		uc.FailAndAbort(c, err.Error(), err)
 	}
 	if user.IsEmpty() {
-		uc.FailAndAbort(c, "用户不存在", nil)
+		uc.FailAndAbort(c, "用户不存在", nil, 404)
 	}
 
 	// 更新用户基本信息
@@ -754,7 +758,7 @@ func (uc *UserController) UpdateBasicInfo(c *gin.Context) {
 // @Failure 400 {object} map[string]interface{} "请求参数错误"
 // @Failure 401 {object} map[string]interface{} "用户未登录"
 // @Failure 403 {object} map[string]interface{} "租户不存在或未启用"
-// @Router /users/switchTenant/{tenantId} [get]
+// @Router /users/switchTenant/{tenantId} [post]
 // @Security ApiKeyAuth
 func (uc *UserController) SwitchTenant(c *gin.Context) {
 	// 从上下文中获取用户信息
@@ -784,7 +788,7 @@ func (uc *UserController) SwitchTenant(c *gin.Context) {
 		return
 	}
 	if user.IsEmpty() {
-		uc.FailAndAbort(c, "用户不存在", nil)
+		uc.FailAndAbort(c, "用户不存在", nil, 404)
 		return
 	}
 
@@ -804,7 +808,7 @@ func (uc *UserController) SwitchTenant(c *gin.Context) {
 			return
 		}
 		if tenant.IsEmpty() {
-			uc.FailAndAbort(c, "租户不存在", nil)
+			uc.FailAndAbort(c, "租户不存在", nil, 404)
 			return
 		}
 		if tenant.Status != 1 {

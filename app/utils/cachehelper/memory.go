@@ -318,17 +318,26 @@ func (m *memoryHelper) SetInt(ctx context.Context, key string, value int64, expi
 // Incr 指定 key 的数值加 1（key 不存在或已过期时按 0 处理）
 // 已存在但值不是整数时返回错误
 func (m *memoryHelper) Incr(ctx context.Context, key string) (int64, error) {
-	return m.incrBy(ctx, key, 1)
+	return m.incrByTTL(ctx, key, 1, 0)
+}
+
+// IncrWithExpire 原子地执行"自增 + 首次自增时设置过期时间"（固定窗口计数语义）
+// 与 Redis Lua（INCR + v==1 时 EXPIRE）一致：自增结果为 1（新计数，含键不存在或已过期）时
+// 设置 expiration，已有计数沿用原过期时间。用于登录失败锁定等需要 TTL 的原子计数场景
+func (m *memoryHelper) IncrWithExpire(ctx context.Context, key string, expiration time.Duration) (int64, error) {
+	return m.incrByTTL(ctx, key, 1, expiration)
 }
 
 // Decr 指定 key 的数值减 1（key 不存在或已过期时按 0 处理）
 // 已存在但值不是整数时返回错误
 func (m *memoryHelper) Decr(ctx context.Context, key string) (int64, error) {
-	return m.incrBy(ctx, key, -1)
+	return m.incrByTTL(ctx, key, -1, 0)
 }
 
-// incrBy 是 Incr/Decr 共用的内部实现，delta 为 +1 或 -1
-func (m *memoryHelper) incrBy(ctx context.Context, key string, delta int64) (int64, error) {
+// incrByTTL 是 Incr/Decr/IncrWithExpire 共用的内部实现，delta 为 +1 或 -1
+// newExpiration > 0 且自增结果为 1 时为新计数设置该过期时间（修复此前新键永不过期的问题）；
+// newExpiration <= 0 时沿用原行为：新键过期时间为零值（永不过期），已有键沿用原过期时间
+func (m *memoryHelper) incrByTTL(ctx context.Context, key string, delta int64, newExpiration time.Duration) (int64, error) {
 	m.mutex.Lock()         // 加写锁，保证并发安全
 	defer m.mutex.Unlock() // 函数退出时释放锁
 
@@ -360,10 +369,15 @@ func (m *memoryHelper) incrBy(ctx context.Context, key string, delta int64) (int
 
 	newVal := current + delta // 执行加减
 
+	// 首次计数（与 Redis v==1 语义一致）且调用方要求 TTL 时，设置过期时间
+	if newVal == 1 && newExpiration > 0 {
+		expiration = time.Now().Add(newExpiration)
+	}
+
 	newItem := &cacheItem{
 		key:        key,
 		value:      newVal,
-		expiration: expiration, // 沿用原有过期时间；新 key 为零值（永不过期）
+		expiration: expiration, // 沿用原有过期时间或新设置的 TTL；否则新 key 为零值（永不过期）
 	}
 	m.data[key] = newItem
 

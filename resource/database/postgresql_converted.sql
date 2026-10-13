@@ -165,6 +165,9 @@ COMMENT ON COLUMN sys_affix_chunk.id IS 'ID';
 COMMENT ON COLUMN sys_affix_chunk.upload_id IS '上传会话ID';
 COMMENT ON COLUMN sys_affix_chunk.file_md5 IS '文件MD5';
 
+-- 分片唯一索引：同一上传会话内分片序号唯一（防并发重片）
+CREATE UNIQUE INDEX sys_affix_chunk_uk_upload_chunk ON sys_affix_chunk (upload_id, chunk_index);
+
 -- Table structure for sys_api
 DROP TABLE IF EXISTS sys_api;
 CREATE TABLE sys_api (
@@ -352,7 +355,7 @@ COMMENT ON COLUMN sys_gen_field.form_type IS '表单类型\r\ninput 文本框\r\
 DROP TABLE IF EXISTS sys_jobs;
 CREATE TABLE sys_jobs (
     id VARCHAR(255) NOT NULL,
-    group VARCHAR(100) NOT NULL,
+    "group" VARCHAR(100) NOT NULL,
     name VARCHAR(200) NOT NULL,
     description TEXT,
     executor_name VARCHAR(100) NOT NULL,
@@ -384,7 +387,7 @@ COMMENT ON COLUMN sys_jobs.executor_name IS '执行器名称';
 COMMENT ON COLUMN sys_jobs.parameters IS '任务参数(JSON格式)';
 COMMENT ON COLUMN sys_jobs.timeout IS '超时时间(纳秒)';
 COMMENT ON COLUMN sys_jobs.running_count IS '当前运行中的任务数';
-COMMENT ON COLUMN sys_jobs.group IS '任务分组名称';
+COMMENT ON COLUMN sys_jobs."group" IS '任务分组名称';
 COMMENT ON COLUMN sys_jobs.execution_policy IS '执行策略: 0=单次执行, 1=重复执行';
 COMMENT ON COLUMN sys_jobs.status IS '任务状态: 0=禁用, 1=启用';
 COMMENT ON COLUMN sys_jobs.cron_expression IS 'Cron表达式';
@@ -404,7 +407,7 @@ CREATE TABLE sys_job_results (
     retry_count INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    CONSTRAINT TEXT
+    CONSTRAINT sys_job_results_ibfk_1 FOREIGN KEY (job_id) REFERENCES sys_jobs (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 COMMENT ON COLUMN sys_job_results.id IS '自增主键';
@@ -570,7 +573,8 @@ CREATE TABLE sys_tenants (
     status SMALLINT NOT NULL DEFAULT 1,
     domain VARCHAR(255),
     platform_domain VARCHAR(255),
-    menu_permission VARCHAR(1000),
+    menu_permission TEXT,
+    menu_filter_enabled SMALLINT NOT NULL DEFAULT 0,
     PRIMARY KEY (id)
 );
 
@@ -580,6 +584,7 @@ COMMENT ON COLUMN sys_tenants.status IS '状态 0停用 1启用';
 COMMENT ON COLUMN sys_tenants.domain IS '租户域名';
 COMMENT ON COLUMN sys_tenants.platform_domain IS '主域名';
 COMMENT ON COLUMN sys_tenants.menu_permission IS '菜单权限';
+COMMENT ON COLUMN sys_tenants.menu_filter_enabled IS '菜单权限过滤开关 0关闭 1开启';
 COMMENT ON COLUMN sys_tenants.created_by IS '创建人';
 COMMENT ON COLUMN sys_tenants.name IS '租户名称';
 

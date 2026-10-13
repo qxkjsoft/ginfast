@@ -250,7 +250,7 @@ func (cgc *CodeGenController) InsertMenuAndApiData(ctx *gin.Context) {
 	}
 
 	if sysGen.IsEmpty() {
-		cgc.FailAndAbort(ctx, "代码生成配置不存在", nil)
+		cgc.FailAndAbort(ctx, "代码生成配置不存在", nil, 404)
 	}
 
 	// 构建菜单API上下文

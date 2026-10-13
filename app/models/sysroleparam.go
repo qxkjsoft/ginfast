@@ -10,7 +10,7 @@ type SysRoleAddRequest struct {
 	Validator
 	Name        string `form:"name" validate:"required" message:"角色名称不能为空"`
 	Sort        int    `form:"sort" validate:"gte:0" message:"排序值不能为负数"`
-	Status      int8   `form:"status" validate:"required|in:0,1" message:"状态值必须为0或1"`
+	Status      *int8  `form:"status" validate:"required|in:0,1" message:"状态值必须为0或1"`
 	Description string `form:"description"`
 	ParentID    uint   `form:"parentId" validate:"gte:0" message:"父级ID不能为负数"`
 }
@@ -25,7 +25,7 @@ type SysRoleUpdateRequest struct {
 	ID          uint   `form:"id" validate:"required" message:"角色ID不能为空"`
 	Name        string `form:"name" validate:"required" message:"角色名称不能为空"`
 	Sort        int    `form:"sort" validate:"gte:0" message:"排序值不能为负数"`
-	Status      int8   `form:"status" validate:"in:0,1" message:"状态值必须为0或1"`
+	Status      *int8  `form:"status" validate:"required|in:0,1" message:"状态值必须为0或1"`
 	Description string `form:"description"`
 	ParentID    uint   `form:"parentId" validate:"gte:0" message:"父级ID不能为负数"`
 }

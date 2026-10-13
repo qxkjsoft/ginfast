@@ -50,7 +50,10 @@ func GetSqlDriver(sqlType string, readDbIsOpen int, dbConf ...ConfigParams) (*go
 	gormDb, err := gorm.Open(dbDialector, &gorm.Config{
 		SkipDefaultTransaction: true,
 		PrepareStmt:            true,
-		Logger:                 redefineLog(sqlType), //拦截、接管 gorm v2 自带日志
+		// 开启错误翻译：唯一索引/唯一约束冲突等由驱动翻译为 gorm.ErrDuplicatedKey，
+		// 业务层经 gormhelper.IsDuplicateKeyError 判断后转友好提示（mysql 1062 / pg 23505 / sqlserver 2627）
+		TranslateError: true,
+		Logger:         redefineLog(sqlType), //拦截、接管 gorm v2 自带日志
 	})
 	if err != nil {
 		//gorm 数据库驱动初始化失败

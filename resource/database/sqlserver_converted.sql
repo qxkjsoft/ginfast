@@ -392,7 +392,8 @@ CREATE TABLE [sys_tenants] (
     [status] TINYINT NOT NULL DEFAULT 1,
     [domain] NVARCHAR(255),
     [platform_domain] NVARCHAR(255),
-    [menu_permission] NVARCHAR(1000),
+    [menu_permission] NVARCHAR(MAX),
+    [menu_filter_enabled] BIT NOT NULL DEFAULT 0,
     PRIMARY KEY ([id])
 );
 
@@ -476,6 +477,7 @@ CREATE INDEX [sys_affix_idx_sys_affix_file_md5] ON [sys_affix] ([file_md5]);
 CREATE UNIQUE INDEX [sys_casbin_rule_idx_casbin_rule] ON [sys_casbin_rule] ([ptype], [v0], [v1], [v2], [v3], [v4], [v5]);
 CREATE INDEX [sys_affix_chunk_idx_upload_id] ON [sys_affix_chunk] ([upload_id]);
 CREATE INDEX [sys_affix_chunk_idx_file_md5] ON [sys_affix_chunk] ([file_md5]);
+CREATE UNIQUE INDEX [sys_affix_chunk_uk_upload_chunk] ON [sys_affix_chunk] ([upload_id], [chunk_index]);
 CREATE INDEX [sys_menu_idx_parent_id] ON [sys_menu] ([parent_id]);
 CREATE INDEX [sys_menu_idx_sort] ON [sys_menu] ([sort]);
 CREATE INDEX [sys_menu_idx_type] ON [sys_menu] ([type]);

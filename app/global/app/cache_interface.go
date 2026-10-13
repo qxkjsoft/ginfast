@@ -49,6 +49,12 @@ type CacheInterf interface {
 	// Incr 指定 key 的数值加 1（key 不存在时按 0 处理）
 	Incr(ctx context.Context, key string) (int64, error)
 
+	// IncrWithExpire 原子地执行"自增 + 首次自增时设置过期时间"（固定窗口计数语义）
+	// 自增结果为 1（即本次为新计数，含键不存在或已过期的情况）时为键设置 expiration，
+	// 已有计数沿用原过期时间；与 Redis Lua（INCR + v==1 时 EXPIRE）语义一致，
+	// 用于登录失败锁定等需要 TTL 的原子计数场景
+	IncrWithExpire(ctx context.Context, key string, expiration time.Duration) (int64, error)
+
 	// Decr 指定 key 的数值减 1（key 不存在时按 0 处理）
 	Decr(ctx context.Context, key string) (int64, error)
 
