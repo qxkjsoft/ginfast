@@ -33,16 +33,21 @@ github地址：[https://github.com/qxkjsoft/ginfast-ui](https://github.com/qxkjs
 - 🔧 **配置管理**：基于 YAML 的配置文件管理
 - 📝 **日志系统**：集成 Zap 日志框架，支持日志切割和归档
 - 🌐 **跨域支持**：内置 CORS 中间件
-- 🚀 **性能监控**：集成 pprof 性能分析工具
+- 🚀 **性能监控**：集成 pprof 性能分析工具（仅 `server.appdebug: true` 调试模式下可用，需 JWT 鉴权）
 - 💾 **缓存支持**：支持 Redis 和内存缓存
 - 🔢 **验证码支持**：集成图形验证码功能，支持登录安全验证
-- 📋 **完整的后台管理**：包含用户管理、角色管理、菜单管理、部门管理、字典管理、API管理等模块
+- 🛡️ **登录安全**：支持登录失败锁定、密码强度策略等安全配置
+- 📋 **完整的后台管理**：包含用户管理、角色管理、菜单管理、部门管理、字典管理、参数管理、行政区划管理、API管理、操作日志、文件附件管理等模块
 - 🔗 **菜单与API权限关联**：支持菜单与API权限的动态关联管理
+- 🔄 **接口路由同步**：自动预览/同步后端注册的路由到 API 权限表，无需手工录入
+- 🗂️ **菜单备份与恢复**：支持菜单的备份、恢复、导入导出，首次部署可从备份一键恢复菜单
+- 🔑 **角色数据权限**：基于数据范围（DataScope）的角色级行数据过滤
 - 🏗️ **分层架构**：采用Controller-Service-Model分层架构，代码结构清晰
 - 📚 **API文档**：集成 Swagger API 文档，自动生成接口文档
-- 🏢 **多租户架构**：支持完整的租户管理、用户租户关联、数据隔离等功能
+- 🏢 **多租户架构**：支持完整的租户管理、用户租户关联、数据隔离等功能，并可通过 `server.multitenant` 配置开关，关闭后退化为单体应用
 - 🔒 **数据隔离**：基于GORM钩子函数实现自动租户数据隔离，确保各租户数据安全
 - 👥 **租户用户管理**：支持用户与租户的灵活关联，一个用户可关联多个租户
+- 📤 **文件上传**：支持本地存储和七牛云存储，支持大文件分片上传
 - 🤖 **代码生成**：强大的代码生成器，支持根据数据库表一键生成完整的后端和前端代码，包括模型、控制器、服务和视图层
 - 🔌 **插件管理**：完整的插件管理系统，支持插件打包、导入、导出、卸载等功能，支持版本管理和依赖检查
 - ⏰ **任务调度**：基于Cron表达式的任务调度系统，支持多种执行策略、阻塞策略、超时控制和自动重试机制
@@ -57,6 +62,7 @@ github地址：[https://github.com/qxkjsoft/ginfast-ui](https://github.com/qxkjs
 - **配置管理**：Viper
 - **数据库**：MySQL、SQL Server、PostgreSQL（多数据库支持）
 - **缓存**：Redis、内存缓存
+- **文件存储**：本地上传、七牛云（支持分片上传）
 - **验证码**：Captcha (dchest/captcha)
 - **参数验证**：Gookit Validate
 - **密码加密**：Bcrypt
@@ -68,24 +74,29 @@ github地址：[https://github.com/qxkjsoft/ginfast-ui](https://github.com/qxkjs
 ## 项目结构
 
 ```
-ginfast-tenant/
+gin-fast-tenant-back/
 ├── app/                    # 应用核心代码
 │   ├── controllers/        # 控制器层
+│   │   ├── area.go         # 行政区划管理控制器
 │   │   ├── auth.go         # 认证控制器
 │   │   ├── codegen.go      # 代码生成控制器
 │   │   ├── common.go       # 通用控制器基类
-│   │   ├── user.go         # 用户控制器
+│   │   ├── config.go       # 系统配置控制器
+│   │   ├── sysaffix.go     # 文件附件管理控制器
 │   │   ├── sysapi.go       # 系统API管理控制器
 │   │   ├── sysdepartment.go # 部门管理控制器
 │   │   ├── sysdict.go      # 字典管理控制器
 │   │   ├── sysdictitem.go  # 字典项管理控制器
 │   │   ├── sysgen.go       # 代码生成配置控制器
+│   │   ├── sysjobscontroller.go # 任务调度管理控制器
+│   │   ├── sysjobresultscontroller.go # 任务执行结果控制器
 │   │   ├── sysmenu.go      # 菜单管理控制器
+│   │   ├── sysoperationlog.go # 操作日志控制器
+│   │   ├── sysparam.go     # 参数管理控制器
 │   │   ├── sysrole.go      # 角色管理控制器
 │   │   ├── systenant.go    # 租户管理控制器
 │   │   ├── sysusertenant.go # 用户租户关联控制器
-│   │   ├── sysjobs.go      # 任务调度管理控制器
-│   │   ├── sysjobresults.go # 任务执行结果控制器
+│   │   ├── user.go         # 用户控制器
 │   │   └── pluginsmanager.go # 插件管理控制器
 │   ├── global/             # 全局变量和接口
 │   │   ├── app/            # 全局应用接口
@@ -95,22 +106,32 @@ ginfast-tenant/
 │   │   ├── captcha.go      # 验证码中间件
 │   │   ├── casbin.go       # 权限控制中间件
 │   │   ├── cors.go         # 跨域中间件
+│   │   ├── demoaccount.go  # 演示账号控制中间件
 │   │   ├── jwt.go          # JWT 认证中间件
-│   │   └── requestaborted.go # 请求中断处理中间件
+│   │   ├── operationlog.go # 操作日志中间件
+│   │   ├── password.go     # 密码修改校验中间件
+│   │   └── timeout.go      # 请求超时与中断处理中间件
 │   ├── models/             # 数据模型
 │   │   ├── base.go         # 基础模型
 │   │   ├── codegen.go      # 代码生成模型
 │   │   ├── user.go         # 用户模型
+│   │   ├── area.go         # 行政区划模型
+│   │   ├── sysaffix.go     # 文件附件模型（含分片 sysaffix_chunk.go）
 │   │   ├── sysapi.go       # 系统API模型
-│   │   ├── sysapiparam.go  # 系统API参数模型
 │   │   ├── sysdepartment.go # 部门模型
 │   │   ├── sysdict.go      # 字典模型
 │   │   ├── sysdictitem.go  # 字典项模型
 │   │   ├── sysgen.go       # 代码生成配置模型
 │   │   ├── sysgenfield.go  # 代码生成字段模型
+│   │   ├── sysjobs.go      # 任务调度模型
+│   │   ├── sysjobresults.go # 任务执行结果模型
 │   │   ├── sysmenu.go      # 菜单模型
 │   │   ├── sysmenuapi.go   # 菜单API关联模型
+│   │   ├── sysoperationlog.go # 操作日志模型
+│   │   ├── sysparam.go     # 参数模型
 │   │   ├── sysrole.go      # 角色模型
+│   │   ├── sysrolemenu.go  # 角色菜单关联模型
+│   │   ├── sysuserrole.go  # 用户角色关联模型
 │   │   ├── systenants.go   # 租户模型
 │   │   ├── sysusertenant.go # 用户租户关联模型
 │   │   ├── pluginexport.go # 插件导出配置模型
@@ -118,35 +139,56 @@ ginfast-tenant/
 │   ├── routes/             # 路由配置
 │   │   └── routes.go       # 路由定义
 │   ├── scheduler/          # 任务调度模块
-│   │   ├── register.go     # 执行器注册和任务加载
+│   │   ├── register.go     # 执行器注册、任务加载与持久化
 │   │   ├── result_handler.go # 任务结果处理器
 │   │   └── executors/      # 任务执行器
 │   ├── service/            # 服务层
 │   │   ├── casbinservice.go # 权限服务
 │   │   ├── codegenservice.go # 代码生成服务
 │   │   ├── sysgenservice.go # 代码生成配置服务
-│   │   ├── sysmenu.go      # 菜单服务
+│   │   ├── sysmenuservice.go # 菜单服务
+│   │   ├── sysapiservice.go # API服务
+│   │   ├── sysdepartmentservice.go # 部门服务
+│   │   ├── sysroleservice.go # 角色服务
+│   │   ├── sysjobsservice.go # 任务调度服务
+│   │   ├── sysjobresultsservice.go # 任务执行结果服务
+│   │   ├── sysparamservice.go # 参数服务
+│   │   ├── sysaffixservice.go # 文件附件服务
 │   │   ├── userservice.go  # 用户服务
 │   │   ├── pluginsmanagerservice.go # 插件管理服务
 │   │   └── zaphooks.go     # 日志钩子
 │   └── utils/              # 工具类
 │       ├── cachehelper/    # 缓存助手
+│       ├── captchahelper/  # 验证码助手
 │       ├── casbinhelper/   # 权限助手
 │       ├── common/         # 通用工具
+│       ├── datascope/      # 角色数据权限助手
+│       ├── filehelper/     # 文件助手
 │       ├── ginhelper/      # Gin助手
-│       ├── gormhelper/     # GORM助手
+│       ├── gormhelper/     # GORM助手（含租户钩子）
+│       ├── imagehelper/    # 图片助手
 │       ├── passwordhelper/ # 密码助手
 │       ├── response/       # 响应助手
+│       ├── schedulerhelper/ # 任务调度核心库
 │       ├── tenanthelper/   # 租户助手
 │       ├── tokenhelper/    # Token助手
+│       ├── uploadhelper/   # 上传助手（本地/七牛云/分片上传）
 │       └── ymlconfig/      # 配置助手
 ├── bootstrap/              # 应用初始化
-│   └── init.go             # 初始化配置
+│   ├── init.go             # 初始化配置
+│   └── initadmin.go        # 超管账号初始化
 ├── config/                 # 配置文件
-│   └── config.yml          # 主配置文件
+│   ├── config.yml          # 主配置文件
+│   └── config.example.yml  # 主配置示例文件（含详细注释）
 ├── docs/                   # 文档
 │   ├── swagger/            # Swagger API 文档
-│   └── catalog.md          # 项目目录说明
+│   ├── catalog.md          # 项目目录说明
+│   ├── installation.md     # 安装文档
+│   ├── deployment.md       # 部署文档
+│   ├── environment.md      # 环境搭建文档
+│   ├── exploit.md          # 二次开发文档
+│   ├── faq.md              # 常见问题
+│   └── frontend-*.md       # 前端相关文档
 ├── gen/                    # 代码生成模板
 │   └── templates/          # 代码生成器使用的模板文件
 ├── plugins/                # 插件目录
@@ -154,12 +196,21 @@ ginfast-tenant/
 │   └── exampleinit.go      # 插件初始化文件
 ├── resource/               # 资源文件
 │   ├── database/           # 数据库脚本
-│   │   └── gin-fast-tenant.sql # 数据库表结构脚本（仅表结构，不含数据）
+│   │   ├── gin-fast-tenant.sql # MySQL表结构脚本（仅表结构，不含数据）
+│   │   ├── sqlserver_converted.sql # SQL Server表结构脚本
+│   │   ├── postgresql_converted.sql # PostgreSQL表结构脚本
+│   │   ├── area.json       # 行政区划数据
+│   │   └── menu_backup/    # 菜单备份（首次部署恢复菜单用）
 │   ├── logs/               # 日志文件目录
 │   └── public/             # 静态资源
 ├── scripts/                # 脚本文件
 │   ├── swagger.sh          # Swagger文档生成脚本(Linux/Mac)
-│   └── swagger.bat         # Swagger文档生成脚本(Windows)
+│   ├── swagger.bat         # Swagger文档生成脚本(Windows)
+│   ├── build-to-linux.bat  # 交叉编译Linux脚本(Windows)
+│   ├── build-to-linux.sh   # 交叉编译Linux脚本(Linux/Mac)
+│   ├── build-to-windows.bat # 交叉编译Windows脚本
+│   ├── mysql2postgres/     # MySQL转PostgreSQL工具
+│   └── mysql2sqlserver/    # MySQL转SQL Server工具
 ├── main.go                 # 应用入口
 └── go.mod                  # 依赖管理
 ```
@@ -186,8 +237,11 @@ go mod tidy
 ```
 
 3. 配置数据库
-   - 修改 `config/config.yml` 中的数据库配置
-   - 建库后导入表结构脚本 `resource/database/gin-fast-tenant.sql`（仅表结构，不含数据）
+   - 修改 `config/config.yml` 中的数据库配置（`gormv2` 节，详见下方配置说明）
+   - 建库后按数据库类型导入对应的表结构脚本（均为仅表结构，不含数据）：
+     - MySQL：`resource/database/gin-fast-tenant.sql`
+     - SQL Server：`resource/database/sqlserver_converted.sql`
+     - PostgreSQL：`resource/database/postgresql_converted.sql`
    - 在 `config/config.yml` 的 `server.initadmin` 中配置超管账号并保持 `enabled: true`（`id`、`username`、`password`）
 
 4. 启动应用
@@ -207,6 +261,8 @@ go run main.go
 本项目集成了 Swagger API 文档，可以自动生成接口文档。
 
 ### 访问API文档
+
+注意：Swagger 路由仅在 `server.appdebug: true`（调试模式）下注册，非调试模式下访问会返回 404。
 
 启动应用后，可以通过以下URL访问API文档：
 - Swagger UI: http://localhost:8080/swagger/index.html
@@ -245,37 +301,99 @@ swag init -g main.go -o docs/swagger
 
 ## 配置说明
 
-主要配置项位于 `config/config.yml` 文件中：
+主要配置项位于 `config/config.yml` 文件中（完整配置及逐项注释请参考 `config/config.example.yml`）：
 
 ### 服务器配置
 ```yaml
-Server:
-  AppDebug: true          # 调试模式
-  CacheType: "redis"      # 缓存类型：memory 或 redis
-HttpServer:
-  Port: ":8080"          # 服务端口
-  AllowCrossDomain: true # 是否允许跨域
-  ServerRootPath: "/public" # 静态资源路由路径
-  ServerRoot: "./resource/public" # 静态资源根目录
+server:
+  appdebug: true         # 调试模式：true 日志优先显示在控制台；false 写入日志文件
+  cachetype: "redis"     # 缓存类型：memory 或 redis
+  syslog: false          # 是否开启操作日志
+  multitenant: true      # 多租户开关，false 时停用全部租户功能，退化为单体应用（缺省视为 true）
+  initadmin:             # 超管账号初始化（全新部署用，初始化成功后应将 enabled 改为 false）
+    enabled: true
+    id: 1
+    username: "admin"
+    password: "123456"
+httpserver:
+  port: ":8080"          # 服务端口
+  allowcrossdomain: true # 是否启用CORS跨域中间件
+  corsorigins:           # 跨域来源白名单（仅 allowcrossdomain: true 时生效，按 Origin 精确匹配）
+    - "http://localhost:5173"
+    - "http://127.0.0.1:5173"
+  serverrootpath: "/public" # 静态资源路由路径
+  serverroot: "./resource/public" # 静态资源根目录
+  read_timeout: 30       # TCP读取超时(秒)
+  write_timeout: 30      # TCP写入超时(秒)
+  idle_timeout: 60       # TCP空闲连接超时(秒)
+  handler_timeout: 30    # 请求处理超时(秒)，超过该时间返回超时错误
 ```
 
 ### 数据库配置示例
+
+数据库配置位于 `gormv2` 节，通过 `usedbtype` 选择启用的数据库类型（mysql、sqlserver、postgresql），每种类型均支持读写分离（`isopenreaddb: 1` 时 `read` 连接块生效）：
+
 ```yaml
-Database:
-  Type: "mysql"          # 数据库类型
-  Host: "127.0.0.1"      # 数据库主机
-  Port: 3306             # 数据库端口
-  Username: "root"       # 数据库用户名
-  Password: "password"   # 数据库密码
-  Database: "gin_fast"   # 数据库名
-  Charset: "utf8mb4"     # 字符集
-  ParseTime: true        # 解析时间
-  Loc: "Local"           # 时区
+gormv2:
+  usedbtype: "mysql"     # 默认使用的数据库类型（mysql、sqlserver、postgresql）
+  mysql:
+    isinitglobalgormmysql: 1  # 随项目启动初始化全局 gorm.DB（1=开启、0=关闭）
+    slowthreshold: 30         # 慢 SQL 阈值(秒)
+    timezone: "Local"         # 时区
+    write:                    # 写库连接
+      host: "127.0.0.1"
+      database: "gin-fast"
+      port: 3306
+      prefix: ""              # 表名前缀
+      user: "root"
+      pass: "root"
+      charset: "utf8mb4"
+      setmaxidleconns: 10     # 最大空闲连接数
+      setmaxopenconns: 128    # 最大打开连接数
+      setconnmaxlifetime: 60  # 连接最大生存时间(秒)
+      setconnmaxidletime: 30  # 空闲连接最大存活时间(秒)
+    isopenreaddb: 0           # 是否开启读写分离（1=开启，read 部分才生效）
+    read:                     # 读库连接（字段同 write）
+      host: "127.0.0.1"
+      database: "gin-fast"
+      port: 3306
+      prefix: ""
+      user: "root"
+      pass: "root"
+      charset: "utf8mb4"
+      setmaxidleconns: 10
+      setmaxopenconns: 128
+      setconnmaxlifetime: 60
+      setconnmaxidletime: 30
 ```
+
+`sqlserver`、`postgresql` 配置块结构与 `mysql` 相同（SQL Server 无需时区配置）。
+
+### 其他配置节一览
+
+| 配置节 | 说明 |
+|--------|------|
+| system | 系统名称、LOGO、版权声明、备案号等基础信息 |
+| safe | 登录失败锁定阈值/时长、密码最小长度、特殊字符要求 |
+| captcha | 图形验证码开关与长度 |
+| token | JWT 签名密钥、Token 过期时间、刷新过期时间、缓存开关 |
+| redis | Redis 连接与连接池配置 |
+| logs | Zap 日志文件、格式、级别、切割与归档策略 |
+| casbin | Casbin 策略自动加载频率、表名、RBAC 模型配置 |
+| upload | 上传方式（local/qiniu）、大小与类型限制、分片上传配置 |
+| gen | 代码生成的前端项目路径 |
+| scheduler | 任务调度器日志目录、级别与结果通道缓冲大小 |
 
 ## 多租户架构说明
 
 本项目基于标准的多租户架构设计，支持数据隔离和租户管理功能：
+
+### 多租户开关
+
+通过 `server.multitenant` 配置项可整体启用或停用多租户模式（缺省视为 `true`）：
+
+- `false` 时：数据不再按租户隔离（`tenanthelper.TenantScope()` 停止过滤），租户管理（`/sysTenant`）、用户租户关联（`/sysUserTenant`）、租户切换（`/users/switchTenant`）接口及租户菜单不再注册，登录不再校验租户编码，前端通过 `/api/config/get` 返回的 `tenant.enabled=false` 自动隐藏租户相关界面
+- 该开关可将框架退化为单体应用，无需修改任何代码
 
 ### 核心组件
 
@@ -392,6 +510,19 @@ POST /api/codegen/generate
 GET /api/codegen/preview?genId=<gen_id>
 ```
 预览即将生成的代码内容，不实际创建文件
+
+#### 插入菜单和API权限
+```
+POST /api/codegen/insertmenuandapi
+```
+根据代码生成配置ID将对应的菜单和API权限数据插入系统
+
+**请求体示例：**
+```json
+{
+  "genId": 1
+}
+```
 
 ### 代码生成工作流程
 
@@ -708,7 +839,7 @@ DELETE /api/pluginsmanager/uninstall?folderName=example
 在config.yml中配置前端项目路径：
 ```yaml
 gen:
-  dir: "../ginfast-ui"  # 前端项目根目录相对路径
+  dir: "../ginfast-tenant-ui"  # 前端项目根目录相对路径
 ```
 
 ## 插件开发规范
@@ -984,27 +1115,28 @@ scheduler:
 
 #### 任务管理接口
 
-所有任务管理接口需要JWT认证，路由前缀为 `/api/sysjobs`
+所有任务管理接口需要JWT认证，路由前缀为 `/api/sysJobs`
 
 | 接口 | 方法 | 说明 |
 |------|------|------|
-| /api/sysjobs/add | POST | 创建任务 |
-| /api/sysjobs/edit | PUT | 更新任务 |
-| /api/sysjobs/delete | DELETE | 删除任务 |
-| /api/sysjobs/getByID | GET | 根据ID获取任务 |
-| /api/sysjobs/list | GET | 获取任务列表（分页） |
-| /api/sysjobs/enable | PUT | 启用任务 |
-| /api/sysjobs/disable | PUT | 禁用任务 |
-| /api/sysjobs/executeNow | POST | 立即执行任务 |
+| /api/sysJobs/add | POST | 创建任务 |
+| /api/sysJobs/edit | PUT | 更新任务 |
+| /api/sysJobs/delete | DELETE | 删除任务 |
+| /api/sysJobs/:id | GET | 根据ID获取任务 |
+| /api/sysJobs/list | GET | 获取任务列表（分页） |
+| /api/sysJobs/setStatus | PUT | 启用/禁用任务 |
+| /api/sysJobs/executeNow | POST | 立即执行任务 |
+| /api/sysJobs/executors | GET | 获取可用执行器列表 |
 
 #### 任务结果查询接口
 
-路由前缀为 `/api/sysjobresults`
+路由前缀为 `/api/sysJobResults`
 
 | 接口 | 方法 | 说明 |
 |------|------|------|
-| /api/sysjobresults/list | GET | 获取任务执行结果列表（分页） |
-| /api/sysjobresults/getByID | GET | 根据ID获取执行结果 |
+| /api/sysJobResults/list | GET | 获取任务执行结果列表（分页） |
+| /api/sysJobResults/:id | GET | 根据ID获取执行结果 |
+| /api/sysJobResults/delete | DELETE | 删除执行结果 |
 
 ### 执行器开发
 
@@ -1152,22 +1284,26 @@ func init() {
 go build -o gin-fast .
 ```
 
+### 交叉编译
+
+Windows 下可使用项目自带脚本交叉编译：
+
+```cmd
+# 编译 Linux 版本
+scripts\build-to-linux.bat
+
+# 编译 Windows 版本
+scripts\build-to-windows.bat
+```
+
+Linux/Mac 下可使用 `scripts/build-to-linux.sh`。
+
 ### 运行项目
 ```bash
 ./gin-fast
 ```
 
-### Docker 部署
-
-1. 构建 Docker 镜像
-```bash
-docker build -t gin-fast .
-```
-
-2. 运行容器
-```bash
-docker run -p 8080:8080 gin-fast
-```
+更多部署方式（宝塔、Nginx 反代等）请参考 [docs/deployment.md](docs/deployment.md)。
 
 ## 免责声明：
 > 1、GIN-FAST仅限自己学习使用，一切商业行为与GIN-FAST无关。
