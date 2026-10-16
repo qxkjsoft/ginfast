@@ -212,6 +212,29 @@ func (list SysMenuList) GetMenusWithChildern(menuIds ...uint) SysMenuList {
 	return result
 }
 
+// GetMenusByIDs 仅返回指定ID的菜单，不包含子级元素
+func (list SysMenuList) GetMenusByIDs(menuIds ...uint) SysMenuList {
+	if len(list) == 0 || len(menuIds) == 0 {
+		return nil
+	}
+
+	// 创建一个集合便于快速查找
+	idSet := make(map[uint]bool, len(menuIds))
+	for _, id := range menuIds {
+		idSet[id] = true
+	}
+
+	// 按原列表顺序收集命中的菜单
+	result := make(SysMenuList, 0, len(menuIds))
+	for _, menu := range list {
+		if idSet[menu.ID] {
+			result = append(result, menu)
+		}
+	}
+
+	return result
+}
+
 // GetMenusWithParents 根据多个菜单ID获取包含这些ID及所有父级元素的数据
 func (list SysMenuList) GetMenusWithParents(menuIds ...uint) SysMenuList {
 

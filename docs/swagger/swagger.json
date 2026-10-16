@@ -1438,6 +1438,48 @@
                 }
             }
         },
+        "/simplemall/wx/member/bindWeChat": {
+            "post": {
+                "description": "校验微信手机号与当前账号手机号一致且 openid 未被其他账号占用后，将 openid 绑定到当前登录会员；绑定后可使用微信手机号快捷登录与真实微信支付（注册账号无 openid 时这两项不可用）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "微信会员"
+                ],
+                "summary": "绑定微信",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "绑定参数",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.WxBindWeChatRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/simplemall/wx/member/updatePassword": {
             "put": {
                 "description": "修改当前登录会员的密码；已设置过密码必须提供正确的旧密码，未设置过密码可直接设置新密码",
@@ -4558,7 +4600,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "根据菜单ID导出菜单及其关联API的数据",
+                "description": "根据菜单ID导出菜单及其关联API的数据；includeChildren 为 false 时仅导出勾选的节点本身，默认（未传或 true）包含其所有子级",
                 "consumes": [
                     "application/json"
                 ],
@@ -4580,6 +4622,12 @@
                         "name": "menuIds",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "是否包含子级菜单，默认 true",
+                        "name": "includeChildren",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -8269,6 +8317,21 @@
                     "type": "integer"
                 },
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.WxBindWeChatRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "phoneCode"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "phoneCode": {
                     "type": "string"
                 }
             }
