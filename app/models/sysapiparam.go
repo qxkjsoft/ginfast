@@ -50,8 +50,9 @@ type SysApiListRequest struct {
 	Title    string `form:"title"`    // API名称，支持模糊查询
 	Path     string `form:"path"`     // API路径，支持模糊查询
 	Method   string `form:"method"`   // 请求方法过滤
-	ApiGroup string `form:"apiGroup"` // API分组过滤
-	MenuID   *uint  `form:"menuId"`   // 菜单ID，用于查询关联的API权限数据
+	ApiGroup      string `form:"apiGroup"`      // API分组过滤
+	MenuID        *uint  `form:"menuId"`        // 菜单ID，用于查询关联的API权限数据
+	ExcludeMenuID *uint  `form:"excludeMenuId"` // 菜单ID，用于排除已关联该菜单的API
 }
 
 func (r *SysApiListRequest) Validate(c *gin.Context) error {
@@ -76,6 +77,11 @@ func (r *SysApiListRequest) Handler() func(db *gorm.DB) *gorm.DB {
 		if r.MenuID != nil {
 			subQuery := db.Session(&gorm.Session{NewDB: true}).Table("sys_menu_api").Where("menu_id = ?", *r.MenuID).Select("api_id")
 			db = db.Where("id IN (?)", subQuery)
+		}
+		// 通过子查询排除与指定菜单ID已关联的API数据
+		if r.ExcludeMenuID != nil {
+			subQuery := db.Session(&gorm.Session{NewDB: true}).Table("sys_menu_api").Where("menu_id = ?", *r.ExcludeMenuID).Select("api_id")
+			db = db.Where("id NOT IN (?)", subQuery)
 		}
 		return db
 	}

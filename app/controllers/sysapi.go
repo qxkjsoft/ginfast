@@ -42,7 +42,8 @@ func NewSysApiController() *SysApiController {
 // @Param pageSize query int false "每页数量" default(10)
 // @Param title query string false "API名称"
 // @Param path query string false "API路径"
-// @Param method query string false "请求方法"
+	// @Param method query string false "请求方法"
+	// @Param excludeMenuId query int false "排除与指定菜单已关联的API"
 // @Success 200 {object} map[string]interface{} "成功返回API列表"
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"
 // @Router /sysApi/list [get]
