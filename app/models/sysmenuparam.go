@@ -88,6 +88,8 @@ func (r *SysMenuApiAssignRequest) Validate(c *gin.Context) error {
 type SysMenuExportRequest struct {
 	Validator
 	MenuIDs []uint `form:"menuIds" json:"menuIds" validate:"required" message:"菜单ID列表不能为空"`
+	// IncludeChildren 是否包含子级菜单；指针类型用于区分"未传"（nil，默认包含，兼容旧行为）与显式传 false
+	IncludeChildren *bool `form:"includeChildren" json:"includeChildren"`
 }
 
 func (r *SysMenuExportRequest) Validate(c *gin.Context) error {

@@ -890,6 +890,16 @@ definitions:
     - id
     - name
     type: object
+  models.WxBindWeChatRequest:
+    properties:
+      code:
+        type: string
+      phoneCode:
+        type: string
+    required:
+    - code
+    - phoneCode
+    type: object
   models.WxLoginByPasswordRequest:
     properties:
       account:
@@ -1895,6 +1905,35 @@ paths:
             additionalProperties: true
             type: object
       summary: 账号密码登录
+      tags:
+      - 微信会员
+  /simplemall/wx/member/bindWeChat:
+    post:
+      consumes:
+      - application/json
+      description: 校验微信手机号与当前账号手机号一致且 openid 未被其他账号占用后，将 openid 绑定到当前登录会员；绑定后可使用微信手机号快捷登录与真实微信支付（注册账号无
+        openid 时这两项不可用）
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: 绑定参数
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.WxBindWeChatRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 绑定微信
       tags:
       - 微信会员
   /simplemall/wx/member/updatePassword:
@@ -3954,7 +3993,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: 根据菜单ID导出菜单及其关联API的数据
+      description: 根据菜单ID导出菜单及其关联API的数据；includeChildren 为 false 时仅导出勾选的节点本身，默认（未传或
+        true）包含其所有子级
       parameters:
       - collectionFormat: csv
         description: 菜单ID列表
@@ -3964,6 +4004,10 @@ paths:
         name: menuIds
         required: true
         type: array
+      - description: 是否包含子级菜单，默认 true
+        in: query
+        name: includeChildren
+        type: boolean
       produces:
       - application/json
       responses:

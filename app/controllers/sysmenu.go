@@ -696,11 +696,12 @@ func (sm *SysMenuController) SetMenuApis(c *gin.Context) {
 
 // Export 导出菜单数据
 // @Summary 导出菜单数据
-// @Description 根据菜单ID导出菜单及其关联API的数据
+// @Description 根据菜单ID导出菜单及其关联API的数据；includeChildren 为 false 时仅导出勾选的节点本身，默认（未传或 true）包含其所有子级
 // @Tags 菜单管理
 // @Accept json
 // @Produce json
 // @Param menuIds query []uint true "菜单ID列表"
+// @Param includeChildren query bool false "是否包含子级菜单，默认 true"
 // @Success 200 {file} file "JSON文件"
 // @Failure 400 {object} map[string]interface{} "请求参数错误"
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"
@@ -712,7 +713,7 @@ func (sm *SysMenuController) Export(c *gin.Context) {
 		sm.FailAndAbort(c, err.Error(), err)
 	}
 
-	// 获取所有需要导出的菜单数据（包括子级菜单）
+	// 获取所有需要导出的菜单数据（includeChildren 为 false 时仅导出勾选节点本身，默认包含其所有子级菜单）
 	menuList := models.NewSysMenuList()
 	err := menuList.Find(c, func(d *gorm.DB) *gorm.DB {
 		return d.Preload("Apis")
@@ -723,7 +724,11 @@ func (sm *SysMenuController) Export(c *gin.Context) {
 	if menuList.IsEmpty() {
 		sm.FailAndAbort(c, "未找到菜单数据", nil)
 	}
-	menuList = menuList.GetMenusWithChildern(req.MenuIDs...)
+	if req.IncludeChildren != nil && !*req.IncludeChildren {
+		menuList = menuList.GetMenusByIDs(req.MenuIDs...)
+	} else {
+		menuList = menuList.GetMenusWithChildern(req.MenuIDs...)
+	}
 	menuTree := menuList.FixOrphanParentIDs().BuildTree()
 
 	content, err := menuTree.Json()
