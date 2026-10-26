@@ -11,6 +11,7 @@ import (
 	"gin-fast/app/utils/captchahelper"
 	"gin-fast/app/utils/common"
 	"gin-fast/app/utils/passwordhelper"
+	"gin-fast/app/utils/sysconfighelper"
 	"gin-fast/app/utils/tenanthelper"
 
 	"github.com/gin-gonic/gin"
@@ -70,10 +71,11 @@ func (ac *AuthController) Login(c *gin.Context) {
 		ac.FailAndAbort(c, "用户未启用", nil)
 	}
 
-	// 获取安全配置
-	loginLockThreshold := app.ConfigYml.GetInt("safe.loginlockthreshold")
-	loginLockExpire := app.ConfigYml.GetInt("safe.loginlockexpire")
-	loginLockDuration := app.ConfigYml.GetInt("safe.loginlockduration")
+	// 获取安全配置（存于 sys_config 表，经 sysconfighelper 读取）
+	sysConfig := sysconfighelper.Instance()
+	loginLockThreshold := sysConfig.GetInt(sysconfighelper.CodeLoginLockThreshold)
+	loginLockExpire := sysConfig.GetInt(sysconfighelper.CodeLoginLockExpire)
+	loginLockDuration := sysConfig.GetInt(sysconfighelper.CodeLoginLockDuration)
 
 	// 失败计数与锁定键按"用户名+IP"组合：既能拦截同一来源爆破，
 	// 又避免攻击者仅凭用户名远程锁死任意真实账号（登录 DoS）

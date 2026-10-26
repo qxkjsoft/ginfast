@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"gin-fast/app/global/app"
+	"gin-fast/app/utils/sysconfighelper"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -15,9 +16,9 @@ import (
 // PasswordValidatorMiddleware 密码验证中间件
 func PasswordValidatorMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 获取配置中的密码安全设置
-		minPasswordLength := app.ConfigYml.GetInt("safe.minpasswordlength")
-		requireSpecialChar := app.ConfigYml.GetBool("safe.requirespecialchar")
+		// 获取配置中的密码安全设置（存于 sys_config 表）
+		minPasswordLength := sysconfighelper.Instance().GetInt(sysconfighelper.CodeMinPasswordLength)
+		requireSpecialChar := sysconfighelper.Instance().GetBool(sysconfighelper.CodeRequireSpecialChar)
 
 		// 获取请求方法
 		method := c.Request.Method

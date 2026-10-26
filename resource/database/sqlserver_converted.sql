@@ -461,6 +461,20 @@ CREATE TABLE [sys_param] (
 CREATE UNIQUE INDEX [idx_sys_param_code] ON [sys_param] ([code]);
 CREATE INDEX [idx_sys_param_deleted_at] ON [sys_param] ([deleted_at]);
 
+-- Table structure for sys_config
+IF OBJECT_ID('sys_config', 'U') IS NOT NULL DROP TABLE [sys_config];
+CREATE TABLE [sys_config] (
+    [id] BIGINT IDENTITY(1,1) NOT NULL,
+    [code] NVARCHAR(100) NOT NULL,
+    [value] NVARCHAR(MAX),
+    [description] NVARCHAR(500),
+    [created_at] DATETIME,
+    [updated_at] DATETIME,
+    PRIMARY KEY ([id])
+);
+
+CREATE UNIQUE INDEX [idx_sys_config_code] ON [sys_config] ([code]);
+
 -- 创建索引
 CREATE INDEX [sys_jobs_idx_group] ON [sys_jobs] ([group]);
 CREATE INDEX [sys_jobs_idx_status] ON [sys_jobs] ([status]);

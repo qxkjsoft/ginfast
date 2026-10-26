@@ -15,8 +15,8 @@ server:
     enabled: false    # 是否启用演示账号功能
     # 演示账号的用户ID列表，可以设置多个账号
     userids: []       # 演示账号的用户ID列表，例如：[1, 2, 3]
-    defaultusername: "admin"  # 登录页默认账号
-    defaultpassword: "123456"  # 演示密码（显示在登录页密码框 placeholder，由用户自行输入）
+    defaultusername: "admin"  # 登录页默认账号的初始默认值（运行时以 sys_config 表为准，后台「系统配置」页面修改）
+    defaultpassword: "123456"  # 演示密码的初始默认值（登录页密码框 placeholder，由用户自行输入）
     # 允许演示账号执行非GET请求的路径前缀列表（白名单）
     # 配置后，演示账号可以对这些路径执行POST/PUT/DELETE等操作
     # 示例：
@@ -26,7 +26,10 @@ server:
     #   - "/api/plugins/test/"  # 测试插件API
     allowpathprefixes: []
 
-system: 
+# 【初始默认值】以下 system/safe/captcha 配置段为后台「系统配置」页面用户配置项的
+# 初始默认值：程序启动时据此补种数据库 sys_config 表缺失的配置行（只读、不回写本文件）。
+# 数据库为运行时唯一数据源，运行期修改请登录后台「系统配置」页面，改这里不会影响已初始化的系统。
+system:
   #系统LOGO
   systemlogo: ""
   #系统图标
