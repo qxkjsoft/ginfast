@@ -676,6 +676,25 @@ COMMENT ON COLUMN sys_param.created_by IS '创建人';
 CREATE UNIQUE INDEX idx_sys_param_code ON sys_param (code);
 CREATE INDEX idx_sys_param_deleted_at ON sys_param (deleted_at);
 
+-- Table structure for sys_config
+DROP TABLE IF EXISTS sys_config;
+CREATE TABLE sys_config (
+    id BIGSERIAL,
+    code VARCHAR(100) NOT NULL,
+    value TEXT,
+    description VARCHAR(500),
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    PRIMARY KEY (id)
+);
+
+COMMENT ON COLUMN sys_config.id IS 'ID';
+COMMENT ON COLUMN sys_config.code IS '配置键';
+COMMENT ON COLUMN sys_config.value IS '配置值';
+COMMENT ON COLUMN sys_config.description IS '描述';
+
+CREATE UNIQUE INDEX idx_sys_config_code ON sys_config (code);
+
 -- 创建索引
 CREATE INDEX sys_jobs_idx_group ON sys_jobs ("group");
 CREATE INDEX sys_jobs_idx_status ON sys_jobs (status);

@@ -543,6 +543,21 @@ CREATE TABLE `sys_param` (
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COMMENT='系统参数配置';
 
 -- ----------------------------
+-- Table structure for sys_config
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_config`;
+CREATE TABLE `sys_config` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `code` varchar(100) NOT NULL COMMENT '配置键',
+  `value` text COMMENT '配置值',
+  `description` varchar(500) DEFAULT NULL COMMENT '描述',
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_sys_config_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统配置表(后台「系统配置」页面的用户配置项,缺失行启动时按config.yml初始值补种)';
+
+-- ----------------------------
 -- Table structure for sys_area
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_area`;

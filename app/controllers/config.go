@@ -3,7 +3,9 @@ package controllers
 import (
 	"gin-fast/app/global/app"
 	"gin-fast/app/models"
+	"gin-fast/app/utils/sysconfighelper"
 	"gin-fast/app/utils/tenanthelper"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,40 +38,40 @@ func NewConfigController() *ConfigController {
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"
 // @Router /config/get [get]
 func (con ConfigController) GetConfig(ctx *gin.Context) {
-	// 提取Server、HttpServer和Captcha配置
 	result := make(map[string]interface{})
 
-	// 获取Server配置
+	// 获取System配置（用户配置项存于 sys_config 表，经 sysconfighelper 内存缓存读取）
+	sysConfig := sysconfighelper.Instance()
 	systemConfig := make(map[string]interface{})
 
-	systemConfig["systemLogo"] = app.ConfigYml.GetString("system.systemlogo")           // 系统LOGO图片地址
-	systemConfig["systemIcon"] = app.ConfigYml.GetString("system.systemicon")           // 系统图标地址
-	systemConfig["systemName"] = app.ConfigYml.GetString("system.systemname")           // 系统名称
-	systemConfig["systemCopyright"] = app.ConfigYml.GetString("system.systemcopyright") // 版权声明信息
-	systemConfig["systemRecordNo"] = app.ConfigYml.GetString("system.systemrecordno")   // 网站备案号
-	// 获取DemoAccount配置，仅在演示账号开关开启时传递
+	systemConfig["systemLogo"] = sysConfig.GetString(sysconfighelper.CodeSystemLogo)         // 系统LOGO图片地址
+	systemConfig["systemIcon"] = sysConfig.GetString(sysconfighelper.CodeSystemIcon)         // 系统图标地址
+	systemConfig["systemName"] = sysConfig.GetString(sysconfighelper.CodeSystemName)         // 系统名称
+	systemConfig["systemCopyright"] = sysConfig.GetString(sysconfighelper.CodeSystemCopyright) // 版权声明信息
+	systemConfig["systemRecordNo"] = sysConfig.GetString(sysconfighelper.CodeSystemRecordNo)   // 网站备案号
+	// 演示账号开关属部署级配置，仍在 config.yml；仅在开启时下发默认账密
 	// 密码仅用于登录页密码框 placeholder 提示（用户自行输入）；注意：若演示账号同时配置在
 	// notcheckuser 中，该密码可被匿名获取并绕过全部权限校验，生产环境务必保持 notcheckuser 为空
 	if app.ConfigYml.GetBool("server.demoaccount.enabled") {
-		systemConfig["defaultusername"] = app.ConfigYml.GetString("server.demoaccount.defaultusername") // 演示账号默认用户名
-		systemConfig["defaultpassword"] = app.ConfigYml.GetString("server.demoaccount.defaultpassword") // 演示账号默认密码（placeholder提示用）
+		systemConfig["defaultusername"] = sysConfig.GetString(sysconfighelper.CodeDemoUsername) // 演示账号默认用户名
+		systemConfig["defaultpassword"] = sysConfig.GetString(sysconfighelper.CodeDemoPassword) // 演示账号默认密码（placeholder提示用）
 	}
 	result["system"] = systemConfig // 将系统配置放入结果集
 
 	// 获取Safe配置
 	safeConfig := make(map[string]interface{})
-	safeConfig["loginLockThreshold"] = app.ConfigYml.GetInt("safe.loginlockthreshold")  // 密码错误锁定阈值，连续登录失败次数达到该值将锁定账号，0表示不锁定
-	safeConfig["loginLockExpire"] = app.ConfigYml.GetInt("safe.loginlockexpire")        // 连续登录失败次数记录的缓存时间（单位：秒）
-	safeConfig["loginLockDuration"] = app.ConfigYml.GetInt("safe.loginlockduration")    // 账号锁定时长（单位：秒）
-	safeConfig["minPasswordLength"] = app.ConfigYml.GetInt("safe.minpasswordlength")    // 密码最小长度要求
-	safeConfig["requireSpecialChar"] = app.ConfigYml.GetBool("safe.requirespecialchar") // 密码是否必须包含特殊字符
-	result["safe"] = safeConfig                                                         // 将安全配置放入结果集
+	safeConfig["loginLockThreshold"] = sysConfig.GetInt(sysconfighelper.CodeLoginLockThreshold)  // 密码错误锁定阈值，连续登录失败次数达到该值将锁定账号，0表示不锁定
+	safeConfig["loginLockExpire"] = sysConfig.GetInt(sysconfighelper.CodeLoginLockExpire)        // 连续登录失败次数记录的缓存时间（单位：秒）
+	safeConfig["loginLockDuration"] = sysConfig.GetInt(sysconfighelper.CodeLoginLockDuration)    // 账号锁定时长（单位：秒）
+	safeConfig["minPasswordLength"] = sysConfig.GetInt(sysconfighelper.CodeMinPasswordLength)    // 密码最小长度要求
+	safeConfig["requireSpecialChar"] = sysConfig.GetBool(sysconfighelper.CodeRequireSpecialChar) // 密码是否必须包含特殊字符
+	result["safe"] = safeConfig                                                                  // 将安全配置放入结果集
 
 	// 获取Captcha配置
 	captchaConfig := make(map[string]interface{})
-	captchaConfig["open"] = app.ConfigYml.GetBool("captcha.open")    // 是否开启验证码功能
-	captchaConfig["length"] = app.ConfigYml.GetInt("captcha.length") // 验证码字符长度
-	result["captcha"] = captchaConfig                                // 将验证码配置放入结果集
+	captchaConfig["open"] = sysConfig.GetBool(sysconfighelper.CodeCaptchaOpen)    // 是否开启验证码功能
+	captchaConfig["length"] = sysConfig.GetInt(sysconfighelper.CodeCaptchaLength) // 验证码字符长度
+	result["captcha"] = captchaConfig                                             // 将验证码配置放入结果集
 
 	// 获取多租户开关配置（前端据此显隐租户相关界面）
 	tenantConfig := make(map[string]interface{})
@@ -107,30 +109,29 @@ func (con ConfigController) UpdateConfig(ctx *gin.Context) {
 		con.Common.FailAndAbort(ctx, "参数绑定失败", err)
 	}
 
-	// 更新System配置
-	app.ConfigYml.Set("system.systemlogo", req.System.SystemLogo)
-	app.ConfigYml.Set("system.systemicon", req.System.SystemIcon)
-	app.ConfigYml.Set("system.systemname", req.System.SystemName)
-	app.ConfigYml.Set("system.systemcopyright", req.System.SystemCopyright)
-	app.ConfigYml.Set("system.systemrecordno", req.System.SystemRecordNo)
-	// 更新DemoAccount配置
-	app.ConfigYml.Set("server.demoaccount.defaultusername", req.System.DefaultUsername)
-	app.ConfigYml.Set("server.demoaccount.defaultpassword", req.System.DefaultPassword)
-
-	// 更新Safe配置
-	app.ConfigYml.Set("safe.loginlockthreshold", req.Safe.LoginLockThreshold)
-	app.ConfigYml.Set("safe.loginlockexpire", req.Safe.LoginLockExpire)
-	app.ConfigYml.Set("safe.loginlockduration", req.Safe.LoginLockDuration)
-	app.ConfigYml.Set("safe.minpasswordlength", req.Safe.MinPasswordLength)
-	app.ConfigYml.Set("safe.requirespecialchar", req.Safe.RequireSpecialChar)
-
-	// 更新Captcha配置
-	app.ConfigYml.Set("captcha.open", req.Captcha.Open)
-	app.ConfigYml.Set("captcha.length", req.Captcha.Length)
-
-	// 保存配置到文件
-	if err := app.ConfigYml.SaveConfig(); err != nil {
-		con.Common.FailAndAbort(ctx, "保存配置文件失败", err)
+	// 更新用户配置项到 sys_config 表（config.yml 不再被程序改写）
+	values := map[string]string{
+		// System配置
+		sysconfighelper.CodeSystemLogo:      req.System.SystemLogo,
+		sysconfighelper.CodeSystemIcon:      req.System.SystemIcon,
+		sysconfighelper.CodeSystemName:      req.System.SystemName,
+		sysconfighelper.CodeSystemCopyright: req.System.SystemCopyright,
+		sysconfighelper.CodeSystemRecordNo:  req.System.SystemRecordNo,
+		// DemoAccount默认账密
+		sysconfighelper.CodeDemoUsername: req.System.DefaultUsername,
+		sysconfighelper.CodeDemoPassword: req.System.DefaultPassword,
+		// Safe配置
+		sysconfighelper.CodeLoginLockThreshold: strconv.Itoa(req.Safe.LoginLockThreshold),
+		sysconfighelper.CodeLoginLockExpire:    strconv.Itoa(req.Safe.LoginLockExpire),
+		sysconfighelper.CodeLoginLockDuration:  strconv.Itoa(req.Safe.LoginLockDuration),
+		sysconfighelper.CodeMinPasswordLength:  strconv.Itoa(req.Safe.MinPasswordLength),
+		sysconfighelper.CodeRequireSpecialChar: strconv.FormatBool(req.Safe.RequireSpecialChar),
+		// Captcha配置
+		sysconfighelper.CodeCaptchaOpen:   strconv.FormatBool(req.Captcha.Open),
+		sysconfighelper.CodeCaptchaLength: strconv.Itoa(req.Captcha.Length),
+	}
+	if err := sysconfighelper.Instance().Update(values); err != nil {
+		con.Common.FailAndAbort(ctx, "保存配置失败", err)
 	}
 
 	// 返回成功响应

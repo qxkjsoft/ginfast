@@ -7,6 +7,7 @@ import (
 
 	"gin-fast/app/global/app"
 	"gin-fast/app/utils/captchahelper"
+	"gin-fast/app/utils/sysconfighelper"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,8 +15,8 @@ import (
 // CaptchaMiddleware 验证码验证中间件
 func CaptchaMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 检查配置是否开启验证码
-		if !app.ConfigYml.GetBool("captcha.open") {
+		// 检查配置是否开启验证码（存于 sys_config 表）
+		if !sysconfighelper.Instance().GetBool(sysconfighelper.CodeCaptchaOpen) {
 			c.Next()
 			return
 		}
