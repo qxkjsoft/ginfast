@@ -76,11 +76,12 @@ httpserver:
     - "http://localhost:8090"
     - "http://127.0.0.1:8090"
   serverrootpath: "/public" # 静态资源路由路径
-  serverroot: "./resource/public" # 静态资源根目录
+  serverroot: "./resource/public" # 静态资源根目录（目录请求含 index.html 时作为站点入口输出，否则 404，与下方 extra_static 行为一致）
   # 额外静态目录映射列表（可配置多个，每项 prefix=URL访问前缀 + dir=磁盘目录），同样经安全加固静态服务输出
+  # 目录请求不输出文件清单：目录下存在 index.html 时作为站点入口输出（如挂载 H5/小程序编译产物，GET /shop → /shop/ → index.html），否则 404
   # 示例：把旧系统迁移的图片目录映射到 /d 访问路径（/d/file/2026/07/a.png → ./resource/d/file/2026/07/a.png）：
   # extra_static:
-  #   - prefix: "/d"            # URL 前缀（勿以 / 结尾，勿与 /api、/swagger、/public 等已有路由冲突）
+  #   - prefix: "/d"            # URL 前缀（勿以 / 结尾，勿与 /api、/swagger、/public 等已有路由冲突；不支持空值或根路径 /）
   #     dir: "./resource/d"     # 磁盘目录（相对或绝对路径，目录不存在时请求返回 404）
   extra_static: []
   read_timeout: 30    # TCP读取超时(秒)

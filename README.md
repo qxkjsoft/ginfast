@@ -322,8 +322,8 @@ httpserver:
     - "http://localhost:5173"
     - "http://127.0.0.1:5173"
   serverrootpath: "/public"       # 静态资源路由路径
-  serverroot: "./resource/public" # 静态资源根目录
-  extra_static: []        # 额外静态目录映射列表（prefix=URL前缀 + dir=磁盘目录），详见 config.example.yml 注释
+  serverroot: "./resource/public" # 静态资源根目录（目录请求含 index.html 时作为站点入口输出，否则 404）
+  extra_static: []        # 额外静态目录映射列表（prefix=URL前缀 + dir=磁盘目录，目录含 index.html 时作为站点入口），详见 config.example.yml 注释
   read_timeout: 30       # TCP读取超时(秒)
   write_timeout: 30      # TCP写入超时(秒)
   idle_timeout: 60       # TCP空闲连接超时(秒)

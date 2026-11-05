@@ -14,7 +14,7 @@ import (
 //   - 所有响应追加 X-Content-Type-Options: nosniff
 //   - uploads 子路径下的 .svg 追加禁执行脚本的 CSP（<img> 引用正常显示，直接在浏览器打开无法执行脚本）
 //   - uploads 子路径下的 .html/.htm/.xml/.xhtml 强制下载（防内联渲染存储型 XSS）
-//   - 关闭目录列表（目录请求返回 404）
+//   - 关闭目录列表（目录请求不输出文件清单；目录下存在 index.html 时输出它作为站点入口，否则 404）
 //
 // 参数：
 //   - engine:   gin 引擎实例
@@ -49,12 +49,25 @@ func SecureStatic(engine *gin.Engine, rootPath, rootDir string) {
 		// 前面 relPath 已规范化，这里 Join 不会逃出 rootDir（双重防护，FileServer 内部也有 ".." 拦截）
 		fullPath := filepath.Join(rootDir, filepath.FromSlash(relPath))
 
-		// 关闭目录列表：os.Stat 出错（文件/目录不存在）或目标是目录时一律 404。
-		// 必须主动拦：标准库 FileServer 对目录请求默认会输出整个目录的索引页（文件清单泄露），
-		// 这里把根路径 /public/、/public/uploads/ 之类的目录浏览全部打死
-		if info, err := os.Stat(fullPath); err != nil || info.IsDir() {
+		// 关闭目录列表：os.Stat 出错（文件/目录不存在）一律 404。
+		// 必须主动拦：标准库 FileServer 对目录请求默认会输出整个目录的索引页（文件清单泄露）。
+		// 目录请求不输出文件清单，改为查找目录下的 index.html 作为站点入口
+		// （如 GET /shop/ → resource/shop/index.html，供 H5/小程序编译产物直接挂载），找不到仍然 404
+		info, err := os.Stat(fullPath)
+		if err != nil {
 			c.Status(http.StatusNotFound)
 			return
+		}
+		if info.IsDir() {
+			relPath = path.Join(relPath, "index.html")
+			fullPath = filepath.Join(rootDir, filepath.FromSlash(relPath))
+			if entryInfo, entryErr := os.Stat(fullPath); entryErr != nil || entryInfo.IsDir() {
+				c.Status(http.StatusNotFound)
+				return
+			}
+			// 命中入口：relPath 已改写为 .../index.html，下方安全响应头按实际输出文件判定
+			// （uploads 下的目录入口与直接访问 /uploads/.../index.html 待遇一致，防绕过强制下载）；
+			// 文件内容无需手动读出，标准库 FileServer 对目录请求本就会自动输出目录下的 index.html
 		}
 
 		// 内容型安全响应头只针对上传文件直出区（/uploads/ 前缀）；

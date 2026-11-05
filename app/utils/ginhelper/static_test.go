@@ -68,3 +68,57 @@ func TestSecureStatic(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "nosniff", w.Header().Get("X-Content-Type-Options"))
 }
+
+// TestSecureStaticDirectoryEntry 目录请求下 index.html 入口（H5 编译产物挂载场景）
+func TestSecureStaticDirectoryEntry(t *testing.T) {
+	dir := t.TempDir()
+
+	// /shop：含 index.html 的 H5 站点目录
+	shop := filepath.Join(dir, "shop")
+	assert.NoError(t, os.MkdirAll(shop, 0755))
+	assert.NoError(t, os.WriteFile(filepath.Join(shop, "index.html"), []byte("<html><body>shop</body></html>"), 0644))
+
+	// uploads/sub：上传区子目录也放一个 index.html，验证目录形式访问不绕过强制下载
+	uploads := filepath.Join(dir, "uploads")
+	sub := filepath.Join(uploads, "sub")
+	assert.NoError(t, os.MkdirAll(sub, 0755))
+	assert.NoError(t, os.WriteFile(filepath.Join(sub, "index.html"), []byte("<html></html>"), 0644))
+
+	gin.SetMode(gin.TestMode)
+	engine := gin.New()
+	SecureStatic(engine, "/public", dir)
+	SecureStatic(engine, "/shop", shop)
+
+	get := func(path string) *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		engine.ServeHTTP(w, req)
+		return w
+	}
+
+	// 裸前缀 /shop → gin 自动 301 到 /shop/（后续请求拿到入口文件）
+	w := get("/shop")
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+	assert.Equal(t, "/shop/", w.Header().Get("Location"))
+
+	// /shop/ → 目录请求输出 index.html 作为站点入口
+	w = get("/shop/")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Header().Get("Content-Type"), "text/html")
+	assert.Equal(t, "nosniff", w.Header().Get("X-Content-Type-Options"))
+	assert.Equal(t, "<html><body>shop</body></html>", w.Body.String())
+
+	// uploads 子目录的 index.html 经目录形式访问，同样强制下载（防存储型 XSS 绕过）
+	w = get("/public/uploads/sub/")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "attachment", w.Header().Get("Content-Disposition"))
+	assert.Equal(t, "nosniff", w.Header().Get("X-Content-Type-Options"))
+
+	// 无 index.html 的目录仍 404（防目录列表）
+	w = get("/public/uploads/")
+	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	// 入口目录下请求不存在的文件仍 404
+	w = get("/shop/not-exist.js")
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
