@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gin-fast/app/global/app"
+	"net/url"
 	"sort"
 	"strings"
 
@@ -45,6 +46,22 @@ func (SysMenu) TableName() string {
 
 func NewSysMenu() *SysMenu {
 	return &SysMenu{}
+}
+
+// validateMenuLink 统一校验菜单外链和内嵌地址，供新增、编辑及 JSON 导入共用。
+func validateMenuLink(menuType, isLink, iframe int8, link string) error {
+	link = strings.TrimSpace(link)
+	if (menuType != 2 || (isLink == 0 && iframe == 0)) && link == "" {
+		return nil
+	}
+	if link == "" {
+		return fmt.Errorf("外链地址不能为空")
+	}
+	address, err := url.Parse(link)
+	if err != nil || (address.Scheme != "http" && address.Scheme != "https") || address.Hostname() == "" {
+		return fmt.Errorf("外链地址需以http:// 或 https:// 开头")
+	}
+	return nil
 }
 
 // IsEmpty 检查单个菜单是否为空
@@ -385,6 +402,13 @@ func (list SysMenuList) ValidateTree() ValidationErrors {
 	// 递归验证函数
 	var validateNode func(menu *SysMenu, parent *SysMenu)
 	validateNode = func(menu *SysMenu, parent *SysMenu) {
+		if err := validateMenuLink(menu.Type, menu.IsLink, menu.Iframe, menu.Link); err != nil {
+			errors = append(errors, ValidationError{
+				MenuID:   menu.ID,
+				MenuName: menu.Name,
+				Error:    err.Error(),
+			})
+		}
 		// 检查1: 循环引用（子节点ID不能等于节点ID或父节点ID）
 		if menu.ID == menu.ParentID {
 			errors = append(errors, ValidationError{
